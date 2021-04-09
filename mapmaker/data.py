@@ -1,3 +1,4 @@
+import os
 from functools import lru_cache
 
 from urllib.request import urlopen
@@ -5,6 +6,8 @@ import json
 
 import numpy as np
 import pandas as pd
+
+NAT_REG_MODEL = os.environ["NAT_REG_MODEL"]
 
 
 @lru_cache(None)
@@ -17,10 +20,10 @@ def counties():
 
 @lru_cache(None)
 def all_data():
-    swing_2012_2016 = pd.read_csv("national-regression-model/2012 to 2016 swing.csv")
-    demo_2012 = pd.read_csv("national-regression-model/2012_demographics_votes.csv")
+    swing_2012_2016 = pd.read_csv(f"{NAT_REG_MODEL}/2012 to 2016 swing.csv")
+    demo_2012 = pd.read_csv(f"{NAT_REG_MODEL}/2012_demographics_votes.csv")
     demo_2020 = pd.read_csv(
-        "national-regression-model/2020_demographics_votes_fips.csv",
+        f"{NAT_REG_MODEL}/2020_demographics_votes_fips.csv",
         dtype=dict(FIPS=str),
     )
     demo_2020["FIPS"] = demo_2020["FIPS"].map(lambda x: x if len(x) == 5 else "0" + x)
@@ -105,4 +108,4 @@ def all_data():
 
 
 def ec():
-    return pd.read_csv("mapmaker/ec.csv").set_index("state")
+    return pd.read_csv("ec.csv").set_index("state")
