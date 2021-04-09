@@ -1,7 +1,9 @@
+import os
 import re
 import tempfile
 
 import svgutils.transform as sg
+from cairosvg import svg2png
 
 from .processing import get_electoral_vote, get_popular_vote
 from .mapper import county_map, state_map
@@ -13,7 +15,7 @@ def generate_map(data, dem_margin, title, out_path):
     sm = state_map(data, dem_margin)
     pop_vote_margin = get_popular_vote(data, dem_margin)
 
-    fig = sg.SVGFigure("16cm", "6.5cm")
+    fig = sg.SVGFigure("160cm", "65cm")
 
     counties_svg, states_svg = [tempfile.mktemp(suffix=".svg") for _ in range(2)]
 
@@ -82,6 +84,8 @@ def generate_map(data, dem_margin, title, out_path):
         )
     fig.save(out_path)
     add_background_back(out_path)
+    with open(out_path) as f:
+        svg2png(bytestring=f.read(), write_to=out_path.replace(".svg", ".png"))
 
 
 def remove_backgrounds(path):
@@ -99,5 +103,8 @@ def add_background_back(path):
     start_content = contents.index("<g>")
     insert_rect = '<rect x="0" y="0" width="900" height="450" style="fill: rgb(34, 34, 34); fill-opacity: 1"/>'
     contents = contents[:start_content] + insert_rect + contents[start_content:]
+    contents = contents.replace(
+        'version="1.1"', 'version="1.1" width="900" height="450"'
+    )
     with open(path, "w") as f:
         f.write(contents)
