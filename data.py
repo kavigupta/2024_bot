@@ -105,4 +105,4 @@ def all_data():
 
 
 def ec():
-    return pd.read_csv("ec.csv").set_index("state")
+    return pd.read_csv("mapmaker/ec.csv").set_index("state")
