@@ -102,3 +102,7 @@ def all_data():
     )
     del all_data["gisjoin"]
     return all_data
+
+
+def ec():
+    return pd.read_csv("ec.csv").set_index("state")

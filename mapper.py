@@ -5,6 +5,7 @@ import numpy as np
 import us
 
 from .data import counties
+from .processing import get_state_results
 
 BACKGROUND = "#222"
 
@@ -42,16 +43,13 @@ def county_map(data, dem_margin):
 
 
 def state_map(data, dem_margin):
-    data = data.copy()
-    data["total_margin"] = data["total_votes"] * data[dem_margin]
-    is_blue_state = data.groupby("state").sum()["total_margin"] > 0
+    is_blue_state = get_state_results(data, dem_margin)
     figure = go.Choropleth(
         locationmode="USA-states",
         z=np.array(is_blue_state).astype(np.float),
         locations=[us.states.lookup(x).abbr for x in is_blue_state.index],
         colorscale=[[0, "#f88"], [1, "#88f"]],
-        #         marker_line_color="Blue" if is_blue else "Red",
-        #         marker_line_width=2,
+        marker_line_width=2,
         showscale=False,
     )
     return fit(figure)
