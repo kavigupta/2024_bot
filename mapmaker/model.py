@@ -19,8 +19,12 @@ class LinearModel:
         return LinearModel(self.weights, self.residuals, x)
 
     @staticmethod
-    def train(features, margin, bias=0):
-        weights, *_ = np.linalg.lstsq(features, margin, rcond=None)
+    def train(features, margin, total_votes, bias=0):
+        weights = (
+            LinearRegression(fit_intercept=False)
+            .fit(features, margin, sample_weight=total_votes)
+            .coef_
+        )
         residuals = margin - features @ weights
         return LinearModel(weights, residuals, bias)
 
@@ -28,7 +32,7 @@ class LinearModel:
         pred = features @ self.weights
         if correct:
             pred = pred + self.residuals + self.bias
-        return pred
+        return np.clip(pred, -0.8, 0.8)
 
     def perturb(self, seed, alpha):
         noise = np.random.RandomState(seed).randn(*self.weights.shape)
@@ -52,7 +56,9 @@ class Model:
     def __init__(self, data, feature_kwargs={}, *, alpha):
         self.data = data
         self.features = get_features(data, **feature_kwargs)
-        self.predictor = LinearModel.train(self.features, data.biden_2020)
+        self.predictor = LinearModel.train(
+            self.features, data.biden_2020, data.total_votes
+        )
         self.alpha = alpha
 
     def unbias_predictor(self):
