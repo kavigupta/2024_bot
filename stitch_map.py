@@ -62,7 +62,7 @@ def generate_map(data, dem_margin, title, out_path):
                     pvy,
                     f"R+{-pop_vote_margin:.2%}",
                     size=30,
-                    color="#88f",
+                    color="#f88",
                     font="Cantarell",
                 )
             ]
