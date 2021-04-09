@@ -25,6 +25,7 @@ def get_model():
 
 
 def get_image(seed, name):
+    name = str(name)
     try:
         os.makedirs(IMAGE_FOLDER)
     except FileExistsError:
@@ -37,21 +38,8 @@ def get_image(seed, name):
     if os.path.exists(png_path):
         return True, png_path
     get_model().sample(
-        f"2024 scenario: {name}",
+        f"2024 scenario {name}",
         seed=seed,
         path=svg_path,
     )
     return False, png_path
-
-
-def sample_word():
-    number = random.randint(0, 2 ** 16 - 1)
-    return number, " ".join(id_to_words(number))
-
-
-def sample_image():
-    number, word = sample_word()
-    exists, path = get_image(number, word)
-    if exists:
-        return sample_image()
-    return word, path
