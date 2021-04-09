@@ -9,6 +9,8 @@ import pandas as pd
 
 NAT_REG_MODEL = os.environ["NAT_REG_MODEL"]
 
+current_folder = os.path.dirname(__file__)
+
 
 @lru_cache(None)
 def counties():
@@ -108,4 +110,4 @@ def all_data():
 
 
 def ec():
-    return pd.read_csv("ec.csv").set_index("state")
+    return pd.read_csv(os.path.join(current_folder, "ec.csv")).set_index("state")

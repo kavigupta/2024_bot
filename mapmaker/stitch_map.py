@@ -7,6 +7,7 @@ from cairosvg import svg2png
 
 from .processing import get_electoral_vote, get_popular_vote
 from .mapper import county_map, state_map
+from .version import version
 
 
 def generate_map(data, dem_margin, title, out_path):
@@ -82,6 +83,19 @@ def generate_map(data, dem_margin, title, out_path):
                 )
             ]
         )
+    fig.append(
+        [
+            sg.TextElement(
+                820,
+                435,
+                f"2024bot v{version}",
+                size=10,
+                color="#fff",
+                font="Cantarell",
+            )
+        ]
+    )
+
     fig.save(out_path)
     add_background_back(out_path)
     with open(out_path) as f:
