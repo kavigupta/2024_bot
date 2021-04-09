@@ -99,7 +99,7 @@ def generate_map(data, dem_margin, title, out_path):
     fig.save(out_path)
     add_background_back(out_path)
     with open(out_path) as f:
-        svg2png(bytestring=f.read(), write_to=out_path.replace(".svg", ".png"))
+        svg2png(bytestring=f.read(), write_to=out_path.replace(".svg", ".png"), scale=5)
 
 
 def remove_backgrounds(path):
