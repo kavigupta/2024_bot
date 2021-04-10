@@ -98,5 +98,5 @@ def get_features(data, pca=20):
     ]
     features = np.array(features)
     if pca is not None:
-        features = PCA(20, whiten=False).fit_transform(features)
+        features = PCA(pca, whiten=False).fit_transform(features)
     return add_ones(features)
