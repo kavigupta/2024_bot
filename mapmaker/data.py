@@ -106,6 +106,19 @@ def all_data():
         relevant_swing_2016, how="inner"
     )
     del all_data["gisjoin"]
+
+    ## Demographic Change
+    all_data['black_pop_change'] = (all_data['White CVAP % 2018'] - all_data['white_2012']) * all_data['Total Population 2018']
+    all_data['white_pop_change'] = (all_data['Black CVAP % 2018'] - all_data['black_2012']) * all_data['Total Population 2018']
+    all_data['hispanic_pop_change'] = (all_data['Hispanic CVAP % 2018'] - all_data['hispanic_2012']) * all_data['Total Population 2018']
+    all_data['changefrom_bachelorabove_2012'] = (all_data['% Bachelor Degree or Above 2018'] - all_data['bachelorabove_2012'])/all_data['bachelorabove_2012']
+
+    ## Nonlinearity
+    all_data['county_diversity_black_white'] = all_data['Black CVAP % 2018'] * all_data['White CVAP % 2018']
+    all_data['county_diversity_hispanic_white'] = all_data['Hispanic CVAP % 2018'] * all_data['White CVAP % 2018']
+    all_data['Median Household Income 2018'] = np.log(all_data['Median Household Income 2018']).replace(-np.inf, -1000)
+    all_data['Total Population 2018'] = np.log(all_data['Total Population 2018']).replace(-np.inf, -1000)
+
     return all_data
 
 
