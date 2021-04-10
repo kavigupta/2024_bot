@@ -38,7 +38,9 @@ def get_image(seed, name):
     if os.path.exists(png_path):
         return True, png_path
     get_model().sample(
+
         f"2024 scenario {name}",
+        data=all_data(demographic_projection=True)
         seed=seed,
         path=svg_path,
     )

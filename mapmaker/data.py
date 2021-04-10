@@ -21,7 +21,7 @@ def counties():
 
 
 @lru_cache(None)
-def all_data():
+def all_data(demographic_projection=False):
     swing_2012_2016 = pd.read_csv(f"{NAT_REG_MODEL}/2012 to 2016 swing.csv")
     demo_2012 = pd.read_csv(f"{NAT_REG_MODEL}/2012_demographics_votes.csv")
     demo_2020 = pd.read_csv(
@@ -71,18 +71,17 @@ def all_data():
             "FIPS",
             "gisjoin",
             "state",
-            "Rural % (2010)",
             "Median Age 2018",
-            "% Bachelor Degree or Above 2018",
-            "Median Household Income 2018",
-            "Total Population 2018",
-            "White CVAP % 2018",
-            "Black CVAP % 2018",
-            "Native CVAP % 2018",
-            "Asian CVAP % 2018",
-            "Multiracial CVAP % 2018",
-            "Pacific Islander CVAP % 2018",
-            "Hispanic CVAP % 2018",
+            "% Bachelor Degree or Above",
+            "Median Household Income",
+            "Total Population",
+            "White %",
+            "Black %",
+            "Native %",
+            "Asian %",
+            "Multiracial %",
+            "Pacific Islander %",
+            "Hispanic %",
             "Total Adherents (All Types) Per 1000 Population (2010)",
             "Evangelical Per 1000 (2010)",
             "Black Protestant Per 1000 (2010)",
@@ -107,17 +106,28 @@ def all_data():
     )
     del all_data["gisjoin"]
 
-    ## Demographic Change
-    all_data['black_pop_change'] = (all_data['White CVAP % 2018'] - all_data['white_2012']) * all_data['Total Population 2018']
-    all_data['white_pop_change'] = (all_data['Black CVAP % 2018'] - all_data['black_2012']) * all_data['Total Population 2018']
-    all_data['hispanic_pop_change'] = (all_data['Hispanic CVAP % 2018'] - all_data['hispanic_2012']) * all_data['Total Population 2018']
-    all_data['changefrom_bachelorabove_2012'] = (all_data['% Bachelor Degree or Above 2018'] - all_data['bachelorabove_2012'])/all_data['bachelorabove_2012']
+    ## PROJECTIONS 
+    if demographic_projection:
+        all_data['Total Population'] = all_data['Total Population'] + (all_data['Total Population'] - all_data['Total Population 2016']) * 2
+        all_data['White %'] = all_data['White %'] + (all_data['White %'] - all_data['2012_white'])
+        all_data['Black %'] = all_data['Black %'] + (all_data['Black %'] - all_data['2012_black'])
+        all_data['Hispanic %'] = all_data['Hispanic %'] + (all_data['Hispanic %'] - all_data['2012_hispanic'])
+        all_data['Asian %'] = all_data['Asian %'] + (all_data['Asian %'] - all_data['2012_asian'])
+        all_data['% Bachelor Degree or Above'] = all_data['% Bachelor Degree or Above'] + (all_data['% Bachelor Degree or Above'] - all_data['2012_bachelors'])
+        all_data['Median Household Income'] = all_data['Median Household Income'] + (all_data['Median Household Income'] - all_data['2012_income'])
+    
+    # else:
+    #     ## Demographic Change
+    #     all_data['white_pop_change'] = (all_data['White %'] - all_data['white_2012'])
+    #     all_data['black_pop_change'] = (all_data['Black %'] - all_data['black_2012'])
+    #     all_data['hispanic_pop_change'] = (all_data['Hispanic %'] - all_data['hispanic_2012'])
+    #     all_data['changefrom_bachelorabove_2012'] = (all_data['% Bachelor Degree or Above'] - all_data['bachelorabove_2012'])/all_data['bachelorabove_2012']
 
     ## Nonlinearity
-    all_data['county_diversity_black_white'] = all_data['Black CVAP % 2018'] * all_data['White CVAP % 2018']
-    all_data['county_diversity_hispanic_white'] = all_data['Hispanic CVAP % 2018'] * all_data['White CVAP % 2018']
-    all_data['Median Household Income 2018'] = np.log(all_data['Median Household Income 2018']).replace(-np.inf, -1000)
-    all_data['Total Population 2018'] = np.log(all_data['Total Population 2018']).replace(-np.inf, -1000)
+    all_data['county_diversity_black_white'] = all_data['Black %'] * all_data['White %']
+    all_data['county_diversity_hispanic_white'] = all_data['Hispanic %'] * all_data['White %']
+    all_data['Median Household Income'] = np.log(all_data['Median Household Income']).replace(-np.inf, -1000)
+    all_data['Total Population'] = np.log(all_data['Total Population']).replace(-np.inf, -1000)
 
     return all_data
 
