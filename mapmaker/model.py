@@ -57,16 +57,22 @@ class Model:
         self.data = data
         self.features = get_features(data, **feature_kwargs)
         self.predictor = LinearModel.train(
-            self.features, data.biden_2020, data.total_votes
+            self.run_pca(self.data), data.biden_2020, data.total_votes
         )
         self.alpha = alpha
+
+    def run_pca(self, data):
+        return add_ones(self.features.transform(strip_columns(data)))
 
     def unbias_predictor(self):
         bias_values = np.linspace(-2e-2, 2e-2, 11)
         biases = np.array(
             [
                 compute_ec_bias(
-                    self.predictor.with_bias(x), self.data, self.features, self.alpha
+                    self.predictor.with_bias(x),
+                    self.data,
+                    self.run_pca(self.data),
+                    self.alpha,
                 )
                 for x in tqdm.tqdm(bias_values)
             ]
@@ -78,12 +84,12 @@ class Model:
         )
         self.predictor = self.predictor.with_bias(best_bias)
 
-    def sample(self, title, path, seed=None, correct=True):
+    def sample(self, title, path, data, seed=None, correct=True):
         predictor = self.predictor
         if seed is not None:
             predictor = predictor.perturb(seed, self.alpha)
-        data = self.data.copy()
-        data["temp"] = predictor.predict(self.features, correct)
+        data = data.copy()
+        data["temp"] = predictor.predict(self.run_pca(data), correct)
         generate_map(data, "temp", title, path)
 
 
@@ -91,12 +97,17 @@ def add_ones(x):
     return np.concatenate([x, np.ones((x.shape[0], 1))], axis=1)
 
 
-def get_features(data, pca=20):
+def strip_columns(data):
     features = data.fillna(0).copy()
     features = features[
         [x for x in features if x not in {"FIPS", "biden_2020", "total_votes", "state"}]
     ]
-    features = np.array(features)
+    return np.array(features)
+
+
+def get_features(data, pca=20):
+    features = strip_columns(data)
     if pca is not None:
-        features = PCA(pca, whiten=False).fit_transform(features)
-    return add_ones(features)
+        features = PCA(pca, whiten=False).fit(features)
+    # return add_ones(features)
+    return features

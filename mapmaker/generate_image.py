@@ -18,9 +18,10 @@ IMAGE_FOLDER = os.path.join(
 
 
 @functools.lru_cache(None)
-def get_model():
-    model = Model(all_data(), alpha=0.1)
-    model.unbias_predictor()
+def get_model(unbias=False):
+    model = Model(all_data(), alpha=0.1, feature_kwargs=dict(pca=20))
+    if unbias:
+        model.unbias_predictor()
     return model
 
 
@@ -39,6 +40,7 @@ def get_image(seed, name):
         return True, png_path
     get_model().sample(
         f"2024 scenario {name}",
+        data=all_data(demographic_projection=True),
         seed=seed,
         path=svg_path,
     )
