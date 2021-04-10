@@ -62,7 +62,7 @@ class Model:
         self.alpha = alpha
 
     def unbias_predictor(self):
-        bias_values = np.linspace(-0.05, 0.05, 11)
+        bias_values = np.linspace(-2e-2, 2e-2, 11)
         biases = np.array(
             [
                 compute_ec_bias(
