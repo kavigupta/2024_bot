@@ -57,7 +57,7 @@ class Model:
         self.data = data
         self.features = get_features(data, **feature_kwargs)
         self.predictor = LinearModel.train(
-            self.features.predict(self.data), data.biden_2020, data.total_votes
+            self.features.transform(strip_columns(self.data)), data.biden_2020, data.total_votes
         )
         self.alpha = alpha
 
@@ -66,7 +66,7 @@ class Model:
         biases = np.array(
             [
                 compute_ec_bias(
-                    self.predictor.with_bias(x), self.data, self.features.predict(self.data), self.alpha
+                    self.predictor.with_bias(x), self.data, self.features.transform(strip_columns(self.data)), self.alpha
                 )
                 for x in tqdm.tqdm(bias_values)
             ]
@@ -83,20 +83,22 @@ class Model:
         if seed is not None:
             predictor = predictor.perturb(seed, self.alpha)
         data = data.copy()
-        data["temp"] = predictor.predict(self.features.predict(data), correct)
+        data["temp"] = predictor.predict(self.features.transform(strip_columns(data)), correct)
         generate_map(data, "temp", title, path)
 
 
 def add_ones(x):
     return np.concatenate([x, np.ones((x.shape[0], 1))], axis=1)
 
-
-def get_features(data, pca=20):
+def strip_columns(data):
     features = data.fillna(0).copy()
     features = features[
         [x for x in features if x not in {"FIPS", "biden_2020", "total_votes", "state"}]
     ]
-    features = np.array(features)
+    return np.array(features)
+
+def get_features(data, pca=20):
+    features = strip_columns(data)
     if pca is not None:
         features = PCA(pca, whiten=False).fit(features)
     # return add_ones(features)

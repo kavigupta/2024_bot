@@ -24,6 +24,7 @@ def counties():
 def all_data(demographic_projection=False):
     swing_2012_2016 = pd.read_csv(f"{NAT_REG_MODEL}/2012 to 2016 swing.csv")
     demo_2012 = pd.read_csv(f"{NAT_REG_MODEL}/2012_demographics_votes.csv")
+    demo_2016 = pd.read_csv(f"{NAT_REG_MODEL}/2016_demographics_votes.csv")
     demo_2020 = pd.read_csv(
         f"{NAT_REG_MODEL}/2020_demographics_votes_fips.csv",
         dtype=dict(FIPS=str),
@@ -51,6 +52,14 @@ def all_data(demographic_projection=False):
             "other religion",
         ]
     ]
+
+    relevant_demo_2016 = demo_2016[
+        [
+            "gisjoin",
+            "Total Population 2016",
+        ]
+    ]
+
     relevant_swing_2016 = swing_2012_2016[
         [
             "gisjoin",
@@ -97,13 +106,16 @@ def all_data(demographic_projection=False):
             "Reform/Reconstructionist Jewish Per 1000 (2010)",
         ]
     ]
+    
     relevant_demo_2020.insert(
         1, "total_votes", demo_2020["Total Votes 2020 (AK is Rough Estimate)"]
     )
+    
     relevant_demo_2020.insert(1, "biden_2020", demo_2020["Biden 2020 Margin"])
     all_data = relevant_demo_2020.merge(relevant_demo_2012, how="inner").merge(
         relevant_swing_2016, how="inner"
-    )
+    ).merge(relevant_demo_2016, how="inner")
+
     del all_data["gisjoin"]
 
     ## PROJECTIONS 
@@ -116,13 +128,6 @@ def all_data(demographic_projection=False):
         all_data['% Bachelor Degree or Above'] = all_data['% Bachelor Degree or Above'] + (all_data['% Bachelor Degree or Above'] - all_data['2012_bachelors'])
         all_data['Median Household Income'] = all_data['Median Household Income'] + (all_data['Median Household Income'] - all_data['2012_income'])
     
-    # else:
-    #     ## Demographic Change
-    #     all_data['white_pop_change'] = (all_data['White %'] - all_data['white_2012'])
-    #     all_data['black_pop_change'] = (all_data['Black %'] - all_data['black_2012'])
-    #     all_data['hispanic_pop_change'] = (all_data['Hispanic %'] - all_data['hispanic_2012'])
-    #     all_data['changefrom_bachelorabove_2012'] = (all_data['% Bachelor Degree or Above'] - all_data['bachelorabove_2012'])/all_data['bachelorabove_2012']
-
     ## Nonlinearity
     all_data['county_diversity_black_white'] = all_data['Black %'] * all_data['White %']
     all_data['county_diversity_hispanic_white'] = all_data['Hispanic %'] * all_data['White %']
