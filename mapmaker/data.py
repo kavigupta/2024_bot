@@ -106,33 +106,57 @@ def all_data(demographic_projection=False):
             "Reform/Reconstructionist Jewish Per 1000 (2010)",
         ]
     ]
-    
+
     relevant_demo_2020.insert(
         1, "total_votes", demo_2020["Total Votes 2020 (AK is Rough Estimate)"]
     )
-    
+
     relevant_demo_2020.insert(1, "biden_2020", demo_2020["Biden 2020 Margin"])
-    all_data = relevant_demo_2020.merge(relevant_demo_2012, how="inner").merge(
-        relevant_swing_2016, how="inner"
-    ).merge(relevant_demo_2016, how="inner")
+    all_data = (
+        relevant_demo_2020.merge(relevant_demo_2012, how="inner")
+        .merge(relevant_swing_2016, how="inner")
+        .merge(relevant_demo_2016, how="inner")
+    )
 
     del all_data["gisjoin"]
 
-    ## PROJECTIONS 
+    ## PROJECTIONS (2018 --> 2024)
     if demographic_projection:
-        all_data['Total Population'] = all_data['Total Population'] + (all_data['Total Population'] - all_data['Total Population 2016']) * 2
-        all_data['White %'] = all_data['White %'] + (all_data['White %'] - all_data['white_2012'])
-        all_data['Black %'] = all_data['Black %'] + (all_data['Black %'] - all_data['black_2012'])
-        all_data['Hispanic %'] = all_data['Hispanic %'] + (all_data['Hispanic %'] - all_data['hispanic_2012'])
-        all_data['Asian %'] = all_data['Asian %'] + (all_data['Asian %'] - all_data['asian_2012'])
-        all_data['% Bachelor Degree or Above'] = all_data['% Bachelor Degree or Above'] + (all_data['% Bachelor Degree or Above'] - all_data['bachelorabove_2012'])
-        all_data['Median Household Income'] = all_data['Median Household Income'] + (all_data['Median Household Income'] - all_data['medianincome_2012'])
-    
+        all_data["Total Population"] = (
+            all_data["Total Population"]
+            + (all_data["Total Population"] - all_data["Total Population 2016"]) * 3
+        )
+        all_data["White %"] = all_data["White %"] + (
+            all_data["White %"] - all_data["white_2012"]
+        )
+        all_data["Black %"] = all_data["Black %"] + (
+            all_data["Black %"] - all_data["black_2012"]
+        )
+        all_data["Hispanic %"] = all_data["Hispanic %"] + (
+            all_data["Hispanic %"] - all_data["hispanic_2012"]
+        )
+        all_data["Asian %"] = all_data["Asian %"] + (
+            all_data["Asian %"] - all_data["asian_2012"]
+        )
+        all_data["% Bachelor Degree or Above"] = all_data[
+            "% Bachelor Degree or Above"
+        ] + (all_data["% Bachelor Degree or Above"] - all_data["bachelorabove_2012"])
+        all_data["Median Household Income"] = all_data["Median Household Income"] + (
+            all_data["Median Household Income"] - all_data["medianincome_2012"]
+        )
+
     ## Nonlinearity
-    all_data['county_diversity_black_white'] = all_data['Black %'] * all_data['White %']
-    all_data['county_diversity_hispanic_white'] = all_data['Hispanic %'] * all_data['White %']
-    all_data['Median Household Income'] = np.log(all_data['Median Household Income']).replace(-np.inf, -1000)
-    all_data['Total Population'] = np.log(all_data['Total Population']).replace(-np.inf, -1000)
+    all_data["county_diversity_black_white"] = all_data["Black %"] * all_data["White %"]
+    all_data["county_diversity_hispanic_white"] = (
+        all_data["Hispanic %"] * all_data["White %"]
+    )
+    # all_data['county_diversity_hispanic_rural'] = all_data['Hispanic %'] * all_data['Rural %']
+    all_data["Median Household Income"] = np.log(
+        all_data["Median Household Income"]
+    ).replace(-np.inf, -1000)
+    all_data["Total Population"] = np.log(all_data["Total Population"]).replace(
+        -np.inf, -1000
+    )
 
     return all_data
 
