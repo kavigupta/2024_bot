@@ -121,12 +121,12 @@ def all_data(demographic_projection=False):
     ## PROJECTIONS 
     if demographic_projection:
         all_data['Total Population'] = all_data['Total Population'] + (all_data['Total Population'] - all_data['Total Population 2016']) * 2
-        all_data['White %'] = all_data['White %'] + (all_data['White %'] - all_data['2012_white'])
-        all_data['Black %'] = all_data['Black %'] + (all_data['Black %'] - all_data['2012_black'])
-        all_data['Hispanic %'] = all_data['Hispanic %'] + (all_data['Hispanic %'] - all_data['2012_hispanic'])
-        all_data['Asian %'] = all_data['Asian %'] + (all_data['Asian %'] - all_data['2012_asian'])
-        all_data['% Bachelor Degree or Above'] = all_data['% Bachelor Degree or Above'] + (all_data['% Bachelor Degree or Above'] - all_data['2012_bachelors'])
-        all_data['Median Household Income'] = all_data['Median Household Income'] + (all_data['Median Household Income'] - all_data['2012_income'])
+        all_data['White %'] = all_data['White %'] + (all_data['White %'] - all_data['white_2012'])
+        all_data['Black %'] = all_data['Black %'] + (all_data['Black %'] - all_data['black_2012'])
+        all_data['Hispanic %'] = all_data['Hispanic %'] + (all_data['Hispanic %'] - all_data['hispanic_2012'])
+        all_data['Asian %'] = all_data['Asian %'] + (all_data['Asian %'] - all_data['asian_2012'])
+        all_data['% Bachelor Degree or Above'] = all_data['% Bachelor Degree or Above'] + (all_data['% Bachelor Degree or Above'] - all_data['bachelorabove_2012'])
+        all_data['Median Household Income'] = all_data['Median Household Income'] + (all_data['Median Household Income'] - all_data['medianincome_2012'])
     
     ## Nonlinearity
     all_data['county_diversity_black_white'] = all_data['Black %'] * all_data['White %']
