@@ -150,6 +150,7 @@ def all_data(demographic_projection=False):
     all_data["county_diversity_hispanic_white"] = (
         all_data["Hispanic %"] * all_data["White %"]
     )
+    all_data["county_diversity_white_homogenity"] = all_data["White %"] ** 2
     # all_data['county_diversity_hispanic_rural'] = all_data['Hispanic %'] * all_data['Rural %']
     all_data["Median Household Income"] = np.log(
         all_data["Median Household Income"]
