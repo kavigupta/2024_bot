@@ -62,7 +62,7 @@ class Model:
         self.alpha = alpha
 
     def unbias_predictor(self):
-        bias_values = np.linspace(-0.05, 0.05, 11)
+        bias_values = np.linspace(-2e-2, 2e-2, 11)
         biases = np.array(
             [
                 compute_ec_bias(
@@ -98,5 +98,5 @@ def get_features(data, pca=20):
     ]
     features = np.array(features)
     if pca is not None:
-        features = PCA(20, whiten=False).fit_transform(features)
+        features = PCA(pca, whiten=False).fit_transform(features)
     return add_ones(features)
