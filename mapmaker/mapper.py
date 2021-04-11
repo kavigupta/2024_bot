@@ -7,6 +7,7 @@ import us
 from .data import counties
 from .processing import get_state_results
 from .colors import BACKGROUND, COUNTY_COLORSCALE, STATE_DEM, STATE_GOP
+from .constants import CLOSE_MARGIN
 
 
 def fit(figure):
@@ -36,9 +37,9 @@ def county_map(data, dem_margin):
 
 
 def classify(margin):
-    if margin < -0.5e-2:
+    if margin < -CLOSE_MARGIN:
         return -10
-    if margin > 0.5e-2:
+    if margin > CLOSE_MARGIN:
         return 10
     if margin < 0:
         return -7

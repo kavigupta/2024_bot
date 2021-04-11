@@ -1,0 +1,1 @@
+CLOSE_MARGIN = 0.5e-2
