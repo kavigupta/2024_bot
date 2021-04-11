@@ -42,13 +42,28 @@ def county_map(data, dem_margin):
     return fit(figure)
 
 
+def classify(margin):
+    if margin < -0.5e-2:
+        return -10
+    if margin > 0.5e-2:
+        return 10
+    if margin < 0:
+        return -7
+    else:
+        return 7
+
+
 def state_map(data, dem_margin):
-    is_blue_state = get_state_results(data, dem_margin)
+    state_margins = get_state_results(data, dem_margin)
+    classes = [classify(m) for m in np.array(state_margins)]
+
     figure = go.Choropleth(
         locationmode="USA-states",
-        z=np.array(is_blue_state).astype(np.float),
-        locations=[us.states.lookup(x).abbr for x in is_blue_state.index],
-        colorscale=[[0, "#f88"], [1, "#88f"]],
+        z=np.array(classes),
+        locations=[us.states.lookup(x).abbr for x in state_margins.index],
+        colorscale=[[0, "#f88"], [0.5, "white"], [1, "#f88"]],
+        zmin=-10,
+        zmax=10,
         marker_line_width=2,
         showscale=False,
     )
