@@ -10,7 +10,14 @@ from cairosvg import svg2png
 from .processing import get_electoral_vote, get_popular_vote
 from .mapper import county_map, state_map
 from .version import version
-from .colors import BACKGROUND_RGB, TEXT_COLOR, STATE_DEM, STATE_GOP
+from .colors import (
+    BACKGROUND_RGB,
+    TEXT_COLOR,
+    STATE_DEM,
+    STATE_GOP,
+    STATE_DEM_CLOSE,
+    STATE_GOP_CLOSE,
+)
 from .text import draw_text
 
 LEFT_MARGIN = 50
@@ -67,9 +74,9 @@ def produce_text(
         15 * scale,
         [
             ("Close: ", TEXT_COLOR),
-            (str(dem_ec_close), STATE_DEM),
+            (str(dem_ec_close), STATE_DEM_CLOSE),
             (" - ", TEXT_COLOR),
-            (str(gop_ec_close), STATE_GOP),
+            (str(gop_ec_close), STATE_GOP_CLOSE),
         ],
         TEXT_CENTER * scale,
         y * scale,

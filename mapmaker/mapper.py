@@ -6,7 +6,14 @@ import us
 
 from .data import counties
 from .processing import get_state_results
-from .colors import BACKGROUND, COUNTY_COLORSCALE, STATE_DEM, STATE_GOP
+from .colors import (
+    BACKGROUND,
+    COUNTY_COLORSCALE,
+    STATE_DEM,
+    STATE_GOP,
+    STATE_DEM_CLOSE,
+    STATE_GOP_CLOSE,
+)
 from .constants import CLOSE_MARGIN
 
 
@@ -38,13 +45,13 @@ def county_map(data, dem_margin):
 
 def classify(margin):
     if margin < -CLOSE_MARGIN:
-        return -10
+        return 0
     if margin > CLOSE_MARGIN:
-        return 10
+        return 1
     if margin < 0:
-        return -7
+        return 0.25
     else:
-        return 7
+        return 0.75
 
 
 def state_map(data, dem_margin):
@@ -55,9 +62,14 @@ def state_map(data, dem_margin):
         locationmode="USA-states",
         z=np.array(classes),
         locations=[us.states.lookup(x).abbr for x in state_margins.index],
-        colorscale=[[0, STATE_GOP], [0.5, "white"], [1, STATE_DEM]],
-        zmin=-10,
-        zmax=10,
+        colorscale=[
+            [0, STATE_GOP],
+            [0.25, STATE_GOP_CLOSE],
+            [0.75, STATE_DEM_CLOSE],
+            [1, STATE_DEM],
+        ],
+        zmin=0,
+        zmax=1,
         marker_line_width=2,
         showscale=False,
     )
