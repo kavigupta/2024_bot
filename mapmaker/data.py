@@ -7,9 +7,7 @@ import json
 import numpy as np
 import pandas as pd
 
-NAT_REG_MODEL = os.environ["NAT_REG_MODEL"]
-
-current_folder = os.path.dirname(__file__)
+CSVS = os.path.join(os.path.dirname(__file__), "../csvs")
 
 
 @lru_cache(None)
@@ -22,11 +20,11 @@ def counties():
 
 @lru_cache(None)
 def all_data(demographic_projection=False):
-    swing_2012_2016 = pd.read_csv(f"{NAT_REG_MODEL}/2012 to 2016 swing.csv")
-    demo_2012 = pd.read_csv(f"{NAT_REG_MODEL}/2012_demographics_votes.csv")
-    demo_2016 = pd.read_csv(f"{NAT_REG_MODEL}/2016_demographics_votes.csv")
+    swing_2012_2016 = pd.read_csv(f"{CSVS}/2012 to 2016 swing.csv")
+    demo_2012 = pd.read_csv(f"{CSVS}/2012_demographics_votes.csv")
+    demo_2016 = pd.read_csv(f"{CSVS}/2016_demographics_votes.csv")
     demo_2020 = pd.read_csv(
-        f"{NAT_REG_MODEL}/2020_demographics_votes_fips.csv",
+        f"{CSVS}/2020_demographics_votes_fips.csv",
         dtype=dict(FIPS=str),
     )
     demo_2020["FIPS"] = demo_2020["FIPS"].map(lambda x: x if len(x) == 5 else "0" + x)
@@ -163,4 +161,4 @@ def all_data(demographic_projection=False):
 
 
 def ec():
-    return pd.read_csv(os.path.join(current_folder, "ec.csv")).set_index("state")
+    return pd.read_csv(os.path.join(CSVS, "ec.csv")).set_index("state")
