@@ -90,7 +90,7 @@ class Model:
             predictor = predictor.perturb(seed, self.alpha)
         data = data.copy()
         data["temp"] = predictor.predict(self.run_pca(data), correct)
-        generate_map(data, "temp", title, path)
+        return generate_map(data, "temp", title, path)
 
 
 def add_ones(x):

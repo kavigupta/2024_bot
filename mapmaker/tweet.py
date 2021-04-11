@@ -1,6 +1,8 @@
 import re
+import pickle
 
 import tweepy
+import gspread
 
 import numpy as np
 
@@ -27,13 +29,22 @@ def current_tweet_id(my_api):
     return 1
 
 
+def post(name, pkl_path):
+    with open(pkl_path, "rb") as f:
+        state_margins = pickle.load(f)
+    gc = gspread.service_account()
+    sh = gc.open("State Margins")
+    sh.sheet1.append_row([str(name)] + list(state_margins))
+
+
 def tweet_map():
     my_auth = tweepy.OAuthHandler(my_consumer_key, my_consumer_secret)
     my_auth.set_access_token(my_access_token, my_access_token_secret)
     my_api = tweepy.API(my_auth)
     number = current_tweet_id(my_api)
-    used, image = get_image(number, number)
+    used, image, pkl = get_image(number, number)
     assert not used
+    post(f"scenario_{number}", pkl)
     message = f"2024 scenario {number}"
     my_api.update_with_media(image, status=message)
     print("Tweeted message")

@@ -7,7 +7,7 @@ from PIL import Image, ImageDraw
 import svgutils.transform as sg
 from cairosvg import svg2png
 
-from .processing import get_electoral_vote, get_popular_vote
+from .processing import get_electoral_vote, get_popular_vote, get_state_results
 from .mapper import county_map, state_map
 from .version import version
 from .colors import (
@@ -141,6 +141,7 @@ def generate_map(data, dem_margin, title, out_path):
     add_background_back(out_path)
     with open(out_path) as f:
         svg2png(bytestring=f.read(), write_to=out_path.replace(".svg", ".png"), scale=5)
+    return get_state_results(data, dem_margin)
 
 
 def remove_backgrounds(path):

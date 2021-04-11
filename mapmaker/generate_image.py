@@ -2,6 +2,7 @@ import os
 import re
 import functools
 import random
+import pickle
 
 import requests
 
@@ -36,12 +37,15 @@ def get_image(seed, name):
 
     svg_path = f"{IMAGE_FOLDER}/{filename}.svg"
     png_path = f"{IMAGE_FOLDER}/{filename}.png"
+    pkl_path = f"{IMAGE_FOLDER}/{filename}.pkl"
     if os.path.exists(png_path):
-        return True, png_path
-    get_model().sample(
+        return True, png_path, pkl_path
+    stateres = get_model().sample(
         f"2024 scenario {name}",
         data=all_data(demographic_projection=True),
         seed=seed,
         path=svg_path,
     )
-    return False, png_path
+    with open(pkl_path, "wb") as f:
+        pickle.dump(stateres, f)
+    return False, png_path, pkl_path
