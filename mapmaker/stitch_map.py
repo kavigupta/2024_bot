@@ -50,7 +50,12 @@ def produce_text(
     draw_text(
         draw,
         10 * scale,
-        [(f"bot_2024 v{version}", TEXT_COLOR)],
+        [
+            (
+                f"bot_2024 v{version} by @notkavi and @lxeagle17 with data from @mill226",
+                TEXT_COLOR,
+            )
+        ],
         (900 - RIGHT_MARGIN) * scale,
         (450 - BOTTOM_MARGIN) * scale,
         align="right",
