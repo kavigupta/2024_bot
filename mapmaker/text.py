@@ -25,7 +25,6 @@ def draw_text(draw, fontsize, chunks, x, y, align="left"):
         x -= anchorwidth
     else:
         x -= anchorwidth // 2
-    print(x)
     for w, (text, color) in zip(widths, chunks):
         draw.text(
             (x, y),
