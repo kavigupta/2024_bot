@@ -65,7 +65,7 @@ class Model:
         return add_ones(self.features.transform(strip_columns(data)))
 
     def unbias_predictor(self):
-        bias_values = np.linspace(-2e-2, 2e-2, 11)
+        bias_values = np.array([0])
         biases = np.array(
             [
                 compute_ec_bias(
