@@ -15,7 +15,10 @@ def counties():
     with urlopen(
         "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json"
     ) as response:
-        return json.load(response)
+        c = json.load(response)
+    [lakota] = [x for x in c["features"] if x["id"] == "46113"]
+    lakota["id"] = "46102"
+    return c
 
 
 @lru_cache(None)
