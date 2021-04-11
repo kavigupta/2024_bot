@@ -15,7 +15,7 @@ COUNTY_COLORSCALE = [
     [1.0, COUNTY_MAX_DEM],
 ]
 
-STATE_GOP = "#f88"
-STATE_DEM = "#88f"
+STATE_GOP = "#f66"
+STATE_DEM = "#66f"
 
 TEXT_COLOR = "white"
