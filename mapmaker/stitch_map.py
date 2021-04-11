@@ -8,6 +8,7 @@ from cairosvg import svg2png
 from .processing import get_electoral_vote, get_popular_vote
 from .mapper import county_map, state_map
 from .version import version
+from .colors import BACKGROUND_RGB, TEXT_COLOR, STATE_DEM, STATE_GOP
 
 
 def generate_map(data, dem_margin, title, out_path):
@@ -36,23 +37,35 @@ def generate_map(data, dem_margin, title, out_path):
     plot2.moveto(575, 200, scale_x=0.5, scale_y=0.5)
     fig.append([plot1, plot2])
     fig.append(
-        [sg.TextElement(125, 55, title, size=45, color="#fff", font="Cantarell")]
-    )
-    fig.append(
-        [sg.TextElement(800, 55, "@bot_2024", size=15, color="#fff", font="Cantarell")]
-    )
-
-    ecx, ecy = 675, 150
-    fig.append(
-        [sg.TextElement(ecx, ecy, str(dem_ec), size=40, color="#88f", font="Cantarell")]
-    )
-    fig.append(
-        [sg.TextElement(ecx + 80, ecy, "-", size=40, color="#fff", font="Cantarell")]
+        [sg.TextElement(125, 55, title, size=45, color=TEXT_COLOR, font="Cantarell")]
     )
     fig.append(
         [
             sg.TextElement(
-                ecx + 105, ecy, str(gop_ec), size=40, color="#f88", font="Cantarell"
+                800, 55, "@bot_2024", size=15, color=TEXT_COLOR, font="Cantarell"
+            )
+        ]
+    )
+
+    ecx, ecy = 675, 150
+    fig.append(
+        [
+            sg.TextElement(
+                ecx, ecy, str(dem_ec), size=40, color=STATE_DEM, font="Cantarell"
+            )
+        ]
+    )
+    fig.append(
+        [
+            sg.TextElement(
+                ecx + 80, ecy, "-", size=40, color=TEXT_COLOR, font="Cantarell"
+            )
+        ]
+    )
+    fig.append(
+        [
+            sg.TextElement(
+                ecx + 105, ecy, str(gop_ec), size=40, color=STATE_GOP, font="Cantarell"
             )
         ]
     )
@@ -65,7 +78,7 @@ def generate_map(data, dem_margin, title, out_path):
                     pvy,
                     f"R+{-pop_vote_margin:.2%}",
                     size=30,
-                    color="#f88",
+                    color=STATE_GOP,
                     font="Cantarell",
                 )
             ]
@@ -78,7 +91,7 @@ def generate_map(data, dem_margin, title, out_path):
                     pvy,
                     f"D+{pop_vote_margin:.2%}",
                     size=30,
-                    color="#88f",
+                    color=STATE_DEM,
                     font="Cantarell",
                 )
             ]
@@ -90,7 +103,7 @@ def generate_map(data, dem_margin, title, out_path):
                 435,
                 f"2024bot v{version}",
                 size=10,
-                color="#fff",
+                color=TEXT_COLOR,
                 font="Cantarell",
             )
         ]
@@ -106,7 +119,9 @@ def remove_backgrounds(path):
     with open(path) as f:
         contents = f.read()
     contents = re.sub(r'<rect x="0" y="0" [^/]*"/>', "", contents)
-    contents = re.sub(r"<rect[^/]*rgb\(34, 34, 34\)[^/]*/>", "", contents)
+    contents = re.sub(
+        r"<rect[^/]*" + re.escape(re.escape(BACKGROUND_RGB)) + "[^/]*/>", "", contents
+    )
     with open(path, "w") as f:
         f.write(contents)
 
@@ -115,7 +130,7 @@ def add_background_back(path):
     with open(path) as f:
         contents = f.read()
     start_content = contents.index("<g>")
-    insert_rect = '<rect x="0" y="0" width="900" height="450" style="fill: rgb(34, 34, 34); fill-opacity: 1"/>'
+    insert_rect = f'<rect x="0" y="0" width="900" height="450" style="fill: {BACKGROUND_RGB}; fill-opacity: 1"/>'
     contents = contents[:start_content] + insert_rect + contents[start_content:]
     contents = contents.replace(
         'version="1.1"', 'version="1.1" width="900" height="450"'

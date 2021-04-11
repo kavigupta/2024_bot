@@ -6,8 +6,7 @@ import us
 
 from .data import counties
 from .processing import get_state_results
-
-BACKGROUND = "#222"
+from .colors import BACKGROUND, COUNTY_COLORSCALE, STATE_DEM, STATE_GOP
 
 
 def fit(figure):
@@ -28,13 +27,7 @@ def county_map(data, dem_margin):
         zmid=0,
         zmin=-1,
         zmax=1,
-        colorscale=[
-            [0, "#f00"],
-            [0.499, "#fcc"],
-            [0.5, "white"],
-            [0.501, "#ccf"],
-            [1.0, "#00f"],
-        ],
+        colorscale=COUNTY_COLORSCALE,
         marker_line_width=0,
         name="margin",
         showscale=False,
@@ -61,7 +54,7 @@ def state_map(data, dem_margin):
         locationmode="USA-states",
         z=np.array(classes),
         locations=[us.states.lookup(x).abbr for x in state_margins.index],
-        colorscale=[[0, "#f88"], [0.5, "white"], [1, "#f88"]],
+        colorscale=[[0, STATE_GOP], [0.5, "white"], [1, STATE_DEM]],
         zmin=-10,
         zmax=10,
         marker_line_width=2,

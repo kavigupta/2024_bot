@@ -1,0 +1,21 @@
+BACKGROUND = "#222"
+BACKGROUND_RGB = "rgb(34, 34, 34)"
+
+COUNTY_MAX_GOP = "#f00"
+COUNTY_MIN_GOP = "#fcc"
+EVEN = "#fff"
+COUNTY_MAX_DEM = "#00f"
+COUNTY_MIN_DEM = "#ccf"
+
+COUNTY_COLORSCALE = [
+    [0, COUNTY_MAX_GOP],
+    [0.499, COUNTY_MIN_GOP],
+    [0.5, EVEN],
+    [0.501, COUNTY_MIN_DEM],
+    [1.0, COUNTY_MAX_DEM],
+]
+
+STATE_GOP = "#f88"
+STATE_DEM = "#88f"
+
+TEXT_COLOR = "white"
