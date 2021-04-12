@@ -110,7 +110,7 @@ def get_features(data, pca=20):
     features = strip_columns(data)
     if pca is not None:
         features_normalized = preprocessing.normalize(features, norm='l2')
-        features_whitened = svd_whiten(features)
+        features_whitened = svd_whiten(features_normalized)
         features = PCA(pca, whiten=False).fit(features_whitened)
     return features
 
