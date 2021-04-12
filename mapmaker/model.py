@@ -4,7 +4,6 @@ import tqdm
 
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
-from sklearn import preprocessing
 
 from .stitch_map import generate_map
 from .processing import get_electoral_vote

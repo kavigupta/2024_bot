@@ -39,7 +39,6 @@ def all_data(demographic_projection=False):
             "medianage_2012",
             "bachelorabove_2012",
             "medianincome_2012",
-            "rural",
             "white_2012",
             "black_2012",
             "native_2012",
@@ -51,6 +50,7 @@ def all_data(demographic_projection=False):
             "catholic_2012",
             "mormon_2012",
             "other religion",
+            "2012votes"
         ]
     ]
 
@@ -58,6 +58,7 @@ def all_data(demographic_projection=False):
         [
             "gisjoin",
             "Total Population 2016",
+            "2016_votes"
         ]
     ]
 
@@ -125,23 +126,23 @@ def all_data(demographic_projection=False):
     if demographic_projection:
         all_data["Total Population"] = (
             all_data["Total Population"]
-            + (all_data["Total Population"] - all_data["Total Population 2016"]) * 3
+            + (all_data["Total Population"] - all_data["Total Population 2016"]) * 2.5
         )
-        all_data["White %"] = all_data["White %"] + (
+        all_data["White %"] = (all_data["White %"] + (
             all_data["White %"] - all_data["white_2012"]
-        )
+        )).clip(0, 1)
         all_data["Black %"] = all_data["Black %"] + (
             all_data["Black %"] - all_data["black_2012"]
-        )
+        ).clip(0, 1)
         all_data["Hispanic %"] = all_data["Hispanic %"] + (
             all_data["Hispanic %"] - all_data["hispanic_2012"]
-        )
+        ).clip(0, 1)
         all_data["Asian %"] = all_data["Asian %"] + (
             all_data["Asian %"] - all_data["asian_2012"]
-        )
+        ).clip(0, 1)
         all_data["% Bachelor Degree or Above"] = all_data[
             "% Bachelor Degree or Above"
-        ] + (all_data["% Bachelor Degree or Above"] - all_data["bachelorabove_2012"])
+        ] + (all_data["% Bachelor Degree or Above"] - all_data["bachelorabove_2012"]).clip(0, 1)
         all_data["Median Household Income"] = all_data["Median Household Income"] + (
             all_data["Median Household Income"] - all_data["medianincome_2012"]
         )
@@ -152,7 +153,8 @@ def all_data(demographic_projection=False):
         all_data["Hispanic %"] * all_data["White %"]
     )
     all_data["county_diversity_white_homogenity"] = all_data["White %"] ** 2
-    # all_data['county_diversity_hispanic_rural'] = all_data['Hispanic %'] * all_data['Rural %']
+    # all_data['county_diversity_hispanic_homogenity'] = all_data['Hispanic %'] ** 2
+    all_data['county_diversity_native_homogenity'] = all_data['Native %'] ** 2
     all_data["Median Household Income"] = np.log(
         all_data["Median Household Income"]
     ).replace(-np.inf, -1000)
