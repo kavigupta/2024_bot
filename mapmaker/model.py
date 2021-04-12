@@ -4,6 +4,7 @@ import tqdm
 
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
+from sklearn import preprocessing
 
 from .stitch_map import generate_map
 from .processing import get_electoral_vote
@@ -108,6 +109,6 @@ def strip_columns(data):
 def get_features(data, pca=20):
     features = strip_columns(data)
     if pca is not None:
-        features = PCA(pca, whiten=False).fit(features)
-    # return add_ones(features)
+        features = PCA(pca, whiten=True).fit(features)
     return features
+
