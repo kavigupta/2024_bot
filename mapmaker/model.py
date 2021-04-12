@@ -4,6 +4,7 @@ import tqdm
 
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
+from sklearn import preprocessing
 
 from .stitch_map import generate_map
 from .processing import get_electoral_vote
@@ -108,6 +109,15 @@ def strip_columns(data):
 def get_features(data, pca=20):
     features = strip_columns(data)
     if pca is not None:
-        features = PCA(pca, whiten=False).fit(features)
-    # return add_ones(features)
+        features_normalized = preprocessing.normalize(features, norm='l2')
+        features_whitened = svd_whiten(features)
+        features = PCA(pca, whiten=False).fit(features_whitened)
     return features
+
+def svd_whiten(X):
+    U, s, Vt = np.linalg.svd(X, full_matrices=False)
+    # U and Vt are the singular matrices, and s contains the singular values.
+    # Since the rows of both U and Vt are orthonormal vectors, then U * Vt
+    # will be white
+    X_white = np.dot(U, Vt)
+    return X_white
