@@ -109,7 +109,6 @@ def strip_columns(data):
 def get_features(data, pca=20):
     features = strip_columns(data)
     if pca is not None:
-        features_normalized = preprocessing.normalize(features, norm='l2')
-        features = PCA(pca, whiten=True).fit(features_normalized)
+        features = PCA(pca, whiten=True).fit(features)
     return features
 
