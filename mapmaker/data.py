@@ -50,7 +50,8 @@ def all_data(demographic_projection=False):
             "catholic_2012",
             "mormon_2012",
             "other religion",
-            "2012votes"
+            "2012votes",
+            "County Power Index 2012"
         ]
     ]
 
@@ -58,7 +59,8 @@ def all_data(demographic_projection=False):
         [
             "gisjoin",
             "Total Population 2016",
-            "2016_votes"
+            "2016_votes",
+            "County Power Index 2016"
         ]
     ]
 
