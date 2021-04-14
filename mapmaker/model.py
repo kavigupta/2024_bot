@@ -110,4 +110,3 @@ def get_features(data, pca=20):
     if pca is not None:
         features = PCA(pca, whiten=True).fit(features)
     return features
-
