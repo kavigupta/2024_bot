@@ -17,7 +17,7 @@ class LinearModel:
     residual_weights = attr.ib()
 
     def with_bias(self, x):
-        return LinearModel(self.weights, self.residuals, x, 0)
+        return LinearModel(self.weights, self.residuals, x, self.residual_weights)
 
     @staticmethod
     def train(features, margin, total_votes, bias=0, residual_weights=0):
@@ -34,13 +34,14 @@ class LinearModel:
         if correct:
             pred = pred + self.residuals + self.bias
         elif adjust:
-            pred = pred + self.residuals * self.residual_weights
+            pred = pred + self.residuals * self.residual_weights + self.bias
         return np.clip(pred, -0.8, 0.8)
 
     def perturb(self, seed, alpha):
-        noise = np.random.RandomState(seed).randn(*self.weights.shape)
+        rng = np.random.RandomState(seed)
+        noise = rng.randn(*self.weights.shape)
         noise = noise * alpha * np.abs(self.weights)
-        self.residual_weights = np.sqrt(0.15) * np.random.RandomState(seed).randn(*self.residuals.shape) + 0.25
+        self.residual_weights = np.sqrt(0.15) * rng.randn(*self.residuals.shape) + 0.25
         return LinearModel(self.weights + noise, self.residuals, self.bias, self.residual_weights)
 
 
@@ -114,4 +115,3 @@ def get_features(data, pca=20):
     if pca is not None:
         features = PCA(pca, whiten=True).fit(features)
     return features
-
