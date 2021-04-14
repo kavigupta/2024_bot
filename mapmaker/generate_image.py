@@ -20,7 +20,7 @@ IMAGE_FOLDER = os.path.join(
 
 @functools.lru_cache(None)
 def get_model(unbias=False):
-    model = Model(all_data(), alpha=0.1, feature_kwargs=dict(pca=23))
+    model = Model(all_data(), alpha=0.05, feature_kwargs=dict(pca=22))
     if unbias:
         model.unbias_predictor()
     return model
