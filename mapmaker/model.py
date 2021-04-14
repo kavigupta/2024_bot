@@ -14,37 +14,41 @@ class LinearModel:
     weights = attr.ib()
     residuals = attr.ib()
     bias = attr.ib()
+    residual_weights = attr.ib()
 
     def with_bias(self, x):
-        return LinearModel(self.weights, self.residuals, x)
+        return LinearModel(self.weights, self.residuals, x, 0)
 
     @staticmethod
-    def train(features, margin, total_votes, bias=0):
+    def train(features, margin, total_votes, bias=0, residual_weights=0):
         weights = (
             LinearRegression(fit_intercept=False)
             .fit(features, margin, sample_weight=total_votes)
             .coef_
         )
         residuals = margin - features @ weights
-        return LinearModel(weights, residuals, bias)
+        return LinearModel(weights, residuals, bias, residual_weights)
 
-    def predict(self, features, correct=True):
+    def predict(self, features, correct=True, adjust=True):
         pred = features @ self.weights
         if correct:
             pred = pred + self.residuals + self.bias
+        elif adjust:
+            pred = pred + self.residuals * self.residual_weights
         return np.clip(pred, -0.8, 0.8)
 
     def perturb(self, seed, alpha):
         noise = np.random.RandomState(seed).randn(*self.weights.shape)
         noise = noise * alpha * np.abs(self.weights)
-        return LinearModel(self.weights + noise, self.residuals, self.bias)
+        self.residual_weights = np.sqrt(0.15) * np.random.RandomState(seed).randn(*self.residuals.shape) + 0.25
+        return LinearModel(self.weights + noise, self.residuals, self.bias, self.residual_weights)
 
 
 def compute_ec_bias(predictor, data, features, alpha):
     data = data.copy()
     overall = []
     for seed in range(100):
-        data["temp"] = predictor.perturb(seed, alpha).predict(features, correct=True)
+        data["temp"] = predictor.perturb(seed, alpha).predict(features, correct=True, adjust=False)
         dem, gop = get_electoral_vote(data, "temp")
         if dem == gop:
             continue
@@ -84,12 +88,12 @@ class Model:
         )
         self.predictor = self.predictor.with_bias(best_bias)
 
-    def sample(self, title, path, data, seed=None, correct=True):
+    def sample(self, title, path, data, seed=None, correct=True, adjust=True):
         predictor = self.predictor
         if seed is not None:
             predictor = predictor.perturb(seed, self.alpha)
         data = data.copy()
-        data["temp"] = predictor.predict(self.run_pca(data), correct)
+        data["temp"] = predictor.predict(self.run_pca(data), correct, adjust)
         return generate_map(data, "temp", title, path)
 
 
