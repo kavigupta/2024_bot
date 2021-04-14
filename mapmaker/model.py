@@ -79,7 +79,7 @@ class LinearModel:
 def compute_ec_bias(predictor, data, features, alpha):
     data = data.copy()
     overall = []
-    for seed in range(100):
+    for seed in range(1000):
         data["temp"] = predictor.perturb(seed, alpha).predict(
             features, correct=True, adjust=True
         )
@@ -103,7 +103,7 @@ class Model:
         return add_ones(self.features.transform(strip_columns(data)))
 
     def unbias_predictor(self):
-        bias_values = np.array([0])
+        bias_values = np.arange(-0.01, -0.005, 0.001)
         biases = np.array(
             [
                 compute_ec_bias(
