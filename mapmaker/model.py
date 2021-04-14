@@ -10,46 +10,79 @@ from .processing import get_electoral_vote
 
 
 @attr.s
+class StableTrendModel:
+    trendiness = attr.ib()
+
+    def __call__(self, features, residuals):
+        return residuals * (1 + self.trendiness)
+
+
+@attr.s
+class NoisedTrendModel:
+    trendiness_by_feature = attr.ib()
+    trend_mu = attr.ib()
+    trend_sigma = attr.ib()
+
+    @staticmethod
+    def of(rng, n_features, trend_mu_mean=0.25, trend_mu_sigma=0.2, trend_sigma=0.1):
+        return NoisedTrendModel(
+            rng.randn(n_features),
+            rng.randn() * trend_mu_sigma + trend_mu_mean,
+            trend_sigma,
+        )
+
+    def __call__(self, features, residuals):
+        trendiness = features @ self.trendiness_by_feature
+        trendiness = (trendiness - trendiness.mean()) / trendiness.std()
+        trendiness = trendiness * self.trend_sigma + self.trend_mu
+        return residuals * (1 + trendiness)
+
+
+@attr.s
 class LinearModel:
     weights = attr.ib()
     residuals = attr.ib()
     bias = attr.ib()
-    residual_weights = attr.ib()
+    trend_model = attr.ib()
 
     def with_bias(self, x):
-        return LinearModel(self.weights, self.residuals, x, self.residual_weights)
+        return LinearModel(self.weights, self.residuals, x, self.trend_model)
 
     @staticmethod
-    def train(features, margin, total_votes, bias=0, residual_weights=0):
+    def train(
+        features, margin, total_votes, bias=0, trend_model=StableTrendModel(0.25)
+    ):
         weights = (
             LinearRegression(fit_intercept=False)
             .fit(features, margin, sample_weight=total_votes)
             .coef_
         )
         residuals = margin - features @ weights
-        return LinearModel(weights, residuals, bias, residual_weights)
+        return LinearModel(weights, residuals, bias, trend_model)
 
     def predict(self, features, correct=True, adjust=True):
         pred = features @ self.weights
         if correct:
             pred = pred + self.residuals + self.bias
         elif adjust:
-            pred = pred + self.residuals * self.residual_weights + self.bias
+            pred = pred + self.trend_model(features, self.residuals) + self.bias
         return np.clip(pred, -0.8, 0.8)
 
     def perturb(self, seed, alpha):
         rng = np.random.RandomState(seed)
         noise = rng.randn(*self.weights.shape)
         noise = noise * alpha * np.abs(self.weights)
-        self.residual_weights = np.sqrt(0.15) * rng.randn(*self.residuals.shape) + 0.25
-        return LinearModel(self.weights + noise, self.residuals, self.bias, self.residual_weights)
+        trend_model = NoisedTrendModel.of(rng, len(self.weights))
+        return LinearModel(self.weights + noise, self.residuals, self.bias, trend_model)
 
 
 def compute_ec_bias(predictor, data, features, alpha):
     data = data.copy()
     overall = []
     for seed in range(100):
-        data["temp"] = predictor.perturb(seed, alpha).predict(features, correct=True, adjust=False)
+        data["temp"] = predictor.perturb(seed, alpha).predict(
+            features, correct=True, adjust=True
+        )
         dem, gop = get_electoral_vote(data, "temp")
         if dem == gop:
             continue
