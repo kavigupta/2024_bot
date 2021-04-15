@@ -4,8 +4,6 @@ import pickle
 import tweepy
 import gspread
 
-import numpy as np
-
 from .SECRET import (
     my_consumer_key,
     my_consumer_secret,

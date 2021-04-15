@@ -10,7 +10,6 @@ pandas==1.1.5
 plotly==4.14.3
 us==2.0.2
 requests==2.25.1
-permacache==2.0.1
 psutil==5.8.0
 
 # launch package

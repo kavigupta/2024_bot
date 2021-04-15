@@ -1,12 +1,6 @@
 import os
-import re
 import functools
-import random
 import pickle
-
-import requests
-
-from permacache import permacache
 
 from .data import all_data
 from .model import Model
