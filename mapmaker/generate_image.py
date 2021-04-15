@@ -7,7 +7,6 @@ import pickle
 import requests
 
 from permacache import permacache
-from word_identifiers import id_to_words
 
 from .data import all_data
 from .model import Model
