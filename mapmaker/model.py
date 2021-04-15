@@ -103,6 +103,16 @@ class Model:
         return add_ones(self.features.transform(strip_columns(data)))
 
     def unbias_predictor(self):
+        starting_bias = compute_ec_bias(
+            self.predictor.with_bias(0),
+            self.data,
+            self.run_pca(self.data),
+            self.alpha,
+        )
+        print(
+            f"Without correction, democrats win the EC {starting_bias:.2%} of the time"
+        )
+
         bias_values = np.arange(-0.01, -0.005, 0.001)
         biases = np.array(
             [
