@@ -1,6 +1,0 @@
-geopandas==0.3.0
-pyshp==1.2.10
-shapely==1.6.3
-plotly==4.14.3
-plotly-geo==1.0.0
-pandas==1.0.1
