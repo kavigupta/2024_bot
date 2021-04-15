@@ -33,6 +33,6 @@ model.sample(
     path="images/2024_pred_corrected.svg",
     data=all_data(demographic_projection=True),
 )
-model.unbias_predictor(all_data(demographic_projection=True))
+# model.unbias_predictor(all_data(demographic_projection=True))
 for i in tqdm.trange(1, 11):
     get_image(i, i)
