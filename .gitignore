@@ -1,3 +1,4 @@
 *.pyc
 images
 SECRET.py
+env

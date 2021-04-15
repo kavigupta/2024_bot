@@ -9,3 +9,21 @@ For the more technically inclined readers, the way that the probabilistic sampli
 Because the bot is essentially fitting 2024 (projected) demographics to 2020 results and then probabilistically sampling, it will provide some Republican-leaning maps and some Democratic-leaning ones in near-identical proportions (54% Democratic, 46% Republican, and the slight Democratic lean is entirely due to the results of the 2020 election). **This is not due to our belief of what is likely to happen, but is rather based on our desire to present a range of possible and plausible electoral scenarios across the board. It is not a predictive model, and it is not meant to be a predictive model for what will happen in 2024. It is meant to be a showcaser of possible coalitions that may emerge across a host of national environments.**
 
 You can see state level margins for each scenario at [this spreadsheet](https://docs.google.com/spreadsheets/d/1GD9GahVdiuYDR82Ne7oV_qW2hKwbL7cuyhgD1AhbZ48/edit#gid=0).
+
+
+## Running the model
+
+First, install orca,
+
+```
+conda install -c plotly plotly-orca
+```
+
+if the above does not work, try following the instructions [here](https://plotly.com/python/orca-management/).
+Then, create a virtualenv and install the requirements
+
+```
+virtualenv -p python3 env
+source env/bin/activate
+pip install -r requirements.txt
+```
