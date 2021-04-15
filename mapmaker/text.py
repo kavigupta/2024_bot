@@ -1,12 +1,10 @@
-import matplotlib.font_manager
+import os
 
 from PIL import ImageFont
 
-[FONT_PATH] = [
-    x
-    for x in matplotlib.font_manager.findSystemFonts(fontpaths=None, fontext="ttf")
-    if "Cantarell-Regular" in x
-]
+FONT_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(__file__)), "fonts", "Cantarell-Regular.ttf"
+)
 
 
 def draw_text(draw, fontsize, chunks, x, y, align="left"):
