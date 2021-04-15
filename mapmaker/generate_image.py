@@ -15,7 +15,7 @@ IMAGE_FOLDER = os.path.join(
 def get_model(unbias=False):
     model = Model(all_data(), alpha=0.05, feature_kwargs=dict(pca=22))
     if unbias:
-        model.unbias_predictor()
+        model.unbias_predictor(all_data(demographic_projection=True))
     return model
 
 

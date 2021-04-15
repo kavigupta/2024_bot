@@ -102,24 +102,24 @@ class Model:
     def run_pca(self, data):
         return add_ones(self.features.transform(strip_columns(data)))
 
-    def unbias_predictor(self):
+    def unbias_predictor(self, data):
         starting_bias = compute_ec_bias(
             self.predictor.with_bias(0),
-            self.data,
-            self.run_pca(self.data),
+            data,
+            self.run_pca(data),
             self.alpha,
         )
         print(
             f"Without correction, democrats win the EC {starting_bias:.2%} of the time"
         )
 
-        bias_values = np.arange(-0.01, -0.005, 0.001)
+        bias_values = np.arange(-0.02, -0.005, 0.001)
         biases = np.array(
             [
                 compute_ec_bias(
                     self.predictor.with_bias(x),
-                    self.data,
-                    self.run_pca(self.data),
+                    data,
+                    self.run_pca(data),
                     self.alpha,
                 )
                 for x in tqdm.tqdm(bias_values)
@@ -131,14 +131,18 @@ class Model:
             f"Computed best bias: {best_bias:.2%}, which gives democrats an EC win {biases[idx]:.0%} of the time"
         )
         self.predictor = self.predictor.with_bias(best_bias)
+        print(self.predictor)
 
     def sample(self, title, path, data, seed=None, correct=True, adjust=True):
+        print(f"Generating {title}")
         predictor = self.predictor
         if seed is not None:
             predictor = predictor.perturb(seed, self.alpha)
         data = data.copy()
         data["temp"] = predictor.predict(self.run_pca(data), correct, adjust)
-        return generate_map(data, "temp", title, path)
+        state_margins = generate_map(data, "temp", title, path)
+        print(state_margins)
+        return state_margins
 
 
 def add_ones(x):
