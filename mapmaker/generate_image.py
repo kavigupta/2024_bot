@@ -15,7 +15,7 @@ IMAGE_FOLDER = os.path.join(
 def get_model(unbias=False):
     model = Model(all_data(), alpha=0.05, feature_kwargs=dict(pca=22))
     if unbias:
-        model.unbias_predictor()
+        model.unbias_predictor(all_data(demographic_projection=True))
     return model
 
 
@@ -33,7 +33,7 @@ def get_image(seed, name):
     pkl_path = f"{IMAGE_FOLDER}/{filename}.pkl"
     if os.path.exists(png_path):
         return True, png_path, pkl_path
-    stateres = get_model().sample(
+    stateres = get_model(unbias=True).sample(
         f"2024 scenario {name}",
         data=all_data(demographic_projection=True),
         seed=seed,
