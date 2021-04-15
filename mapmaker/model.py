@@ -131,7 +131,6 @@ class Model:
             f"Computed best bias: {best_bias:.2%}, which gives democrats an EC win {biases[idx]:.0%} of the time"
         )
         self.predictor = self.predictor.with_bias(best_bias)
-        print(self.predictor)
 
     def sample(self, title, path, data, seed=None, correct=True, adjust=True):
         print(f"Generating {title}")
