@@ -6,7 +6,7 @@ from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
 
 from .stitch_map import generate_map
-from .processing import get_electoral_vote
+from .aggregation import get_electoral_vote
 
 
 @attr.s

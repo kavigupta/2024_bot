@@ -5,7 +5,7 @@ import numpy as np
 import us
 
 from .data import counties
-from .processing import get_state_results
+from .aggregation import get_state_results
 from .colors import (
     BACKGROUND,
     COUNTY_COLORSCALE,
