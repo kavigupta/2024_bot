@@ -30,7 +30,7 @@ def county_map(data, dem_margin):
     figure = go.Choropleth(
         geojson=counties(),
         locations=data["FIPS"],
-        z=data[dem_margin],
+        z=dem_margin,
         zmid=0,
         zmin=-1,
         zmax=1,

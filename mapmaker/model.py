@@ -2,9 +2,9 @@ import numpy as np
 import attr
 import tqdm
 
-from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
 
+from .features import Features
 from .stitch_map import generate_map
 from .aggregation import get_electoral_vote
 
@@ -13,7 +13,10 @@ from .aggregation import get_electoral_vote
 class StableTrendModel:
     trendiness = attr.ib()
 
-    def __call__(self, features, residuals):
+    def __call__(self, features, residuals, year):
+        if year == 2020:
+            return residuals
+        assert year == 2024
         return residuals * (1 + self.trendiness)
 
 
@@ -31,7 +34,10 @@ class NoisedTrendModel:
             trend_sigma,
         )
 
-    def __call__(self, features, residuals):
+    def __call__(self, features, residuals, year):
+        if year == 2020:
+            return residuals
+        assert year == 2024
         trendiness = features @ self.trendiness_by_feature
         trendiness = (trendiness - trendiness.mean()) / trendiness.std()
         trendiness = trendiness * self.trend_sigma + self.trend_mu
@@ -60,12 +66,10 @@ class LinearModel:
         residuals = margin - features @ weights
         return LinearModel(weights, residuals, bias, trend_model)
 
-    def predict(self, features, correct=True, adjust=True):
-        pred = features @ self.weights
+    def predict(self, features, correct=True, *, year):
+        pred = features @ self.weights + self.bias
         if correct:
-            pred = pred + self.residuals + self.bias
-        elif adjust:
-            pred = pred + self.trend_model(features, self.residuals) + self.bias
+            pred = pred + self.trend_model(features, self.residuals, year)
         return np.clip(pred, -0.8, 0.8)
 
     def perturb(self, seed, alpha):
@@ -80,10 +84,10 @@ def compute_ec_bias(predictor, data, features, alpha):
     data = data.copy()
     overall = []
     for seed in range(1000):
-        data["temp"] = predictor.perturb(seed, alpha).predict(
-            features, correct=True, adjust=True
+        predictions = predictor.perturb(seed, alpha).predict(
+            features, correct=True, year=2024
         )
-        dem, gop = get_electoral_vote(data, "temp")
+        dem, gop = get_electoral_vote(data, predictions)
         if dem == gop:
             continue
         overall += [dem > gop]
@@ -91,22 +95,20 @@ def compute_ec_bias(predictor, data, features, alpha):
 
 
 class Model:
-    def __init__(self, data, feature_kwargs={}, *, alpha):
-        self.data = data
-        self.features = get_features(data, **feature_kwargs)
+    def __init__(self, data_2020, data_2024, feature_kwargs={}, *, alpha):
+        self.features = Features.fit(data_2020, data_2024, **feature_kwargs)
         self.predictor = LinearModel.train(
-            self.run_pca(self.data), data.biden_2020, data.total_votes
+            self.features.features(2020),
+            self.features.metadata_2020.biden_2020,
+            self.features.metadata_2020.total_votes,
         )
         self.alpha = alpha
 
-    def run_pca(self, data):
-        return add_ones(self.features.transform(strip_columns(data)))
-
-    def unbias_predictor(self, data):
+    def unbias_predictor(self):
         starting_bias = compute_ec_bias(
             self.predictor.with_bias(0),
-            data,
-            self.run_pca(data),
+            self.features.metadata_2020,
+            self.features.features(2024),
             self.alpha,
         )
         print(
@@ -118,8 +120,8 @@ class Model:
             [
                 compute_ec_bias(
                     self.predictor.with_bias(x),
-                    data,
-                    self.run_pca(data),
+                    self.features.metadata_2020,
+                    self.features.features_2024,
                     self.alpha,
                 )
                 for x in tqdm.tqdm(bias_values)
@@ -132,32 +134,19 @@ class Model:
         )
         self.predictor = self.predictor.with_bias(best_bias)
 
-    def sample(self, title, path, data, seed=None, correct=True, adjust=True):
-        print(f"Generating {title}")
+    def sample(self, *, year=2024, seed=None, correct=True):
         predictor = self.predictor
         if seed is not None:
             predictor = predictor.perturb(seed, self.alpha)
-        data = data.copy()
-        data["temp"] = predictor.predict(self.run_pca(data), correct, adjust)
-        state_margins = generate_map(data, "temp", title, path)
+        return predictor.predict(
+            self.features.features(year), correct, year=year
+        )
+
+    def sample_map(self, title, path, **kwargs):
+        print(f"Generating {title}")
+        predictions = self.sample(**kwargs)
+        state_margins = generate_map(
+            self.features.metadata_2020, predictions, title, path
+        )
         print(state_margins)
         return state_margins
-
-
-def add_ones(x):
-    return np.concatenate([x, np.ones((x.shape[0], 1))], axis=1)
-
-
-def strip_columns(data):
-    features = data.fillna(0).copy()
-    features = features[
-        [x for x in features if x not in {"FIPS", "biden_2020", "total_votes", "state"}]
-    ]
-    return np.array(features)
-
-
-def get_features(data, pca=20):
-    features = strip_columns(data)
-    if pca is not None:
-        features = PCA(pca, whiten=True).fit(features)
-    return features
