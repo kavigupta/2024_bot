@@ -26,6 +26,7 @@ def get_electoral_vote(data, dem_margin, only_nonclose=False):
         ec_results["electoral_college"][ec_results.total_margin < -m].sum(),
     )
 
+
 def calculate_tipping_point(data, dem_margin):
     ec_results = ec().join(get_state_results(data, dem_margin), how="inner")
     dem_ec = ec_results["electoral_college"][ec_results.total_margin > 0].sum()
@@ -33,19 +34,34 @@ def calculate_tipping_point(data, dem_margin):
     tipping_point = None
     if dem_ec >= 270:
         # dem tipping pt
-        for index, row in ec_results[ec_results.total_margin > 0].sort_values(by="total_margin").iterrows():
-            dem_ec -= row['electoral_college']
+        for index, row in (
+            ec_results[ec_results.total_margin > 0]
+            .sort_values(by="total_margin")
+            .iterrows()
+        ):
+            dem_ec -= row["electoral_college"]
             if dem_ec < 270:
-                tipping_point = ec_results[ec_results.index == index].total_margin.reset_index()
+                tipping_point = ec_results[
+                    ec_results.index == index
+                ].total_margin.reset_index()
                 break
     elif ec_results["electoral_college"][ec_results.total_margin < 0].sum() >= 270:
         # GOP tipping pt
-        for index, row in ec_results[ec_results.total_margin < 0].sort_values(by="total_margin").iterrows():
-            gop_ec -= row['electoral_college']
+        for index, row in (
+            ec_results[ec_results.total_margin < 0]
+            .sort_values(by="total_margin")
+            .iterrows()
+        ):
+            gop_ec -= row["electoral_college"]
             if gop_ec < 270:
-                tipping_point = ec_results[ec_results.index == index].total_margin.reset_index()
+                tipping_point = ec_results[
+                    ec_results.index == index
+                ].total_margin.reset_index()
                 break
 
-    tipping_point_state, tipping_point_margin = tipping_point.values[0][0], tipping_point.values[0][1]
+    tipping_point_state, tipping_point_margin = (
+        tipping_point.values[0][0],
+        tipping_point.values[0][1],
+    )
 
     return tipping_point_state, tipping_point_margin
