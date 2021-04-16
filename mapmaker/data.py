@@ -103,7 +103,6 @@ def all_data(demographic_projection=False):
             "Muslim Per 1000 (2010)",
             "Orthodox Jewish Per 1000 (2010)",
             "Reform/Reconstructionist Jewish Per 1000 (2010)",
-            "2018 votes",
             "2018 partisanship",
         ]
     ]
