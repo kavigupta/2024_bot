@@ -7,7 +7,12 @@ from PIL import Image, ImageDraw
 import svgutils.transform as sg
 from cairosvg import svg2png
 
-from .aggregation import get_electoral_vote, get_popular_vote, get_state_results, calculate_tipping_point
+from .aggregation import (
+    get_electoral_vote,
+    get_popular_vote,
+    get_state_results,
+    calculate_tipping_point,
+)
 from .mapper import county_map, state_map
 from .version import version
 from .colors import (
@@ -26,12 +31,19 @@ TOP_MARGIN = 55
 BOTTOM_MARGIN = 15
 TEXT_CENTER = 760
 
-FIRST_LINE = 150
+FIRST_LINE = 130
 
 
 def produce_text(
-    title, dem_ec, dem_ec_close, gop_ec, gop_ec_close, pop_vote_margin,
-    tipping_point_state, tipping_point_margin, scale=5
+    title,
+    dem_ec,
+    dem_ec_close,
+    gop_ec,
+    gop_ec_close,
+    pop_vote_margin,
+    tipping_point_state,
+    tipping_point_margin,
+    scale=5,
 ):
     im = Image.new(mode="RGBA", size=(900 * scale, 450 * scale))
     draw = ImageDraw.Draw(im)
@@ -108,7 +120,7 @@ def produce_text(
 
     tipping_point_str = None
     tipping_point_color = None
-    
+
     if tipping_point_margin > 0:
         tipping_point_str = f"{tipping_point_state} D+{tipping_point_margin:.2%}"
         tipping_point_color = STATE_DEM_CLOSE
@@ -131,8 +143,10 @@ def produce_text(
 def generate_map(data, dem_margin, title, out_path):
     dem_ec, gop_ec = get_electoral_vote(data, dem_margin)
     dem_ec_safe, gop_ec_safe = get_electoral_vote(data, dem_margin, only_nonclose=True)
-    
-    tipping_point_state, tipping_point_margin = calculate_tipping_point(data, dem_margin)
+
+    tipping_point_state, tipping_point_margin = calculate_tipping_point(
+        data, dem_margin
+    )
 
     dem_ec_close, gop_ec_close = dem_ec - dem_ec_safe, gop_ec - gop_ec_safe
     assert dem_ec_close >= 0 and gop_ec_close >= 0
@@ -158,7 +172,14 @@ def generate_map(data, dem_margin, title, out_path):
     fig.append([states])
 
     im = produce_text(
-        title, dem_ec, dem_ec_close, gop_ec, gop_ec_close, pop_vote_margin, tipping_point_state, tipping_point_margin
+        title,
+        dem_ec,
+        dem_ec_close,
+        gop_ec,
+        gop_ec_close,
+        pop_vote_margin,
+        tipping_point_state,
+        tipping_point_margin,
     )
     im.save(text_mask)
     with open(text_mask, "rb") as f:
