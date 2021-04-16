@@ -40,7 +40,7 @@ def calculate_tipping_point(data, dem_margin):
                 break
     elif ec_results["electoral_college"][ec_results.total_margin < 0].sum() >= 270:
         # GOP tipping pt
-        for index, row in ec_results[ec_results.total_margin > 0].sort_values(by="total_margin").iterrows():
+        for index, row in ec_results[ec_results.total_margin < 0].sort_values(by="total_margin").iterrows():
             gop_ec -= row['electoral_college']
             if gop_ec < 270:
                 tipping_point = ec_results[ec_results.index == index].total_margin.reset_index()
