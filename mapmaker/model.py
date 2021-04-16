@@ -66,10 +66,12 @@ class LinearModel:
         residuals = margin - features @ weights
         return LinearModel(weights, residuals, bias, trend_model)
 
-    def predict(self, features, correct=True, *, year):
-        pred = features @ self.weights + self.bias
+    def predict(self, features, correct=True, adjust=True):
+        pred = features @ self.weights
         if correct:
-            pred = pred + self.trend_model(features, self.residuals, year)
+            pred = pred + self.residuals + self.bias
+        elif adjust:
+            pred = pred + self.trend_model(features, self.residuals, year=2024) + self.bias
         return np.clip(pred, -0.8, 0.8)
 
     def perturb(self, seed, alpha):
@@ -85,7 +87,7 @@ def compute_ec_bias(predictor, data, features, alpha):
     overall = []
     for seed in range(1000):
         predictions = predictor.perturb(seed, alpha).predict(
-            features, correct=True, year=2024
+            features, correct=True, adjust=True
         )
         dem, gop = get_electoral_vote(data, predictions)
         if dem == gop:
@@ -134,19 +136,12 @@ class Model:
         )
         self.predictor = self.predictor.with_bias(best_bias)
 
-    def sample(self, *, year=2024, seed=None, correct=True):
+    def sample_map(self, title, path, year=2024, seed=None, correct=True, adjust=True):
+        print(f"Generating {title}")
         predictor = self.predictor
         if seed is not None:
             predictor = predictor.perturb(seed, self.alpha)
-        return predictor.predict(
-            self.features.features(year), correct, year=year
-        )
-
-    def sample_map(self, title, path, **kwargs):
-        print(f"Generating {title}")
-        predictions = self.sample(**kwargs)
-        state_margins = generate_map(
-            self.features.metadata_2020, predictions, title, path
-        )
+        predictions = predictor.predict(self.features.features(year), correct, adjust)
+        state_margins = generate_map(self.features.metadata_2020, predictions, title, path)
         print(state_margins)
         return state_margins

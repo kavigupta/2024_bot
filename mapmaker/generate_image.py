@@ -40,7 +40,7 @@ def get_image(seed, name):
         return True, png_path, pkl_path
     stateres = get_model(unbias=True).sample_map(
         f"2024 scenario {name}",
-        data=all_data(demographic_projection=True),
+        year=2024,
         seed=seed,
         path=svg_path,
     )
