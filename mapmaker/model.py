@@ -62,10 +62,10 @@ class LinearModel:
 
     def predict(self, features, correct=True, adjust=True):
         pred = features @ self.weights
-        if correct:
-            pred = pred + self.residuals + self.bias
-        elif adjust:
+        if adjust:
             pred = pred + self.trend_model(features, self.residuals) + self.bias
+        elif correct:
+            pred = pred + self.residuals + self.bias
         return np.clip(pred, -0.9, 0.9)
 
     def perturb(self, seed, alpha):

@@ -25,6 +25,7 @@ model.sample(
     seed=None,
     path="images/2024_pred.svg",
     correct=False,
+    adjust=False,
     data=all_data(demographic_projection=True),
 )
 model.sample(
