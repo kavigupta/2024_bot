@@ -164,6 +164,7 @@ def all_data(demographic_projection=False):
     all_data["Total Population"] = np.log(all_data["Total Population"]).replace(
         -np.inf, -1000
     )
+    all_data["turnout_spike"] = all_data["2018 votes"]/all_data["2016_votes"]
 
     return all_data
 
