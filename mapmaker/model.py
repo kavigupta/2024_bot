@@ -81,13 +81,12 @@ class LinearModel:
 
 
 def compute_ec_bias(predictor, data, features, alpha):
-    data = data.copy()
     overall = []
     for seed in range(1000):
         predictions = predictor.perturb(seed, alpha).predict(
             features, correct=True, year=2024
         )
-        dem, gop = get_electoral_vote(data, predictions)
+        dem, gop = get_electoral_vote(data, dem_margin=predictions)
         if dem == gop:
             continue
         overall += [dem > gop]
@@ -146,7 +145,7 @@ class Model:
         print(f"Generating {title}")
         predictions = self.sample(**kwargs)
         state_margins = generate_map(
-            self.features.metadata_2020, predictions, title, path
+            self.features.metadata_2020, title, path, dem_margin=predictions
         )
         print(state_margins)
         return state_margins

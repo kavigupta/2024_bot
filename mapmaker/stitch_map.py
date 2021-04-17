@@ -140,19 +140,21 @@ def produce_text(
     return im
 
 
-def generate_map(data, dem_margin, title, out_path):
-    dem_ec, gop_ec = get_electoral_vote(data, dem_margin)
-    dem_ec_safe, gop_ec_safe = get_electoral_vote(data, dem_margin, only_nonclose=True)
+def generate_map(data, title, out_path, *, dem_margin):
+    dem_ec, gop_ec = get_electoral_vote(data, dem_margin=dem_margin)
+    dem_ec_safe, gop_ec_safe = get_electoral_vote(
+        data, dem_margin=dem_margin, only_nonclose=True
+    )
 
     tipping_point_state, tipping_point_margin = calculate_tipping_point(
-        data, dem_margin
+        data, dem_margin=dem_margin
     )
 
     dem_ec_close, gop_ec_close = dem_ec - dem_ec_safe, gop_ec - gop_ec_safe
     assert dem_ec_close >= 0 and gop_ec_close >= 0
-    cm = county_map(data, dem_margin)
-    sm = state_map(data, dem_margin)
-    pop_vote_margin = get_popular_vote(data, dem_margin)
+    cm = county_map(data, dem_margin=dem_margin)
+    sm = state_map(data, dem_margin=dem_margin)
+    pop_vote_margin = get_popular_vote(data, dem_margin=dem_margin)
 
     fig = sg.SVGFigure("160cm", "65cm")
 
@@ -188,7 +190,7 @@ def generate_map(data, dem_margin, title, out_path):
     add_background_back(out_path)
     with open(out_path) as f:
         svg2png(bytestring=f.read(), write_to=out_path.replace(".svg", ".png"), scale=5)
-    return get_state_results(data, dem_margin)
+    return get_state_results(data, dem_margin=dem_margin)
 
 
 def remove_backgrounds(path):

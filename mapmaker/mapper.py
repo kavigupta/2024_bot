@@ -26,7 +26,7 @@ def fit(figure):
     return figure
 
 
-def county_map(data, dem_margin):
+def county_map(data, *, dem_margin):
     figure = go.Choropleth(
         geojson=counties(),
         locations=data["FIPS"],
@@ -53,8 +53,8 @@ def classify(margin):
         return 0.75
 
 
-def state_map(data, dem_margin):
-    state_margins = get_state_results(data, dem_margin)
+def state_map(data, *, dem_margin):
+    state_margins = get_state_results(data, dem_margin=dem_margin)
     classes = [classify(m) for m in np.array(state_margins)]
 
     figure = go.Choropleth(
