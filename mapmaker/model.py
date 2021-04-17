@@ -131,15 +131,17 @@ class Model:
         )
         self.predictor = self.predictor.with_bias(best_bias)
 
-    def sample_map(self, title, path, data, seed=None, correct=True, adjust=True):
-        print(f"Generating {title}")
+    def sample(self, data, seed=None, correct=True, adjust=True):
         predictor = self.predictor
         if seed is not None:
             predictor = predictor.perturb(seed, self.alpha)
         predictions = predictor.predict(self.run_pca(data), correct, adjust)
+        return predictions
+
+    def sample_map(self, title, path, data, **kwargs):
+        print(f"Generating {title}")
+        predictions = self.sample(data, **kwargs)
         state_margins = generate_map(data, title, path, dem_margin=predictions)
-        print(state_margins)
-        return state_margins
 
 
 def add_ones(x):
