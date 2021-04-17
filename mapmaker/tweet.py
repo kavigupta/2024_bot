@@ -41,7 +41,6 @@ def tweet_map():
     my_api = tweepy.API(my_auth)
     number = current_tweet_id(my_api)
     used, image, pkl = get_image(number, number)
-    assert not used
     post(f"scenario_{number}", pkl)
     message = f"2024 scenario {number}"
     my_api.update_with_media(image, status=message)
