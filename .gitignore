@@ -1,4 +1,6 @@
 *.pyc
-images
+images/*/*.svg
+images/*.svg
+images/*/*.pkl
 SECRET.py
 env
