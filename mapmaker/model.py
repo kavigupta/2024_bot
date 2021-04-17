@@ -131,11 +131,23 @@ class Model:
         )
         self.predictor = self.predictor.with_bias(best_bias)
 
+    def win_consistent_with(self, data, predictions, seed):
+        if seed is None:
+            return True
+        dem, gop = get_electoral_vote(data, dem_margin=predictions)
+        dem_win = dem > gop  # ties go to gop
+        # even days, democrat. odd days, gop
+        return dem_win == (seed % 2 == 0)
+
     def sample(self, data, seed=None, correct=True, adjust=True):
-        predictor = self.predictor
-        if seed is not None:
-            predictor = predictor.perturb(seed, self.alpha)
-        predictions = predictor.predict(self.run_pca(data), correct, adjust)
+        rng = np.random.RandomState(seed)
+        while True:
+            predictor = self.predictor
+            if seed is not None:
+                predictor = predictor.perturb(rng.randint(2 ** 32), self.alpha)
+            predictions = predictor.predict(self.run_pca(data), correct, adjust)
+            if self.win_consistent_with(data, predictions, seed):
+                break
         return predictions
 
     def sample_map(self, title, path, data, **kwargs):
