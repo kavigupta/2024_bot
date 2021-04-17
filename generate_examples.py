@@ -5,14 +5,14 @@ from mapmaker.data import all_data
 from mapmaker.generate_image import get_model, get_image
 
 model = get_model(unbias=False)
-model.sample(
+model.sample_map(
     "2020 Actual",
     seed=None,
     path="images/2020_actual.svg",
     adjust=False,
     data=all_data(),
 )
-model.sample(
+model.sample_map(
     "2020 Pred",
     seed=None,
     path="images/2020_pred.svg",
@@ -20,7 +20,7 @@ model.sample(
     correct=False,
     data=all_data(),
 )
-model.sample(
+model.sample_map(
     "2024 Pred",
     seed=None,
     path="images/2024_pred.svg",
@@ -28,7 +28,7 @@ model.sample(
     adjust=False,
     data=all_data(demographic_projection=True),
 )
-model.sample(
+model.sample_map(
     "2024 Pred Corrected",
     seed=None,
     path="images/2024_pred_corrected.svg",

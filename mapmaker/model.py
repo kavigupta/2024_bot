@@ -132,7 +132,7 @@ class Model:
         )
         self.predictor = self.predictor.with_bias(best_bias)
 
-    def sample(self, title, path, data, seed=None, correct=True, adjust=True):
+    def sample_map(self, title, path, data, seed=None, correct=True, adjust=True):
         print(f"Generating {title}")
         predictor = self.predictor
         if seed is not None:
