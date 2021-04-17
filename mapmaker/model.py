@@ -77,13 +77,12 @@ class LinearModel:
 
 
 def compute_ec_bias(predictor, data, features, alpha):
-    data = data.copy()
     overall = []
     for seed in range(1000):
-        data["temp"] = predictor.perturb(seed, alpha).predict(
+        predictions = predictor.perturb(seed, alpha).predict(
             features, correct=True, adjust=True
         )
-        dem, gop = get_electoral_vote(data, "temp")
+        dem, gop = get_electoral_vote(data, dem_margin=predictions)
         if dem == gop:
             continue
         overall += [dem > gop]
@@ -137,9 +136,8 @@ class Model:
         predictor = self.predictor
         if seed is not None:
             predictor = predictor.perturb(seed, self.alpha)
-        data = data.copy()
-        data["temp"] = predictor.predict(self.run_pca(data), correct, adjust)
-        state_margins = generate_map(data, "temp", title, path)
+        predictions = predictor.predict(self.run_pca(data), correct, adjust)
+        state_margins = generate_map(data, title, path, dem_margin=predictions)
         print(state_margins)
         return state_margins
 
