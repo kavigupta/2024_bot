@@ -35,18 +35,30 @@ def calculate_tipping_point(data, dem_margin):
     ec_total = 0
     if dem_ec >= 270:
         # dem tipping pt
-        for index, row in ec_results[ec_results.total_margin > 0].sort_values(by="total_margin", ascending=False).iterrows():
-            ec_total += row['electoral_college']
+        for index, row in (
+            ec_results[ec_results.total_margin > 0]
+            .sort_values(by="total_margin", ascending=False)
+            .iterrows()
+        ):
+            ec_total += row["electoral_college"]
             if ec_total >= 270:
-                tipping_point = ec_results[ec_results.index == index].total_margin.reset_index()
+                tipping_point = ec_results[
+                    ec_results.index == index
+                ].total_margin.reset_index()
                 break
     else:
         # GOP tipping pt
-        for index, row in ec_results[ec_results.total_margin < 0].sort_values(by="total_margin", ascending=True).iterrows():
-            ec_total += row['electoral_college']
-            if ec_total >= 269: 
+        for index, row in (
+            ec_results[ec_results.total_margin < 0]
+            .sort_values(by="total_margin", ascending=True)
+            .iterrows()
+        ):
+            ec_total += row["electoral_college"]
+            if ec_total >= 269:
                 # Give the tiebreak to the GOP because of likely House delegation lean
-                tipping_point = ec_results[ec_results.index == index].total_margin.reset_index()
+                tipping_point = ec_results[
+                    ec_results.index == index
+                ].total_margin.reset_index()
                 break
 
     tipping_point_state, tipping_point_margin = (
