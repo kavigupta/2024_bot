@@ -141,7 +141,7 @@ class Model:
     def sample_map(self, title, path, data, **kwargs):
         print(f"Generating {title}")
         predictions = self.sample(data, **kwargs)
-        state_margins = generate_map(data, title, path, dem_margin=predictions)
+        return generate_map(data, title, path, dem_margin=predictions)
 
 
 def add_ones(x):
