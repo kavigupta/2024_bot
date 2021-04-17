@@ -17,7 +17,7 @@ def get_model(unbias=False):
         all_data(),
         all_data(demographic_projection=True),
         alpha=0.05,
-        feature_kwargs=dict(pca=22),
+        feature_kwargs=dict(pca=24),
     )
     if unbias:
         model.unbias_predictor()
