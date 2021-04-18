@@ -7,6 +7,7 @@ from sklearn.linear_model import LinearRegression
 
 from .stitch_map import generate_map
 from .aggregation import get_electoral_vote
+from .features import Features, metadata
 
 
 @attr.s
@@ -90,22 +91,21 @@ def compute_ec_bias(predictor, data, features, alpha):
 
 
 class Model:
-    def __init__(self, data, feature_kwargs={}, *, alpha):
-        self.data = data
-        self.features = get_features(data, **feature_kwargs)
+    def __init__(self, data_by_year, feature_kwargs={}, *, alpha):
+        self.metadata = metadata(data_by_year, train_key=2020)
+        self.features = Features.fit(data_by_year, train_key=2020, **feature_kwargs)
         self.predictor = LinearModel.train(
-            self.run_pca(self.data), data.biden_2020, data.total_votes
+            self.features.features(2020),
+            self.metadata.biden_2020,
+            self.metadata.total_votes,
         )
         self.alpha = alpha
 
-    def run_pca(self, data):
-        return add_ones(self.features.transform(strip_columns(data)))
-
-    def unbias_predictor(self, data):
+    def unbias_predictor(self, *, for_year):
         starting_bias = compute_ec_bias(
             self.predictor.with_bias(0),
-            data,
-            self.run_pca(data),
+            self.metadata,
+            self.features.features(for_year),
             self.alpha,
         )
         print(
@@ -117,8 +117,8 @@ class Model:
             [
                 compute_ec_bias(
                     self.predictor.with_bias(x),
-                    data,
-                    self.run_pca(data),
+                    self.metadata,
+                    self.features.features(for_year),
                     self.alpha,
                 )
                 for x in tqdm.tqdm(bias_values)
@@ -131,45 +131,28 @@ class Model:
         )
         self.predictor = self.predictor.with_bias(best_bias)
 
-    def win_consistent_with(self, data, predictions, seed):
+    def win_consistent_with(self, predictions, seed):
         if seed is None:
             return True
-        dem, gop = get_electoral_vote(data, dem_margin=predictions)
+        dem, gop = get_electoral_vote(self.metadata, dem_margin=predictions)
         dem_win = dem > gop  # ties go to gop
         # even days, democrat. odd days, gop
         return dem_win == (seed % 2 == 0)
 
-    def sample(self, data, seed=None, correct=True, adjust=True):
+    def sample(self, *, year, seed=None, correct=True, adjust=True):
         rng = np.random.RandomState(seed)
         while True:
             predictor = self.predictor
             if seed is not None:
                 predictor = predictor.perturb(rng.randint(2 ** 32), self.alpha)
-            predictions = predictor.predict(self.run_pca(data), correct, adjust)
-            if self.win_consistent_with(data, predictions, seed):
+            predictions = predictor.predict(
+                self.features.features(year), correct, adjust
+            )
+            if self.win_consistent_with(predictions, seed):
                 break
         return predictions
 
-    def sample_map(self, title, path, data, **kwargs):
+    def sample_map(self, title, path, **kwargs):
         print(f"Generating {title}")
-        predictions = self.sample(data, **kwargs)
-        return generate_map(data, title, path, dem_margin=predictions)
-
-
-def add_ones(x):
-    return np.concatenate([x, np.ones((x.shape[0], 1))], axis=1)
-
-
-def strip_columns(data):
-    features = data.fillna(0).copy()
-    features = features[
-        [x for x in features if x not in {"FIPS", "biden_2020", "total_votes", "state"}]
-    ]
-    return np.array(features)
-
-
-def get_features(data, pca=20):
-    features = strip_columns(data)
-    if pca is not None:
-        features = PCA(pca, whiten=True).fit(features)
-    return features
+        predictions = self.sample(**kwargs)
+        return generate_map(self.metadata, title, path, dem_margin=predictions)

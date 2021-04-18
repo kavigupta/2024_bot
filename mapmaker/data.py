@@ -169,5 +169,12 @@ def all_data(demographic_projection=False):
     return all_data
 
 
+def data_by_year():
+    return {
+        2020: all_data(demographic_projection=False),
+        2024: all_data(demographic_projection=True),
+    }
+
+
 def ec():
     return pd.read_csv(os.path.join(CSVS, "ec.csv")).set_index("state")

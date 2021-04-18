@@ -2,7 +2,7 @@ import os
 import functools
 import pickle
 
-from .data import all_data
+from .data import data_by_year
 from .model import Model
 from .version import version
 
@@ -13,9 +13,9 @@ IMAGE_FOLDER = os.path.join(
 
 @functools.lru_cache(None)
 def get_model(unbias=False):
-    model = Model(all_data(), alpha=0.05, feature_kwargs=dict(pca=24))
+    model = Model(data_by_year(), alpha=0.05, feature_kwargs=dict(dimensions=24))
     if unbias:
-        model.unbias_predictor(all_data(demographic_projection=True))
+        model.unbias_predictor(for_year=2024)
     return model
 
 
@@ -35,7 +35,7 @@ def get_image(seed, name):
         return True, png_path, pkl_path
     stateres = get_model(unbias=True).sample_map(
         f"2024 scenario {name}",
-        data=all_data(demographic_projection=True),
+        year=2024,
         seed=seed,
         path=svg_path,
     )
