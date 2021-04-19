@@ -1,3 +1,5 @@
+from abc import ABC, abstractmethod
+
 import numpy as np
 import attr
 import tqdm
@@ -10,16 +12,26 @@ from .aggregation import get_electoral_vote
 from .features import Features, metadata
 
 
+class TrendModel(ABC):
+    @abstractmethod
+    def extra_residue(self, features, residuals):
+        pass
+
+    def __call__(self, features, residuals, *, year):
+        assert year in {2020, 2024}
+        return residuals + self.extra_residue(features, residuals) * ((year - 2020) / 4)
+
+
 @attr.s
-class StableTrendModel:
+class StableTrendModel(TrendModel):
     trendiness = attr.ib()
 
-    def __call__(self, features, residuals):
-        return residuals * (1 + self.trendiness)
+    def extra_residue(self, features, residuals):
+        return residuals * self.trendiness
 
 
 @attr.s
-class NoisedTrendModel:
+class NoisedTrendModel(TrendModel):
     trendiness_by_feature = attr.ib()
     trend_mu = attr.ib()
     trend_sigma = attr.ib()
@@ -32,11 +44,11 @@ class NoisedTrendModel:
             trend_sigma,
         )
 
-    def __call__(self, features, residuals):
+    def extra_residue(self, features, residuals):
         trendiness = features @ self.trendiness_by_feature
         trendiness = (trendiness - trendiness.mean()) / trendiness.std()
         trendiness = trendiness * self.trend_sigma + self.trend_mu
-        return residuals * (1 + trendiness)
+        return residuals * trendiness
 
 
 @attr.s
@@ -61,12 +73,12 @@ class LinearModel:
         residuals = margin - features @ weights
         return LinearModel(weights, residuals, bias, trend_model)
 
-    def predict(self, features, correct=True, adjust=True):
+    def predict(self, features, correct=True, *, year):
         pred = features @ self.weights
-        if adjust:
-            pred = pred + self.trend_model(features, self.residuals) + self.bias
-        elif correct:
-            pred = pred + self.residuals + self.bias
+        if correct:
+            pred = (
+                pred + self.trend_model(features, self.residuals, year=year) + self.bias
+            )
         return np.clip(pred, -0.9, 0.9)
 
     def perturb(self, seed, alpha):
@@ -81,7 +93,7 @@ def compute_ec_bias(predictor, data, features, alpha):
     overall = []
     for seed in range(1000):
         predictions = predictor.perturb(seed, alpha).predict(
-            features, correct=True, adjust=True
+            features, correct=True, year=2024
         )
         dem, gop = get_electoral_vote(data, dem_margin=predictions)
         if dem == gop:
@@ -139,14 +151,14 @@ class Model:
         # even days, democrat. odd days, gop
         return dem_win == (seed % 2 == 0)
 
-    def sample(self, *, year, seed=None, correct=True, adjust=True):
+    def sample(self, *, year, seed=None, correct=True):
         rng = np.random.RandomState(seed)
         while True:
             predictor = self.predictor
             if seed is not None:
                 predictor = predictor.perturb(rng.randint(2 ** 32), self.alpha)
             predictions = predictor.predict(
-                self.features.features(year), correct, adjust
+                self.features.features(year), correct, year=year
             )
             if self.win_consistent_with(predictions, seed):
                 break

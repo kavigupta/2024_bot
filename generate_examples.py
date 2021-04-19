@@ -8,14 +8,12 @@ model.sample_map(
     "2020 Actual",
     seed=None,
     path="images/2020_actual.svg",
-    adjust=False,
     year=2020,
 )
 model.sample_map(
     "2020 Pred",
     seed=None,
     path="images/2020_pred.svg",
-    adjust=False,
     correct=False,
     year=2020,
 )
@@ -24,7 +22,6 @@ model.sample_map(
     seed=None,
     path="images/2024_pred.svg",
     correct=False,
-    adjust=False,
     year=2024,
 )
 model.sample_map(
