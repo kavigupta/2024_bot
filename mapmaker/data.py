@@ -90,6 +90,7 @@ def all_data(demographic_projection=False):
             "Multiracial %",
             "Pacific Islander %",
             "Hispanic %",
+            "Rural % (2010)",
             "Total Adherents (All Types) Per 1000 Population (2010)",
             "Evangelical Per 1000 (2010)",
             "Black Protestant Per 1000 (2010)",
@@ -165,6 +166,7 @@ def all_data(demographic_projection=False):
         -np.inf, -1000
     )
     all_data["turnout_spike"] = all_data["2018 votes"] / all_data["2016_votes"]
+    all_data['hispanic_rural'] = all_data['Hispanic %'] ** 2 * all_data['Rural % (2010)']
 
     return all_data
 
