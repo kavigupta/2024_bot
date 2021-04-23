@@ -159,12 +159,16 @@ def all_data(demographic_projection=False):
     all_data["county_diversity_white_homogenity"] = all_data["White %"] ** 2
     all_data["county_diversity_hispanic_homogenity"] = all_data["Hispanic %"] ** 2
     all_data["county_diversity_native_homogenity"] = all_data["Native %"] ** 2
-    all_data["Median Household Income"] = np.log(
-        all_data["Median Household Income"]
-    ).replace(-np.inf, -1000)
-    all_data["Total Population"] = np.log(all_data["Total Population"]).replace(
-        -np.inf, -1000
-    )
+
+    def logify(column):
+        all_data[column] = np.log(all_data[column]).replace(-np.inf, -1000)
+
+    logify("Median Household Income")
+    logify("Total Population")
+    logify("Total Population 2016")
+    logify("2012votes")
+    logify("2016_votes")
+    logify("2018 votes")
     all_data["turnout_spike"] = all_data["2018 votes"] / all_data["2016_votes"]
     all_data['hispanic_rural'] = all_data['Hispanic %'] ** 2 * all_data['Rural % (2010)']
 
