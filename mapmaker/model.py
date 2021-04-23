@@ -37,7 +37,7 @@ class NoisedTrendModel(TrendModel):
     trend_sigma = attr.ib()
 
     @staticmethod
-    def of(rng, n_features, trend_mu_mean=0.25, trend_mu_sigma=0.2, trend_sigma=0.1):
+    def of(rng, n_features, trend_mu_mean=0, trend_mu_sigma=0.2, trend_sigma=0.1):
         return NoisedTrendModel(
             rng.randn(n_features),
             rng.randn() * trend_mu_sigma + trend_mu_mean,
@@ -62,9 +62,7 @@ class LinearModel:
         return LinearModel(self.weights, self.residuals, x, self.trend_model)
 
     @staticmethod
-    def train(
-        features, margin, total_votes, bias=0, trend_model=StableTrendModel(0.25)
-    ):
+    def train(features, margin, total_votes, bias=0, trend_model=StableTrendModel(0)):
         weights = (
             LinearRegression(fit_intercept=False)
             .fit(features, margin, sample_weight=total_votes)

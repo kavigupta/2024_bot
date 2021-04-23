@@ -13,7 +13,7 @@ IMAGE_FOLDER = os.path.join(
 
 @functools.lru_cache(None)
 def get_model(unbias=False):
-    model = Model(data_by_year(), alpha=0.05, feature_kwargs=dict(dimensions=24))
+    model = Model(data_by_year(), alpha=0.15, feature_kwargs=dict(dimensions=19))
     if unbias:
         model.unbias_predictor(for_year=2024)
     return model

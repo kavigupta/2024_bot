@@ -30,5 +30,5 @@ model.sample_map(
     path="images/2024_pred_corrected.svg",
     year=2024,
 )
-for i in tqdm.trange(1, 12):
+for i in tqdm.trange(10, 20):
     get_image(i, i)
