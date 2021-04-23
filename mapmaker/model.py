@@ -62,9 +62,7 @@ class LinearModel:
         return LinearModel(self.weights, self.residuals, x, self.trend_model)
 
     @staticmethod
-    def train(
-        features, margin, total_votes, bias=0, trend_model=StableTrendModel(0)
-    ):
+    def train(features, margin, total_votes, bias=0, trend_model=StableTrendModel(0)):
         weights = (
             LinearRegression(fit_intercept=False)
             .fit(features, margin, sample_weight=total_votes)
@@ -84,7 +82,7 @@ class LinearModel:
     def perturb(self, seed, alpha):
         rng = np.random.RandomState(seed)
         noise = rng.randn(*self.weights.shape)
-        noise = noise * alpha * np.abs(self.weights).mean()
+        noise = noise * alpha * np.abs(self.weights)
         trend_model = NoisedTrendModel.of(rng, len(self.weights))
         return LinearModel(self.weights + noise, self.residuals, self.bias, trend_model)
 

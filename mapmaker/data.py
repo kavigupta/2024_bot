@@ -96,14 +96,7 @@ def all_data(demographic_projection=False):
             "Black Protestant Per 1000 (2010)",
             "Mainline Protestant Per 1000 (2010)",
             "Catholic Per 1000 (2010)",
-            "Orthodox Christian Per 1000 (2010)",
-            "Other Religion (Non-Christian) Per 1000 (2010)",
-            "Buddhist Per 1000 (2010)",
             "Mormon Per 1000 (2010)",
-            "Hindu Per 1000 (2010)",
-            "Muslim Per 1000 (2010)",
-            "Orthodox Jewish Per 1000 (2010)",
-            "Reform/Reconstructionist Jewish Per 1000 (2010)",
             "2018 votes",
             "2018 partisanship",
         ]
@@ -170,7 +163,9 @@ def all_data(demographic_projection=False):
     logify("2016_votes")
     logify("2018 votes")
     all_data["turnout_spike"] = all_data["2018 votes"] / all_data["2016_votes"]
-    all_data['hispanic_rural'] = all_data['Hispanic %'] ** 2 * all_data['Rural % (2010)']
+    all_data["hispanic_rural"] = (
+        all_data["Hispanic %"] ** 2 * all_data["Rural % (2010)"]
+    )
 
     return all_data
 
