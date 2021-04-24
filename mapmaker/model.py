@@ -4,11 +4,11 @@ import numpy as np
 import attr
 import tqdm
 
-from sklearn.decomposition import PCA
 from sklearn.linear_model import LinearRegression
 
+from .data import ec
 from .stitch_map import generate_map
-from .aggregation import get_electoral_vote
+from .aggregation import get_electoral_vote, get_state_results
 from .features import Features, metadata
 
 
@@ -87,19 +87,6 @@ class LinearModel:
         return LinearModel(self.weights + noise, self.residuals, self.bias, trend_model)
 
 
-def compute_ec_bias(predictor, data, features, alpha):
-    overall = []
-    for seed in range(1000):
-        predictions = predictor.perturb(seed, alpha).predict(
-            features, correct=True, year=2024
-        )
-        dem, gop = get_electoral_vote(data, dem_margin=predictions)
-        if dem == gop:
-            continue
-        overall += [dem > gop]
-    return np.mean(overall)
-
-
 class Model:
     def __init__(self, data_by_year, feature_kwargs={}, *, alpha):
         self.metadata = metadata(data_by_year, train_key=2020)
@@ -112,34 +99,44 @@ class Model:
         self.alpha = alpha
 
     def unbias_predictor(self, *, for_year):
-        starting_bias = compute_ec_bias(
-            self.predictor.with_bias(0),
-            self.metadata,
-            self.features.features(for_year),
-            self.alpha,
-        )
+        state_preds = self.family_of_predictions(year=for_year)
+
+        def bias(preds):
+            dems = preds > 0
+            gop = preds < 0
+            ecs = np.array(ec())[:, 0]
+            return ((ecs * dems).sum(1) > (ecs * gop).sum(1)).mean()
+
         print(
-            f"Without correction, democrats win the EC {starting_bias:.2%} of the time"
+            f"Without correction, democrats win the EC {bias(state_preds):.2%} of the time"
         )
 
         bias_values = np.arange(-0.02, -0.005, 0.001)
-        biases = np.array(
-            [
-                compute_ec_bias(
-                    self.predictor.with_bias(x),
-                    self.metadata,
-                    self.features.features(for_year),
-                    self.alpha,
-                )
-                for x in tqdm.tqdm(bias_values)
-            ]
-        )
+        biases = np.array([bias(state_preds + x) for x in tqdm.tqdm(bias_values)])
+
         idx = np.argmin(np.abs(biases - 0.5))
         best_bias = bias_values[idx]
         print(
             f"Computed best bias: {best_bias:.2%}, which gives democrats an EC win {biases[idx]:.0%} of the time"
         )
         self.predictor = self.predictor.with_bias(best_bias)
+
+    def family_of_predictions(self, *, year, correct=True, n_seeds=1000):
+        state_results = []
+        for seed in range(n_seeds):
+            predictions = self.fully_random_sample(
+                year=year, correct=correct, prediction_seed=seed
+            )
+            state_results.append(
+                get_state_results(self.metadata, dem_margin=predictions)
+            )
+        return np.array(state_results)
+
+    def fully_random_sample(self, *, year, prediction_seed, correct):
+        predictor = self.predictor
+        if prediction_seed is not None:
+            predictor = predictor.perturb(prediction_seed, self.alpha)
+        return predictor.predict(self.features.features(year), correct, year=year)
 
     def win_consistent_with(self, predictions, seed):
         if seed is None:
@@ -152,11 +149,10 @@ class Model:
     def sample(self, *, year, seed=None, correct=True):
         rng = np.random.RandomState(seed)
         while True:
-            predictor = self.predictor
-            if seed is not None:
-                predictor = predictor.perturb(rng.randint(2 ** 32), self.alpha)
-            predictions = predictor.predict(
-                self.features.features(year), correct, year=year
+            predictions = self.fully_random_sample(
+                year=year,
+                prediction_seed=rng.randint(2 ** 32) if seed is not None else None,
+                correct=correct,
             )
             if self.win_consistent_with(predictions, seed):
                 break
