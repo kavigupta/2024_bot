@@ -2,11 +2,9 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 import attr
-import tqdm
 
 from sklearn.linear_model import LinearRegression
 
-from .data import ec
 from .stitch_map import generate_map
 from .aggregation import get_electoral_vote, get_state_results
 from .features import Features, metadata
@@ -97,29 +95,6 @@ class Model:
             self.metadata.total_votes,
         )
         self.alpha = alpha
-
-    def unbias_predictor(self, *, for_year):
-        state_preds = self.family_of_predictions(year=for_year)
-
-        def bias(preds):
-            dems = preds > 0
-            gop = preds < 0
-            ecs = np.array(ec())[:, 0]
-            return ((ecs * dems).sum(1) > (ecs * gop).sum(1)).mean()
-
-        print(
-            f"Without correction, democrats win the EC {bias(state_preds):.2%} of the time"
-        )
-
-        bias_values = np.arange(-0.02, -0.005, 0.001)
-        biases = np.array([bias(state_preds + x) for x in tqdm.tqdm(bias_values)])
-
-        idx = np.argmin(np.abs(biases - 0.5))
-        best_bias = bias_values[idx]
-        print(
-            f"Computed best bias: {best_bias:.2%}, which gives democrats an EC win {biases[idx]:.0%} of the time"
-        )
-        self.predictor = self.predictor.with_bias(best_bias)
 
     def family_of_predictions(self, *, year, correct=True, n_seeds=1000):
         state_results = []
