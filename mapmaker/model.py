@@ -57,19 +57,28 @@ class LinearModel:
     residuals = attr.ib()
     bias = attr.ib()
     trend_model = attr.ib()
+    clip_range = attr.ib()
 
     def with_bias(self, x):
-        return LinearModel(self.weights, self.residuals, x, self.trend_model)
+        return LinearModel(self.weights, self.residuals, x, self.trend_model, self.clip_range)
 
     @staticmethod
-    def train(features, margin, total_votes, bias=0, trend_model=StableTrendModel(0)):
+    def train(
+        features,
+        margin,
+        total_votes,
+        bias=0,
+        trend_model=StableTrendModel(0),
+        *,
+        clip_range,
+    ):
         weights = (
             LinearRegression(fit_intercept=False)
             .fit(features, margin, sample_weight=total_votes)
             .coef_
         )
         residuals = margin - features @ weights
-        return LinearModel(weights, residuals, bias, trend_model)
+        return LinearModel(weights, residuals, bias, trend_model, clip_range)
 
     def predict(self, features, correct=True, *, year):
         pred = features @ self.weights
@@ -77,14 +86,20 @@ class LinearModel:
             pred = (
                 pred + self.trend_model(features, self.residuals, year=year) + self.bias
             )
-        return np.clip(pred, -0.9, 0.9)
+        return np.clip(pred, *self.clip_range)
 
     def perturb(self, seed, alpha):
         rng = np.random.RandomState(seed)
         noise = rng.randn(*self.weights.shape)
         noise = noise * alpha * np.abs(self.weights)
         trend_model = NoisedTrendModel.of(rng, len(self.weights))
-        return LinearModel(self.weights + noise, self.residuals, self.bias, trend_model)
+        return LinearModel(
+            self.weights + noise,
+            self.residuals,
+            self.bias,
+            trend_model,
+            self.clip_range,
+        )
 
 
 class Model:
@@ -94,7 +109,14 @@ class Model:
         self.predictor = LinearModel.train(
             self.features.features(2020),
             self.metadata.biden_2020,
-            self.metadata.total_votes,
+            self.metadata.CVAP,
+            clip_range=(-0.9, 0.9),
+        )
+        self.turnout_predictor = LinearModel.train(
+            self.features.features(2020),
+            self.metadata.turnout,
+            self.metadata.CVAP,
+            clip_range=(0.2, 0.9),
         )
         self.alpha = alpha
 
@@ -111,25 +133,39 @@ class Model:
     def family_of_predictions(self, *, year, correct=True, n_seeds=1000):
         state_results, pop_votes = [], []
         for seed in range(n_seeds):
-            predictions = self.fully_random_sample(
+            predictions, turnout_predictions = self.fully_random_sample(
                 year=year, correct=correct, prediction_seed=seed
             )
             state_results.append(
-                get_state_results(self.metadata, dem_margin=predictions)
+                get_state_results(
+                    self.metadata, dem_margin=predictions, turnout=turnout_predictions
+                )
             )
-            pop_votes.append(get_popular_vote(self.metadata, dem_margin=predictions))
+            pop_votes.append(
+                get_popular_vote(
+                    self.metadata, dem_margin=predictions, turnout=turnout_predictions
+                )
+            )
         return np.array(state_results), np.array(pop_votes)
 
     def fully_random_sample(self, *, year, prediction_seed, correct):
         predictor = self.predictor
+        turnout_predictor = self.turnout_predictor
         if prediction_seed is not None:
-            predictor = predictor.perturb(prediction_seed, self.alpha)
-        return predictor.predict(self.features.features(year), correct, year=year)
+            predictor = predictor.perturb(2 * prediction_seed, self.alpha)
+            turnout_predictor = turnout_predictor.perturb(2 * prediction_seed + 1, self.alpha)
+        features = self.features.features(year)
+        return (
+            predictor.predict(features, correct, year=year),
+            turnout_predictor.predict(features, correct, year=year),
+        )
 
-    def win_consistent_with(self, predictions, seed):
+    def win_consistent_with(self, predictions, turnout_predictions, seed):
         if seed is None:
             return True
-        dem, gop = get_electoral_vote(self.metadata, dem_margin=predictions)
+        dem, gop = get_electoral_vote(
+            self.metadata, dem_margin=predictions, turnout=turnout_predictions
+        )
         dem_win = dem > gop  # ties go to gop
         # even days, democrat. odd days, gop
         return dem_win == (seed % 2 == 0)
@@ -137,16 +173,22 @@ class Model:
     def sample(self, *, year, seed=None, correct=True):
         rng = np.random.RandomState(seed)
         while True:
-            predictions = self.fully_random_sample(
+            predictions, turnout_predictions = self.fully_random_sample(
                 year=year,
                 prediction_seed=rng.randint(2 ** 32) if seed is not None else None,
                 correct=correct,
             )
-            if self.win_consistent_with(predictions, seed):
+            if self.win_consistent_with(predictions, turnout_predictions, seed):
                 break
-        return predictions
+        return predictions, turnout_predictions
 
     def sample_map(self, title, path, **kwargs):
         print(f"Generating {title}")
-        predictions = self.sample(**kwargs)
-        return generate_map(self.metadata, title, path, dem_margin=predictions)
+        predictions, turnout_predictions = self.sample(**kwargs)
+        return generate_map(
+            self.metadata,
+            title,
+            path,
+            dem_margin=predictions,
+            turnout=turnout_predictions,
+        )
