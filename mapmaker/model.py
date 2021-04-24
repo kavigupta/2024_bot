@@ -60,7 +60,9 @@ class LinearModel:
     clip_range = attr.ib()
 
     def with_bias(self, x):
-        return LinearModel(self.weights, self.residuals, x, self.trend_model, self.clip_range)
+        return LinearModel(
+            self.weights, self.residuals, x, self.trend_model, self.clip_range
+        )
 
     @staticmethod
     def train(
@@ -88,11 +90,14 @@ class LinearModel:
             )
         return np.clip(pred, *self.clip_range)
 
-    def perturb(self, seed, alpha):
-        rng = np.random.RandomState(seed)
+    def perturb(self, seed, alpha, *, use_trends):
+        rng = np.random.RandomState(seed % (2 ** 32))
         noise = rng.randn(*self.weights.shape)
         noise = noise * alpha * np.abs(self.weights)
-        trend_model = NoisedTrendModel.of(rng, len(self.weights))
+        if use_trends:
+            trend_model = NoisedTrendModel.of(rng, len(self.weights))
+        else:
+            trend_model = self.trend_model
         return LinearModel(
             self.weights + noise,
             self.residuals,
@@ -152,8 +157,12 @@ class Model:
         predictor = self.predictor
         turnout_predictor = self.turnout_predictor
         if prediction_seed is not None:
-            predictor = predictor.perturb(2 * prediction_seed, self.alpha)
-            turnout_predictor = turnout_predictor.perturb(2 * prediction_seed + 1, self.alpha)
+            predictor = predictor.perturb(
+                2 * prediction_seed, self.alpha, use_trends=True
+            )
+            turnout_predictor = turnout_predictor.perturb(
+                2 * prediction_seed + 1, 1 / 3 * self.alpha, use_trends=False
+            )
         features = self.features.features(year)
         return (
             predictor.predict(features, correct, year=year),
