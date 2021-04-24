@@ -3,10 +3,12 @@ from abc import ABC, abstractmethod
 import numpy as np
 import attr
 
+import copy
+
 from sklearn.linear_model import LinearRegression
 
 from .stitch_map import generate_map
-from .aggregation import get_electoral_vote, get_state_results
+from .aggregation import get_electoral_vote, get_state_results, get_popular_vote
 from .features import Features, metadata
 
 
@@ -86,7 +88,7 @@ class LinearModel:
 
 
 class Model:
-    def __init__(self, data_by_year, feature_kwargs={}, *, alpha):
+    def __init__(self, data_by_year, feature_kwargs={}, *, alpha=0.2):
         self.metadata = metadata(data_by_year, train_key=2020)
         self.features = Features.fit(data_by_year, train_key=2020, **feature_kwargs)
         self.predictor = LinearModel.train(
@@ -96,8 +98,18 @@ class Model:
         )
         self.alpha = alpha
 
+    def with_alpha(self, alpha):
+        self = copy.copy(self)
+        self.alpha = alpha
+        return self
+
+    def with_predictor(self, predictor):
+        self = copy.copy(self)
+        self.predictor = predictor
+        return self
+
     def family_of_predictions(self, *, year, correct=True, n_seeds=1000):
-        state_results = []
+        state_results, pop_votes = [], []
         for seed in range(n_seeds):
             predictions = self.fully_random_sample(
                 year=year, correct=correct, prediction_seed=seed
@@ -105,7 +117,8 @@ class Model:
             state_results.append(
                 get_state_results(self.metadata, dem_margin=predictions)
             )
-        return np.array(state_results)
+            pop_votes.append(get_popular_vote(self.metadata, dem_margin=predictions))
+        return np.array(state_results), np.array(pop_votes)
 
     def fully_random_sample(self, *, year, prediction_seed, correct):
         predictor = self.predictor
