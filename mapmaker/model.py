@@ -126,10 +126,12 @@ class Model:
             predictor = predictor.perturb(prediction_seed, self.alpha)
         return predictor.predict(self.features.features(year), correct, year=year)
 
-    def win_consistent_with(self, predictions, seed):
+    def win_consistent_with(self, predictions, turnout_predictions, seed):
         if seed is None:
             return True
-        dem, gop = get_electoral_vote(self.metadata, dem_margin=predictions)
+        dem, gop = get_electoral_vote(
+            self.metadata, dem_margin=predictions, turnout=turnout_predictions
+        )
         dem_win = dem > gop  # ties go to gop
         # even days, democrat. odd days, gop
         return dem_win == (seed % 2 == 0)
@@ -142,11 +144,18 @@ class Model:
                 prediction_seed=rng.randint(2 ** 32) if seed is not None else None,
                 correct=correct,
             )
-            if self.win_consistent_with(predictions, seed):
+            turnout_predictions = self.metadata.turnout
+            if self.win_consistent_with(predictions, turnout_predictions, seed):
                 break
-        return predictions
+        return predictions, turnout_predictions
 
     def sample_map(self, title, path, **kwargs):
         print(f"Generating {title}")
-        predictions = self.sample(**kwargs)
-        return generate_map(self.metadata, title, path, dem_margin=predictions)
+        predictions, turnout_predictions = self.sample(**kwargs)
+        return generate_map(
+            self.metadata,
+            title,
+            path,
+            dem_margin=predictions,
+            turnout=turnout_predictions,
+        )
