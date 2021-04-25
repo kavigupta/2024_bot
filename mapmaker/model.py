@@ -163,10 +163,9 @@ class Model:
                 2 * prediction_seed + 1, 1 / 3 * self.alpha, noise_trends=False
             )
         features = self.features.features(year)
-        return (
-            predictor.predict(features, correct, year=year),
-            turnout_predictor.predict(features, correct, year=year),
-        )
+        predictions = predictor.predict(features, correct, year=year)
+        turnout = turnout_predictor.predict(features, correct, year=year)
+        return predictions, turnout
 
     def win_consistent_with(self, predictions, turnout, seed):
         if seed is None:
