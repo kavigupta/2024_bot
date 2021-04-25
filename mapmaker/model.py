@@ -90,11 +90,14 @@ class LinearModel:
             )
         return np.clip(pred, *self.clip_range)
 
-    def perturb(self, seed, alpha):
+    def perturb(self, seed, alpha, *, noise_trends):
         rng = np.random.RandomState(seed)
         noise = rng.randn(*self.weights.shape)
         noise = noise * alpha * np.abs(self.weights)
-        trend_model = NoisedTrendModel.of(rng, len(self.weights))
+        if noise_trends:
+            trend_model = NoisedTrendModel.of(rng, len(self.weights))
+        else:
+            trend_model = self.trend_model
         return LinearModel(self.weights + noise, self.residuals, self.bias, trend_model)
         return LinearModel(
             self.weights + noise,
@@ -146,7 +149,9 @@ class Model:
     def fully_random_sample(self, *, year, prediction_seed, correct):
         predictor = self.predictor
         if prediction_seed is not None:
-            predictor = predictor.perturb(prediction_seed, self.alpha)
+            predictor = predictor.perturb(
+                prediction_seed, self.alpha, noise_trends=True
+            )
         predictions = predictor.predict(
             self.features.features(year), correct, year=year
         )
