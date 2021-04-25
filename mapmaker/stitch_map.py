@@ -12,6 +12,7 @@ from .aggregation import (
     get_popular_vote,
     get_state_results,
     calculate_tipping_point,
+    number_votes,
 )
 from .mapper import county_map, state_map
 from .version import version
@@ -31,7 +32,7 @@ TOP_MARGIN = 55
 BOTTOM_MARGIN = 15
 TEXT_CENTER = 760
 
-FIRST_LINE = 130
+FIRST_LINE = 110
 
 
 def produce_text(
@@ -43,6 +44,7 @@ def produce_text(
     pop_vote_margin,
     tipping_point_state,
     tipping_point_margin,
+    total_turnout,
     scale=5,
 ):
     im = Image.new(mode="RGBA", size=(900 * scale, 450 * scale))
@@ -118,6 +120,17 @@ def produce_text(
 
     y += 10 // 2 + 20
 
+    draw_text(
+        draw,
+        10 * scale,
+        [(f"Total Turnout: {total_turnout/1e6:.0f}m", TEXT_COLOR)],
+        TEXT_CENTER * scale,
+        y * scale,
+        align=("center"),
+    )
+
+    y += 20
+
     tipping_point_str = None
     tipping_point_color = None
 
@@ -182,6 +195,7 @@ def generate_map(data, title, out_path, *, dem_margin, turnout):
         pop_vote_margin,
         tipping_point_state,
         tipping_point_margin,
+        total_turnout=number_votes(data, turnout=turnout),
     )
     im.save(text_mask)
     with open(text_mask, "rb") as f:

@@ -91,7 +91,7 @@ class LinearModel:
         return np.clip(pred, *self.clip_range)
 
     def perturb(self, seed, alpha, *, noise_trends):
-        rng = np.random.RandomState(seed)
+        rng = np.random.RandomState(seed % (2 ** 32))
         noise = rng.randn(*self.weights.shape)
         noise = noise * alpha * np.abs(self.weights)
         if noise_trends:
@@ -114,8 +114,14 @@ class Model:
         self.predictor = LinearModel.train(
             self.features.features(2020),
             self.metadata.biden_2020,
-            self.metadata.total_votes,
+            self.metadata.CVAP,
             clip_range=(-0.9, 0.9),
+        )
+        self.turnout_predictor = LinearModel.train(
+            self.features.features(2020),
+            self.metadata.turnout,
+            self.metadata.CVAP,
+            clip_range=(0.2, 0.9),
         )
         self.alpha = alpha
 
@@ -148,14 +154,17 @@ class Model:
 
     def fully_random_sample(self, *, year, prediction_seed, correct):
         predictor = self.predictor
+        turnout_predictor = self.turnout_predictor
         if prediction_seed is not None:
             predictor = predictor.perturb(
-                prediction_seed, self.alpha, noise_trends=True
+                2 * prediction_seed, self.alpha, noise_trends=True
             )
-        predictions = predictor.predict(
-            self.features.features(year), correct, year=year
-        )
-        turnout = self.metadata.turnout
+            turnout_predictor = turnout_predictor.perturb(
+                2 * prediction_seed + 1, 1 / 3 * self.alpha, noise_trends=False
+            )
+        features = self.features.features(year)
+        predictions = predictor.predict(features, correct, year=year)
+        turnout = turnout_predictor.predict(features, correct, year=year)
         return predictions, turnout
 
     def win_consistent_with(self, predictions, turnout, seed):
