@@ -111,25 +111,35 @@ class Model:
     def family_of_predictions(self, *, year, correct=True, n_seeds=1000):
         state_results, pop_votes = [], []
         for seed in range(n_seeds):
-            predictions = self.fully_random_sample(
+            predictions, turnout = self.fully_random_sample(
                 year=year, correct=correct, prediction_seed=seed
             )
             state_results.append(
-                get_state_results(self.metadata, dem_margin=predictions)
+                get_state_results(
+                    self.metadata, dem_margin=predictions, turnout=turnout
+                )
             )
-            pop_votes.append(get_popular_vote(self.metadata, dem_margin=predictions))
+            pop_votes.append(
+                get_popular_vote(self.metadata, dem_margin=predictions, turnout=turnout)
+            )
         return np.array(state_results), np.array(pop_votes)
 
     def fully_random_sample(self, *, year, prediction_seed, correct):
         predictor = self.predictor
         if prediction_seed is not None:
             predictor = predictor.perturb(prediction_seed, self.alpha)
-        return predictor.predict(self.features.features(year), correct, year=year)
+        predictions = predictor.predict(
+            self.features.features(year), correct, year=year
+        )
+        turnout = self.metadata.turnout
+        return predictions, turnout
 
-    def win_consistent_with(self, predictions, seed):
+    def win_consistent_with(self, predictions, turnout, seed):
         if seed is None:
             return True
-        dem, gop = get_electoral_vote(self.metadata, dem_margin=predictions)
+        dem, gop = get_electoral_vote(
+            self.metadata, dem_margin=predictions, turnout=turnout
+        )
         dem_win = dem > gop  # ties go to gop
         # even days, democrat. odd days, gop
         return dem_win == (seed % 2 == 0)
@@ -137,16 +147,22 @@ class Model:
     def sample(self, *, year, seed=None, correct=True):
         rng = np.random.RandomState(seed)
         while True:
-            predictions = self.fully_random_sample(
+            predictions, turnout = self.fully_random_sample(
                 year=year,
                 prediction_seed=rng.randint(2 ** 32) if seed is not None else None,
                 correct=correct,
             )
-            if self.win_consistent_with(predictions, seed):
+            if self.win_consistent_with(predictions, turnout, seed):
                 break
-        return predictions
+        return predictions, turnout
 
     def sample_map(self, title, path, **kwargs):
         print(f"Generating {title}")
-        predictions = self.sample(**kwargs)
-        return generate_map(self.metadata, title, path, dem_margin=predictions)
+        predictions, turnout = self.sample(**kwargs)
+        return generate_map(
+            self.metadata,
+            title,
+            path,
+            dem_margin=predictions,
+            turnout=turnout,
+        )

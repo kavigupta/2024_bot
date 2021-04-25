@@ -2,24 +2,28 @@ from .data import ec
 from .constants import CLOSE_MARGIN
 
 
-def get_state_results(data, *, dem_margin):
+def get_state_results(data, *, dem_margin, turnout):
     data = data.copy()
-    data["total_margin"] = data["total_votes"] * dem_margin
+    data["total_votes_predicted"] = turnout * data["CVAP"]
+    data["total_margin"] = data["total_votes_predicted"] * dem_margin
     grouped = data.groupby("state").sum()
-    grouped["total_margin"] = grouped["total_margin"] / grouped["total_votes"]
+    grouped["total_margin"] = grouped["total_margin"] / grouped["total_votes_predicted"]
     return grouped["total_margin"]
 
 
-def get_popular_vote(data, *, dem_margin):
-    return (data["total_votes"] * dem_margin).sum() / data["total_votes"].sum()
+def get_popular_vote(data, *, dem_margin, turnout):
+    total_votes_predicted = turnout * data.CVAP
+    return (total_votes_predicted * dem_margin).sum() / total_votes_predicted.sum()
 
 
-def get_electoral_vote(data, *, dem_margin, only_nonclose=False):
+def get_electoral_vote(data, *, dem_margin, turnout, only_nonclose=False):
     if only_nonclose:
         m = CLOSE_MARGIN
     else:
         m = 0
-    ec_results = ec().join(get_state_results(data, dem_margin=dem_margin), how="inner")
+    ec_results = ec().join(
+        get_state_results(data, turnout=turnout, dem_margin=dem_margin), how="inner"
+    )
 
     return (
         ec_results["electoral_college"][ec_results.total_margin > m].sum(),
@@ -27,8 +31,9 @@ def get_electoral_vote(data, *, dem_margin, only_nonclose=False):
     )
 
 
-def calculate_tipping_point(data, *, dem_margin):
-    ec_results = ec().join(get_state_results(data, dem_margin=dem_margin), how="inner")
+def calculate_tipping_point(data, *, dem_margin, turnout):
+    state_results = get_state_results(data, dem_margin=dem_margin, turnout=turnout)
+    ec_results = ec().join(state_results, how="inner")
     dem_ec = ec_results["electoral_college"][ec_results.total_margin > 0].sum()
     gop_ec = ec_results["electoral_college"][ec_results.total_margin < 0].sum()
     tipping_point = None

@@ -53,8 +53,8 @@ def classify(margin):
         return 0.75
 
 
-def state_map(data, *, dem_margin):
-    state_margins = get_state_results(data, dem_margin=dem_margin)
+def state_map(data, *, dem_margin, turnout):
+    state_margins = get_state_results(data, dem_margin=dem_margin, turnout=turnout)
     classes = [classify(m) for m in np.array(state_margins)]
 
     figure = go.Choropleth(
