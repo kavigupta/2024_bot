@@ -12,7 +12,7 @@ def bias(preds):
 
 
 def unbias_predictor(model, *, for_year, target_pv_spread_90=12.0e-2):
-    low_alpha, high_alpha = 0, 1
+    low_alpha, high_alpha = 0, 0.1016 * 2
     while True:
         mid_alpha = (low_alpha + high_alpha) / 2
         model = model.with_alpha(mid_alpha)

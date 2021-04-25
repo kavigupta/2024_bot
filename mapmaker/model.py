@@ -156,13 +156,14 @@ class Model:
     def fully_random_sample(self, *, year, prediction_seed, correct):
         predictor = self.predictor
         turnout_predictor = self.turnout_predictor
+        print(prediction_seed)
         if prediction_seed is not None:
             predictor = predictor.perturb(
                 2 * prediction_seed, self.alpha, use_trends=True
             )
-            turnout_predictor = turnout_predictor.perturb(
-                2 * prediction_seed + 1, 1 / 3 * self.alpha, use_trends=False
-            )
+            # turnout_predictor = turnout_predictor.perturb(
+            #     2 * prediction_seed + 1, 1 / 3 * self.alpha, use_trends=False
+            # )
         features = self.features.features(year)
         return (
             predictor.predict(features, correct, year=year),
