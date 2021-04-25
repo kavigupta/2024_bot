@@ -16,7 +16,6 @@ def get_popular_vote(data, *, dem_margin, turnout):
     return (total_votes_predicted * dem_margin).sum() / total_votes_predicted.sum()
 
 
-
 def get_electoral_vote(data, *, dem_margin, turnout, only_nonclose=False):
     if only_nonclose:
         m = CLOSE_MARGIN
