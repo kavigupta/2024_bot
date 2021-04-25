@@ -57,19 +57,30 @@ class LinearModel:
     residuals = attr.ib()
     bias = attr.ib()
     trend_model = attr.ib()
+    clip_range = attr.ib()
 
     def with_bias(self, x):
-        return LinearModel(self.weights, self.residuals, x, self.trend_model)
+        return LinearModel(
+            self.weights, self.residuals, x, self.trend_model, self.clip_range
+        )
 
     @staticmethod
-    def train(features, margin, total_votes, bias=0, trend_model=StableTrendModel(0)):
+    def train(
+        features,
+        margin,
+        total_votes,
+        bias=0,
+        trend_model=StableTrendModel(0),
+        *,
+        clip_range,
+    ):
         weights = (
             LinearRegression(fit_intercept=False)
             .fit(features, margin, sample_weight=total_votes)
             .coef_
         )
         residuals = margin - features @ weights
-        return LinearModel(weights, residuals, bias, trend_model)
+        return LinearModel(weights, residuals, bias, trend_model, clip_range)
 
     def predict(self, features, correct=True, *, year):
         pred = features @ self.weights
@@ -77,7 +88,7 @@ class LinearModel:
             pred = (
                 pred + self.trend_model(features, self.residuals, year=year) + self.bias
             )
-        return np.clip(pred, -0.9, 0.9)
+        return np.clip(pred, *self.clip_range)
 
     def perturb(self, seed, alpha):
         rng = np.random.RandomState(seed)
@@ -85,6 +96,13 @@ class LinearModel:
         noise = noise * alpha * np.abs(self.weights)
         trend_model = NoisedTrendModel.of(rng, len(self.weights))
         return LinearModel(self.weights + noise, self.residuals, self.bias, trend_model)
+        return LinearModel(
+            self.weights + noise,
+            self.residuals,
+            self.bias,
+            trend_model,
+            self.clip_range,
+        )
 
 
 class Model:
@@ -95,6 +113,7 @@ class Model:
             self.features.features(2020),
             self.metadata.biden_2020,
             self.metadata.total_votes,
+            clip_range=(-0.9, 0.9),
         )
         self.alpha = alpha
 
