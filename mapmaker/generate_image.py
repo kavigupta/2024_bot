@@ -34,7 +34,7 @@ def get_image(seed, name):
     pkl_path = f"{IMAGE_FOLDER}/{filename}.pkl"
     if os.path.exists(png_path):
         return True, png_path, pkl_path
-    stateres = get_model(unbias=True).sample_map(
+    stateres = get_model(calibrated=True).sample_map(
         f"2024 scenario {name}",
         year=2024,
         seed=seed,
