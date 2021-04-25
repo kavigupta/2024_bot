@@ -16,7 +16,7 @@ def calibrate(model, *, for_year, target_pv_spread_90=17.5e-2):
     while True:
         mid_alpha = (low_alpha + high_alpha) / 2
         model = model.with_alpha(mid_alpha)
-        state_preds, pv = model.family_of_predictions(year=for_year)
+        _, state_preds, pv = model.family_of_predictions(year=for_year)
         pv_spread_90 = np.percentile(pv, 95) - np.percentile(pv, 5)
         print(f"Alpha: {mid_alpha:.4f}")
         print(f"Spread: {pv_spread_90:.2%}")
