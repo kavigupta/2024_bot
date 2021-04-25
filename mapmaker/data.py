@@ -44,20 +44,16 @@ def all_data(demographic_projection=False):
             "native_2012",
             "asian_2012",
             "hispanic_2012",
-            # "otherrace_2012",
             "evangelical_2012",
             "mainlineprotestant_2012",
             "catholic_2012",
             "mormon_2012",
             "other religion",
             "2012votes",
-            # "County Power Index 2012",
         ]
     ]
 
-    relevant_demo_2016 = demo_2016[
-        ["gisjoin", "Total Population 2016", "2016_votes", ]#"County Power Index 2016"]
-    ]
+    relevant_demo_2016 = demo_2016[["gisjoin", "Total Population 2016", "2016_votes"]]
 
     relevant_swing_2016 = swing_2012_2016[
         [
@@ -87,8 +83,6 @@ def all_data(demographic_projection=False):
             "Black %",
             "Native %",
             "Asian %",
-            # "Multiracial %",
-            # "Pacific Islander %",
             "Hispanic %",
             "Rural % (2010)",
             "Total Adherents (All Types) Per 1000 Population (2010)",
@@ -151,11 +145,15 @@ def all_data(demographic_projection=False):
         all_data["Hispanic %"] * all_data["White %"]
     )
     all_data["county_diversity_white_homogenity"] = all_data["White %"] ** 2
-    all_data["county_diversity_white_education"] = all_data["White %"] ** 2 * all_data["% Bachelor Degree or Above"]
+    all_data["county_diversity_white_education"] = (
+        all_data["White %"] ** 2 * all_data["% Bachelor Degree or Above"]
+    )
     all_data["county_diversity_hispanic_homogenity"] = all_data["Hispanic %"] ** 2
     all_data["county_diversity_native_homogenity"] = all_data["Native %"] ** 2
 
-    all_data["turnout_spike"] = np.clip(all_data["2018 votes"] / all_data["2016_votes"], 0, 3)
+    all_data["turnout_spike"] = np.clip(
+        all_data["2018 votes"] / all_data["2016_votes"], 0, 3
+    )
     all_data["hispanic_rural"] = (
         all_data["Hispanic %"] ** 2 * all_data["Rural % (2010)"]
     )
@@ -164,7 +162,6 @@ def all_data(demographic_projection=False):
 
     def logify(column):
         all_data[column] = np.log(all_data[column]).replace(-np.inf, -1000)
-
 
     logify("Median Household Income")
     logify("Total Population")
