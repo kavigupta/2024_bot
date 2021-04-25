@@ -98,7 +98,6 @@ class LinearModel:
             trend_model = NoisedTrendModel.of(rng, len(self.weights))
         else:
             trend_model = self.trend_model
-        return LinearModel(self.weights + noise, self.residuals, self.bias, trend_model)
         return LinearModel(
             self.weights + noise,
             self.residuals,
