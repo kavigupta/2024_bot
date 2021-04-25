@@ -136,11 +136,12 @@ class Model:
         return self
 
     def family_of_predictions(self, *, year, correct=True, n_seeds=1000):
-        state_results, pop_votes = [], []
+        county_results, state_results, pop_votes = [], [], []
         for seed in range(n_seeds):
             predictions, turnout_predictions = self.fully_random_sample(
                 year=year, correct=correct, prediction_seed=seed
             )
+            county_results.append(predictions)
             state_results.append(
                 get_state_results(
                     self.metadata, dem_margin=predictions, turnout=turnout_predictions
@@ -151,7 +152,7 @@ class Model:
                     self.metadata, dem_margin=predictions, turnout=turnout_predictions
                 )
             )
-        return np.array(state_results), np.array(pop_votes)
+        return np.array(county_results), np.array(state_results), np.array(pop_votes)
 
     def fully_random_sample(self, *, year, prediction_seed, correct):
         predictor = self.predictor
