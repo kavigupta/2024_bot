@@ -5,7 +5,7 @@ import pickle
 from .data import data_by_year
 from .model import Model
 from .version import version
-from .calibrator import unbias_predictor
+from .calibrator import calibrate
 
 IMAGE_FOLDER = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "images", version
@@ -13,10 +13,10 @@ IMAGE_FOLDER = os.path.join(
 
 
 @functools.lru_cache(None)
-def get_model(unbias=False):
+def get_model(calibrated=False):
     model = Model(data_by_year(), feature_kwargs=dict(dimensions=19))
-    if unbias:
-        model = unbias_predictor(model, for_year=2024)
+    if calibrated:
+        model = calibrate(model, for_year=2024)
     return model
 
 
@@ -34,7 +34,7 @@ def get_image(seed, name):
     pkl_path = f"{IMAGE_FOLDER}/{filename}.pkl"
     if os.path.exists(png_path):
         return True, png_path, pkl_path
-    stateres = get_model(unbias=True).sample_map(
+    stateres = get_model(calibrated=True).sample_map(
         f"2024 scenario {name}",
         year=2024,
         seed=seed,
