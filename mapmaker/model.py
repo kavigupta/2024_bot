@@ -148,9 +148,7 @@ class Model:
                 )
             )
             pop_votes.append(
-                get_popular_vote(
-                    self.metadata, dem_margin=predictions, turnout=turnout
-                )
+                get_popular_vote(self.metadata, dem_margin=predictions, turnout=turnout)
             )
         return np.array(county_results), np.array(state_results), np.array(pop_votes)
 
