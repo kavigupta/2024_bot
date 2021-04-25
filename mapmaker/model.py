@@ -161,9 +161,9 @@ class Model:
             predictor = predictor.perturb(
                 2 * prediction_seed, self.alpha, use_trends=True
             )
-            # turnout_predictor = turnout_predictor.perturb(
-            #     2 * prediction_seed + 1, 1 / 3 * self.alpha, use_trends=False
-            # )
+            turnout_predictor = turnout_predictor.perturb(
+                2 * prediction_seed + 1, 1 / 3 * self.alpha, use_trends=False
+            )
         features = self.features.features(year)
         return (
             predictor.predict(features, correct, year=year),
