@@ -3,7 +3,7 @@ import tqdm
 from mapmaker.model import Model
 from mapmaker.generate_image import get_model, get_image
 
-model = get_model(unbias=False)
+model = get_model(calibrated=False)
 model.sample_map(
     "2020 Actual",
     seed=None,

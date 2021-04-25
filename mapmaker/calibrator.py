@@ -11,7 +11,7 @@ def bias(preds):
     return ((ecs * dems).sum(1) > (ecs * gop).sum(1)).mean()
 
 
-def unbias_predictor(model, *, for_year, target_pv_spread_90=17.5e-2):
+def calibrate(model, *, for_year, target_pv_spread_90=17.5e-2):
     low_alpha, high_alpha = 0, 1
     while True:
         mid_alpha = (low_alpha + high_alpha) / 2
@@ -37,7 +37,7 @@ def unbias_predictor(model, *, for_year, target_pv_spread_90=17.5e-2):
     idx = np.argmin(np.abs(biases - 0.5))
     best_bias = bias_values[idx]
     print(
-        f"Computed best bias: {best_bias:.2%}, which gives democrats an EC win {biases[idx]:.0%} of the time"
+        f"Best bias would be: {best_bias:.2%}, which gives democrats an EC win {biases[idx]:.0%} of the time"
     )
-    model = model.with_predictor(model.predictor.with_bias(best_bias))
+    # model = model.with_predictor(model.predictor.with_bias(best_bias))
     return model
