@@ -93,6 +93,7 @@ def all_data(demographic_projection=False):
             "Mormon Per 1000 (2010)",
             "2018 votes",
             "2018 partisanship",
+            "CVAP",
         ]
     ]
 
@@ -156,6 +157,8 @@ def all_data(demographic_projection=False):
     all_data["hispanic_rural"] = (
         all_data["Hispanic %"] ** 2 * all_data["Rural % (2010)"]
     )
+
+    all_data["turnout"] = all_data["total_votes"] / all_data["CVAP"]
 
     def logify(column):
         all_data[column] = np.log(all_data[column]).replace(-np.inf, -1000)
