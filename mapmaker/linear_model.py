@@ -107,7 +107,7 @@ class LinearModel:
         )
 
 
-class Model:
+class LinearMixtureModel:
     def __init__(self, data_by_year, feature_kwargs={}, *, alpha=0.2):
         self.metadata = metadata(data_by_year, train_key=2020)
         self.features = Features.fit(data_by_year, train_key=2020, **feature_kwargs)

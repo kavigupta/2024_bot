@@ -3,7 +3,7 @@ import functools
 import pickle
 
 from .data import data_by_year
-from .model import Model
+from .linear_model import LinearMixtureModel
 from .version import version
 from .calibrator import calibrate
 
@@ -13,8 +13,10 @@ IMAGE_FOLDER = os.path.join(
 
 
 @functools.lru_cache(None)
-def get_model(calibrated=False):
-    model = Model(data_by_year(), feature_kwargs=dict(dimensions=19))
+def get_model(calibrated=False, *, dimensions=19):
+    model = LinearMixtureModel(
+        data_by_year(), feature_kwargs=dict(dimensions=dimensions)
+    )
     if calibrated:
         model = calibrate(model, for_year=2024)
     return model

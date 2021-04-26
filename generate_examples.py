@@ -1,6 +1,5 @@
 import tqdm
 
-from mapmaker.model import Model
 from mapmaker.generate_image import get_model, get_image
 
 model = get_model(calibrated=False)
