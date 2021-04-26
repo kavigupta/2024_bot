@@ -7,9 +7,8 @@ import copy
 
 from sklearn.linear_model import LinearRegression
 
-from .stitch_map import generate_map
-from .aggregation import get_electoral_vote, get_state_results, get_popular_vote
 from .features import Features, metadata
+from .model import Model
 
 
 class TrendModel(ABC):
@@ -107,9 +106,9 @@ class LinearModel:
         )
 
 
-class LinearMixtureModel:
+class LinearMixtureModel(Model):
     def __init__(self, data_by_year, feature_kwargs={}, *, alpha=0.2):
-        self.metadata = metadata(data_by_year, train_key=2020)
+        self._metadata = metadata(data_by_year, train_key=2020)
         self.features = Features.fit(data_by_year, train_key=2020, **feature_kwargs)
         self.predictor = LinearModel.train(
             self.features.features(2020),
@@ -125,6 +124,10 @@ class LinearMixtureModel:
         )
         self.alpha = alpha
 
+    @property
+    def metadata(self):
+        return self._metadata
+
     def with_alpha(self, alpha):
         self = copy.copy(self)
         self.alpha = alpha
@@ -134,23 +137,6 @@ class LinearMixtureModel:
         self = copy.copy(self)
         self.predictor = predictor
         return self
-
-    def family_of_predictions(self, *, year, correct=True, n_seeds=1000):
-        county_results, state_results, pop_votes = [], [], []
-        for seed in range(n_seeds):
-            predictions, turnout = self.fully_random_sample(
-                year=year, correct=correct, prediction_seed=seed
-            )
-            county_results.append(predictions)
-            state_results.append(
-                get_state_results(
-                    self.metadata, dem_margin=predictions, turnout=turnout
-                )
-            )
-            pop_votes.append(
-                get_popular_vote(self.metadata, dem_margin=predictions, turnout=turnout)
-            )
-        return np.array(county_results), np.array(state_results), np.array(pop_votes)
 
     def fully_random_sample(self, *, year, prediction_seed, correct):
         predictor = self.predictor
@@ -166,36 +152,3 @@ class LinearMixtureModel:
         predictions = predictor.predict(features, correct, year=year)
         turnout = turnout_predictor.predict(features, correct, year=year)
         return predictions, turnout
-
-    def win_consistent_with(self, predictions, turnout, seed):
-        if seed is None:
-            return True
-        dem, gop = get_electoral_vote(
-            self.metadata, dem_margin=predictions, turnout=turnout
-        )
-        dem_win = dem > gop  # ties go to gop
-        # even days, democrat. odd days, gop
-        return dem_win == (seed % 2 == 0)
-
-    def sample(self, *, year, seed=None, correct=True):
-        rng = np.random.RandomState(seed)
-        while True:
-            predictions, turnout = self.fully_random_sample(
-                year=year,
-                prediction_seed=rng.randint(2 ** 32) if seed is not None else None,
-                correct=correct,
-            )
-            if self.win_consistent_with(predictions, turnout, seed):
-                break
-        return predictions, turnout
-
-    def sample_map(self, title, path, **kwargs):
-        print(f"Generating {title}")
-        predictions, turnout = self.sample(**kwargs)
-        return generate_map(
-            self.metadata,
-            title,
-            path,
-            dem_margin=predictions,
-            turnout=turnout,
-        )
