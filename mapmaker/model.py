@@ -52,9 +52,16 @@ class Model(ABC):
         dem, gop = get_electoral_vote(
             self.metadata, dem_margin=predictions, turnout=turnout
         )
-        dem_win = dem > gop  # ties go to gop
-        # even days, democrat. odd days, gop
-        return dem_win == (seed % 2 == 0)
+        if seed % 10 == 1:
+            # GOP day but we're going to make this a tie, for extra fun
+            return dem == gop
+        if seed % 2 == 1:
+            # GOP day
+            return dem < gop
+        if seed % 2 == 0:
+            # dem day
+            return dem > gop
+        raise AssertionError("Not reachable")
 
     def sample(self, *, year, seed=None, correct=True):
         rng = np.random.RandomState(seed)
