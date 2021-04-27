@@ -7,7 +7,6 @@ import copy
 
 from sklearn.linear_model import LinearRegression
 
-from .features import Features, metadata
 from .model import Model
 
 
@@ -107,9 +106,8 @@ class LinearModel:
 
 
 class LinearMixtureModel(Model):
-    def __init__(self, data_by_year, feature_kwargs={}, *, alpha=0.2):
-        self._metadata = metadata(data_by_year, train_key=2020)
-        self.features = Features.fit(data_by_year, train_key=2020, **feature_kwargs)
+    def __init__(self, data_by_year, feature_kwargs={}):
+        super().__init__(data_by_year, feature_kwargs)
         self.predictor = LinearModel.train(
             self.features.features(2020),
             self.metadata.biden_2020,
@@ -122,16 +120,6 @@ class LinearMixtureModel(Model):
             self.metadata.CVAP,
             clip_range=(0.2, 0.9),
         )
-        self.alpha = alpha
-
-    @property
-    def metadata(self):
-        return self._metadata
-
-    def with_alpha(self, alpha):
-        self = copy.copy(self)
-        self.alpha = alpha
-        return self
 
     def with_predictor(self, predictor):
         self = copy.copy(self)

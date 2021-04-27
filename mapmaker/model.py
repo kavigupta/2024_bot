@@ -1,20 +1,33 @@
 from abc import ABC, abstractmethod
 
+import copy
+
 import numpy as np
 
 from .aggregation import get_electoral_vote, get_state_results, get_popular_vote
 from .stitch_map import generate_map
 
+from .features import Features, metadata
+
 
 class Model(ABC):
+    def __init__(self, data_by_year, feature_kwargs):
+        self._metadata = metadata(data_by_year, train_key=2020)
+        self.features = Features.fit(data_by_year, train_key=2020, **feature_kwargs)
+        self.alpha = None
+
     @abstractmethod
     def fully_random_sample(self, *, year, prediction_seed, correct):
         pass
 
     @property
-    @abstractmethod
     def metadata(self):
-        pass
+        return self._metadata
+
+    def with_alpha(self, alpha):
+        self = copy.copy(self)
+        self.alpha = alpha
+        return self
 
     def family_of_predictions(self, *, year, correct=True, n_seeds=1000):
         county_results, state_results, pop_votes = [], [], []
