@@ -13,6 +13,7 @@ from .features import Features, metadata
 class Model(ABC):
     def __init__(self, data_by_year, feature_kwargs):
         self._metadata = metadata(data_by_year, train_key=2020)
+        self.data = data_by_year
         self.features = Features.fit(data_by_year, train_key=2020, **feature_kwargs)
         self.alpha = None
 

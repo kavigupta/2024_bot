@@ -3,7 +3,7 @@ import attr
 import numpy as np
 from sklearn.decomposition import PCA
 
-METADATA = {"FIPS", "biden_2020", "total_votes", "state", "CVAP", "turnout"}
+METADATA = {"FIPS", "biden_2020", "dem_margin", "total_votes", "state", "county", "CVAP", "turnout"}
 
 
 @attr.s
