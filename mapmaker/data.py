@@ -53,7 +53,7 @@ def all_data(demographic_projection=False):
         ]
     ]
 
-    relevant_demo_2016 = demo_2016[["gisjoin", "Total Population 2016", "2016_votes"]]
+    relevant_demo_2016 = demo_2016[["gisjoin", "population 2016", "2016_votes"]]
 
     relevant_swing_2016 = swing_2012_2016[
         [
@@ -75,10 +75,10 @@ def all_data(demographic_projection=False):
             "FIPS",
             "gisjoin",
             "state",
-            "Median Age 2018",
+            "median_age",
             "bachelor %",
-            "Median Household Income",
-            "Total Population",
+            "median_income",
+            "population",
             "white %",
             "black %",
             "native %",
@@ -112,9 +112,9 @@ def all_data(demographic_projection=False):
 
     ## PROJECTIONS (2018 --> 2024)
     if demographic_projection:
-        all_data["Total Population"] = (
-            all_data["Total Population"]
-            + (all_data["Total Population"] - all_data["Total Population 2016"]) * 3
+        all_data["population"] = (
+            all_data["population"]
+            + (all_data["population"] - all_data["population 2016"]) * 3
         )
         all_data["white %"] = (
             all_data["white %"] + (all_data["white %"] - all_data["white_2012"])
@@ -135,8 +135,8 @@ def all_data(demographic_projection=False):
         ).clip(
             0, 1
         )
-        all_data["Median Household Income"] = all_data["Median Household Income"] + (
-            all_data["Median Household Income"] - all_data["medianincome_2012"]
+        all_data["median_income"] = all_data["median_income"] + (
+            all_data["median_income"] - all_data["medianincome_2012"]
         )
 
     ## Nonlinearity
@@ -163,9 +163,9 @@ def all_data(demographic_projection=False):
     def logify(column):
         all_data[column] = np.log(all_data[column]).replace(-np.inf, -1000)
 
-    logify("Median Household Income")
-    logify("Total Population")
-    logify("Total Population 2016")
+    logify("median_income")
+    logify("population")
+    logify("population 2016")
     logify("2012votes")
     logify("2016_votes")
     logify("2018 votes")

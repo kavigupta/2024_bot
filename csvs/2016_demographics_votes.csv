@@ -1,4 +1,4 @@
-gisjoin,YEAR,STATE,COUNTY,Total Population 2016,Median Age,white %,black %,Amerindian %,asian %,Pacific %,Other %,Multi %,hispanic %,Asian/Pac/Other/Multi?,Bachelor Above %,Median Household Income,2016_votes,County Power Index 2016
+gisjoin,YEAR,STATE,COUNTY,population 2016,Median Age,white %,black %,Amerindian %,asian %,Pacific %,Other %,Multi %,hispanic %,Asian/Pac/Other/Multi?,Bachelor Above %,median_income,2016_votes,County Power Index 2016
 G0100010,2012-2016,Alabama,Autauga County,55049,37.8,0.75683482,0.183709059,0.004105433,0.008065542,0.000108994,0.002234373,0.019219241,0.025722538,0.029628149,0.245927714,53099,24661,0.01186672
 G0100030,2012-2016,Alabama,Baldwin County,199510,42.3,0.83178788,0.092256027,0.00615508,0.006641271,0,0.001528745,0.017964012,0.043666984,0.026134028,0.29547111,51365,94090,0.04527552
 G0100050,2012-2016,Alabama,Barbour County,26614,38.7,0.458856241,0.478883295,0.001728414,0.004433757,0,0.007439693,0.005560983,0.043097618,0.017434433,0.12867787,33956,10390,0.0049996
