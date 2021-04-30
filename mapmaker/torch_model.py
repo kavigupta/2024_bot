@@ -36,26 +36,35 @@ class DemographicCategoryPredictor(nn.Module):
             torch.bmm(demos, partisanship_heads).squeeze(-1),
         )
 
-    def loss(self, years, features, target_turnouts, target_partisanships):
+    def loss(self, years, features, target_turnouts, target_partisanships, cvaps):
 
         target_turnouts = np.array(target_turnouts)
         target_partisanships = np.array(target_partisanships)
         target_tp = target_turnouts * target_partisanships
-        loss = nn.MSELoss()
+        target_t = torch.tensor(target_turnouts).float()
+        target_tp = torch.tensor(target_tp).float()
+        cvaps = torch.tensor(np.array(cvaps)).float()
         t, tp = self(years, features)
-        return self.gamma * loss(t, torch.tensor(target_turnouts).float()) + loss(
-            tp, torch.tensor(target_tp).float()
-        )
+        loss = (target_t - t) ** 2 * self.gamma + (target_tp - tp) ** 2
+        return (loss * cvaps).sum() / cvaps.sum()
 
     @staticmethod
     def train(
-        years, features, target_turnouts, target_partisanships, iters=1000, lr=1e-2
+        years,
+        features,
+        target_turnouts,
+        target_partisanships,
+        cvaps,
+        iters=1000,
+        lr=1e-2,
+        *,
+        dimensions,
     ):
-        dcm = DemographicCategoryPredictor(20, 15, years)
+        dcm = DemographicCategoryPredictor(dimensions + 1, 15, years)
         opt = torch.optim.Adam(dcm.parameters(), lr=lr)
         for itr in range(iters):
             opt.zero_grad()
-            lv = dcm.loss(years, features, target_turnouts, target_partisanships)
+            lv = dcm.loss(years, features, target_turnouts, target_partisanships, cvaps)
             if (itr + 1) % 100 == 0:
                 print(itr, lv.item())
             lv.backward()
@@ -67,14 +76,19 @@ class DemographicCategoryModel(Model):
     def __init__(self, data_by_year, feature_kwargs={}):
         super().__init__(data_by_year, feature_kwargs)
         train_years = sorted(y for y in data_by_year if y <= 2020)
-        train_years = [2012, 2020]
+        train_years = [2020]
         # print((self.data[y].total_votes.fillna(0) / self.data[y].CVAP).max())
         self.dcm = DemographicCategoryPredictor.train(
             train_years,
             [self.features.features(y) for y in train_years],
-            [self.data[y].total_votes.fillna(0) / self.data[y].CVAP for y in train_years],
+            [
+                self.data[y].total_votes.fillna(0) / self.data[y].CVAP
+                for y in train_years
+            ],
             [self.data[y].dem_margin for y in train_years],
-            iters=2_000
+            [self.data[y].CVAP for y in train_years],
+            iters=2_000,
+            **feature_kwargs,
         )
 
     def fully_random_sample(self, *, year, prediction_seed, correct):

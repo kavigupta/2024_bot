@@ -23,7 +23,9 @@ def counties():
 
 @lru_cache(None)
 def data_for_year(year):
-    data = pd.read_csv(f"{CSVS}/election_demographic_data - {year}.csv", dtype=dict(FIPS=str))
+    data = pd.read_csv(
+        f"{CSVS}/election_demographic_data - {year}.csv", dtype=dict(FIPS=str)
+    )
     data["FIPS"] = data["FIPS"].map(lambda x: x if len(x) == 5 else "0" + x)
     return data[
         [
@@ -32,6 +34,7 @@ def data_for_year(year):
             "county",
             "total_votes",
             "dem_margin",
+            "past_pres_partisanship",
             "CVAP",
             "median_age",
             "bachelor %",
@@ -46,6 +49,8 @@ def data_for_year(year):
             "protestant",
             "catholic",
             "mormon",
+            "total_religious",
+            "black_protestant",
         ]
     ]
 
@@ -58,8 +63,7 @@ def all_data(year, demographic_projection=False):
     ## PROJECTIONS (2018 --> 2024)
     if demographic_projection:
         all_data["CVAP"] = (
-            all_data["CVAP"]
-            + (all_data["CVAP"] - all_data["CVAP 2016"]) * 3
+            all_data["CVAP"] + (all_data["CVAP"] - all_data["CVAP 2016"]) * 3
         )
         all_data["white %"] = (
             all_data["white %"] + (all_data["white %"] - all_data["white_2012"])
@@ -73,13 +77,9 @@ def all_data(year, demographic_projection=False):
         all_data["asian %"] = all_data["asian %"] + (
             all_data["asian %"] - all_data["asian_2012"]
         ).clip(0, 1)
-        all_data["bachelor %"] = all_data[
-            "bachelor %"
-        ] + (
+        all_data["bachelor %"] = all_data["bachelor %"] + (
             all_data["bachelor %"] - all_data["bachelorabove_2012"]
-        ).clip(
-            0, 1
-        )
+        ).clip(0, 1)
         all_data["median_income"] = all_data["median_income"] + (
             all_data["median_income"] - all_data["medianincome_2012"]
         )
@@ -99,9 +99,7 @@ def all_data(year, demographic_projection=False):
     # all_data["turnout_spike"] = np.clip(
     #     all_data["2018 votes"] / all_data["2016_votes"], 0, 3
     # )
-    all_data["hispanic_rural"] = (
-        all_data["hispanic %"] ** 2 * all_data["rural %"]
-    )
+    all_data["hispanic_rural"] = all_data["hispanic %"] ** 2 * all_data["rural %"]
 
     all_data["turnout"] = all_data["total_votes"] / all_data["CVAP"]
 
