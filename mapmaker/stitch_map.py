@@ -214,6 +214,8 @@ def remove_backgrounds(path):
     contents = re.sub(
         r"<rect[^/]*" + re.escape(re.escape(BACKGROUND_RGB)) + "[^/]*/>", "", contents
     )
+    contents = re.sub('<g class="layer land">.*?</g>', "", contents)
+    contents = re.sub('<g class="layer subunits">.*?</g>', "", contents)
     with open(path, "w") as f:
         f.write(contents)
 
