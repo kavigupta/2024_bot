@@ -76,21 +76,21 @@ def all_data(demographic_projection=False):
             "gisjoin",
             "state",
             "Median Age 2018",
-            "% Bachelor Degree or Above",
+            "bachelor %",
             "Median Household Income",
             "Total Population",
-            "White %",
-            "Black %",
-            "Native %",
-            "Asian %",
-            "Hispanic %",
+            "white %",
+            "black %",
+            "native %",
+            "asian %",
+            "hispanic %",
             "Rural % (2010)",
             "Total Adherents (All Types) Per 1000 Population (2010)",
-            "Evangelical Per 1000 (2010)",
+            "evangelical",
             "Black Protestant Per 1000 (2010)",
             "Mainline Protestant Per 1000 (2010)",
-            "Catholic Per 1000 (2010)",
-            "Mormon Per 1000 (2010)",
+            "catholic",
+            "mormon",
             "2018 votes",
             "2018 partisanship",
             "CVAP",
@@ -116,22 +116,22 @@ def all_data(demographic_projection=False):
             all_data["Total Population"]
             + (all_data["Total Population"] - all_data["Total Population 2016"]) * 2.5
         )
-        all_data["White %"] = (
-            all_data["White %"] + (all_data["White %"] - all_data["white_2012"])
+        all_data["white %"] = (
+            all_data["white %"] + (all_data["white %"] - all_data["white_2012"])
         ).clip(0, 1)
-        all_data["Black %"] = all_data["Black %"] + (
-            all_data["Black %"] - all_data["black_2012"]
+        all_data["black %"] = all_data["black %"] + (
+            all_data["black %"] - all_data["black_2012"]
         ).clip(0, 1)
-        all_data["Hispanic %"] = all_data["Hispanic %"] + (
-            all_data["Hispanic %"] - all_data["hispanic_2012"]
+        all_data["hispanic %"] = all_data["hispanic %"] + (
+            all_data["hispanic %"] - all_data["hispanic_2012"]
         ).clip(0, 1)
-        all_data["Asian %"] = all_data["Asian %"] + (
-            all_data["Asian %"] - all_data["asian_2012"]
+        all_data["asian %"] = all_data["asian %"] + (
+            all_data["asian %"] - all_data["asian_2012"]
         ).clip(0, 1)
-        all_data["% Bachelor Degree or Above"] = all_data[
-            "% Bachelor Degree or Above"
+        all_data["bachelor %"] = all_data[
+            "bachelor %"
         ] + (
-            all_data["% Bachelor Degree or Above"] - all_data["bachelorabove_2012"]
+            all_data["bachelor %"] - all_data["bachelorabove_2012"]
         ).clip(
             0, 1
         )
@@ -140,22 +140,22 @@ def all_data(demographic_projection=False):
         )
 
     ## Nonlinearity
-    all_data["county_diversity_black_white"] = all_data["Black %"] * all_data["White %"]
+    all_data["county_diversity_black_white"] = all_data["black %"] * all_data["white %"]
     all_data["county_diversity_hispanic_white"] = (
-        all_data["Hispanic %"] * all_data["White %"]
+        all_data["hispanic %"] * all_data["white %"]
     )
-    all_data["county_diversity_white_homogenity"] = all_data["White %"] ** 2
+    all_data["county_diversity_white_homogenity"] = all_data["white %"] ** 2
     all_data["county_diversity_white_education"] = (
-        all_data["White %"] ** 2 * all_data["% Bachelor Degree or Above"]
+        all_data["white %"] ** 2 * all_data["bachelor %"]
     )
-    all_data["county_diversity_hispanic_homogenity"] = all_data["Hispanic %"] ** 2
-    all_data["county_diversity_native_homogenity"] = all_data["Native %"] ** 2
+    all_data["county_diversity_hispanic_homogenity"] = all_data["hispanic %"] ** 2
+    all_data["county_diversity_native_homogenity"] = all_data["native %"] ** 2
 
     all_data["turnout_spike"] = np.clip(
         all_data["2018 votes"] / all_data["2016_votes"], 0, 3
     )
     all_data["hispanic_rural"] = (
-        all_data["Hispanic %"] ** 2 * all_data["Rural % (2010)"]
+        all_data["hispanic %"] ** 2 * all_data["Rural % (2010)"]
     )
 
     all_data["turnout"] = all_data["total_votes"] / all_data["CVAP"]
