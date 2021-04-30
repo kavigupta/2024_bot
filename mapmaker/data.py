@@ -114,7 +114,7 @@ def all_data(demographic_projection=False):
     if demographic_projection:
         all_data["Total Population"] = (
             all_data["Total Population"]
-            + (all_data["Total Population"] - all_data["Total Population 2016"]) * 2.5
+            + (all_data["Total Population"] - all_data["Total Population 2016"]) * 3
         )
         all_data["White %"] = (
             all_data["White %"] + (all_data["White %"] - all_data["white_2012"])
