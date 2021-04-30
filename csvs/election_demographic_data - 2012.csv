@@ -1,4 +1,4 @@
-FIPS,gisjoin,county,state,past_pres_partisanship,dem_margin,total_votes,CVAP,median_age,bachelor %,median_income,rural %,white %,black %,native %,asian %,hispanic %,evangelical %,protestant,catholic,mormon,total_religious,black_protestant
+FIPS,gisjoin,county,state,past_pres_partisanship,dem_margin,total_votes,CVAP,median_age,bachelor %,median_income,rural %,white %,black %,native %,asian %,hispanic %,evangelical,protestant,catholic,mormon,total_religious,black_protestant
 1001,G0100010,Autauga,Alabama,-0.4784062,-0.4603042,23932,39580,37,0.21707831,53773,0.42,0.79092976,0.17534108,0.00391612,0.00543204,0.01515917,0.50399,0.082859,0.032359,0.015029,0.676879,0.041979
 1003,G0100030,Baldwin,Alabama,-0.5144756,-0.5576883,85338,136945,41.2,0.27741591,50706,0.423,0.8733068,0.08868524,0.00525759,0.00321297,0.01942386,0.318139,0.11014,0.076859,0.00561,0.53174,0.01717
 1005,G0100050,Barbour,Alabama,-0.0145314,0.03145365,11509,20895,38.2,0.14524286,31889,0.678,0.50969131,0.45585068,0.00119646,0.00119646,0.01603254,0.32025,0.077939,0.02094,0.00965,0.54999,0.121209

@@ -60,6 +60,7 @@ class DemographicCategoryPredictor(nn.Module):
         *,
         dimensions,
     ):
+        torch.manual_seed(0)
         dcm = DemographicCategoryPredictor(dimensions + 1, 15, years)
         opt = torch.optim.Adam(dcm.parameters(), lr=lr)
         for itr in range(iters):
@@ -76,8 +77,6 @@ class DemographicCategoryModel(Model):
     def __init__(self, data_by_year, feature_kwargs={}):
         super().__init__(data_by_year, feature_kwargs)
         train_years = sorted(y for y in data_by_year if y <= 2020)
-        train_years = [2020]
-        # print((self.data[y].total_votes.fillna(0) / self.data[y].CVAP).max())
         self.dcm = DemographicCategoryPredictor.train(
             train_years,
             [self.features.features(y) for y in train_years],
@@ -87,7 +86,7 @@ class DemographicCategoryModel(Model):
             ],
             [self.data[y].dem_margin for y in train_years],
             [self.data[y].CVAP for y in train_years],
-            iters=2_000,
+            iters=6_000,
             **feature_kwargs,
         )
 

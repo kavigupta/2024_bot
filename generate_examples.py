@@ -3,12 +3,12 @@ import tqdm
 from mapmaker.generate_image import get_model, get_image
 
 model = get_model(calibrated=False)
-model.sample_map(
-    "2020 Actual",
-    seed=None,
-    path="images/2020_actual.svg",
-    year=2020,
-)
+# model.sample_map(
+#     "2020 Actual",
+#     seed=None,
+#     path="images/2020_actual.svg",
+#     year=2020,
+# )
 model.sample_map(
     "2012 Pred",
     seed=None,
@@ -16,13 +16,13 @@ model.sample_map(
     correct=False,
     year=2012,
 )
-# model.sample_map(
-#     "2016 Pred",
-#     seed=None,
-#     path="images/2016_pred.svg",
-#     correct=False,
-#     year=2016,
-# )
+model.sample_map(
+    "2016 Pred",
+    seed=None,
+    path="images/2016_pred.svg",
+    correct=False,
+    year=2016,
+)
 model.sample_map(
     "2020 Pred",
     seed=None,
