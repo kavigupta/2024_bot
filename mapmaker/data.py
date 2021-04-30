@@ -59,7 +59,7 @@ def all_data(year, demographic_projection=False):
     if demographic_projection:
         all_data["CVAP"] = (
             all_data["CVAP"]
-            + (all_data["CVAP"] - all_data["CVAP 2016"]) * 2.5
+            + (all_data["CVAP"] - all_data["CVAP 2016"]) * 3
         )
         all_data["white %"] = (
             all_data["white %"] + (all_data["white %"] - all_data["white_2012"])
