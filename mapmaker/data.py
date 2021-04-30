@@ -84,7 +84,7 @@ def all_data(demographic_projection=False):
             "native %",
             "asian %",
             "hispanic %",
-            "Rural % (2010)",
+            "rural %",
             "Total Adherents (All Types) Per 1000 Population (2010)",
             "evangelical",
             "Black Protestant Per 1000 (2010)",
@@ -155,7 +155,7 @@ def all_data(demographic_projection=False):
         all_data["2018 votes"] / all_data["2016_votes"], 0, 3
     )
     all_data["hispanic_rural"] = (
-        all_data["hispanic %"] ** 2 * all_data["Rural % (2010)"]
+        all_data["hispanic %"] ** 2 * all_data["rural %"]
     )
 
     all_data["turnout"] = all_data["total_votes"] / all_data["CVAP"]
