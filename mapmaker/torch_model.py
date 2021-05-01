@@ -1,9 +1,12 @@
+import attr
+
 import torch
 import torch.nn as nn
 
 import numpy as np
 
 from .model import Model
+from .trend_model import StableTrendModel
 
 
 class DemographicCategoryPredictor(nn.Module):
@@ -48,6 +51,10 @@ class DemographicCategoryPredictor(nn.Module):
         loss = (target_t - t) ** 2 * self.gamma + (target_tp - tp) ** 2
         return (loss * cvaps).sum() / cvaps.sum()
 
+    def predict(self, year, features):
+        t, tp = self([year], [features])
+        return (tp / t).detach().numpy()[0], t.detach().numpy()[0]
+
     @staticmethod
     def train(
         years,
@@ -73,26 +80,65 @@ class DemographicCategoryPredictor(nn.Module):
         return dcm
 
 
+@attr.s
+class AdjustedDemographicCategoryModel:
+    dcm = attr.ib()
+    residuals = attr.ib()
+    trend_model = attr.ib()
+
+    @staticmethod
+    def train(*, years, features, data, feature_kwargs):
+        turnouts = {y: data[y].total_votes / data[y].CVAP for y in years}
+        dcm = DemographicCategoryPredictor.train(
+            years,
+            [features.features(y) for y in years],
+            [turnouts[y] for y in years],
+            [data[y].dem_margin for y in years],
+            [data[y].CVAP for y in years],
+            iters=6000,
+            **feature_kwargs,
+        )
+        residuals = {}
+        for y in years:
+            p, t = dcm.predict(y, features.features(y))
+            residuals[y] = data[y].dem_margin - p, turnouts[y] - t
+        return AdjustedDemographicCategoryModel(dcm, residuals, StableTrendModel(0))
+
+    def predict(self, *, model_year, year, features, correct):
+        p, t = self.dcm.predict(model_year, features)
+        if correct:
+            pr = self.trend_model(
+                features,
+                self.residuals[model_year][0],
+                year=year,
+                base_year=model_year,
+            )
+            if correct == "just_residuals":
+                p = pr
+            else:
+                p = p + pr
+
+            t = t + self.residuals[model_year][1]
+        return p, t
+
+
 class DemographicCategoryModel(Model):
     def __init__(self, data_by_year, feature_kwargs={}):
         super().__init__(data_by_year, feature_kwargs)
-        train_years = sorted(y for y in data_by_year if y <= 2020)
-        self.dcm = DemographicCategoryPredictor.train(
-            train_years,
-            [self.features.features(y) for y in train_years],
-            [
-                self.data[y].total_votes.fillna(0) / self.data[y].CVAP
-                for y in train_years
-            ],
-            [self.data[y].dem_margin for y in train_years],
-            [self.data[y].CVAP for y in train_years],
-            iters=6_000,
-            **feature_kwargs,
+        self.adcm = AdjustedDemographicCategoryModel.train(
+            years=sorted(y for y in data_by_year if y <= 2020),
+            features=self.features,
+            data=self.data,
+            feature_kwargs=feature_kwargs,
         )
 
     def fully_random_sample(self, *, year, prediction_seed, correct):
         # use the 2020 predictor since that's the best we have
         # TODO ADD THE PERTURBATIONS
         model_year = 2020 if year == 2024 else year
-        t, tp = self.dcm([model_year], [self.features.features(year)])
-        return (tp / t).detach().numpy()[0], t.detach().numpy()[0]
+        return self.adcm.predict(
+            model_year=model_year,
+            year=year,
+            features=self.features.features(year),
+            correct=correct,
+        )

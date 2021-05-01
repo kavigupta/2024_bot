@@ -8,9 +8,10 @@ class TrendModel(ABC):
     def extra_residue(self, features, residuals):
         pass
 
-    def __call__(self, features, residuals, *, year):
-        assert year in {2020, 2024}
-        return residuals + self.extra_residue(features, residuals) * ((year - 2020) / 4)
+    def __call__(self, features, residuals, *, year, base_year=2020):
+        return residuals + self.extra_residue(features, residuals) * (
+            (year - base_year) / 4
+        )
 
 
 @attr.s
