@@ -37,10 +37,6 @@ class Features:
         return self.features_by_key[year]
 
 
-def metadata(data_by_key, train_key):
-    return data_by_key[train_key][sorted(METADATA)]
-
-
 def strip_columns(data):
     features = data.fillna(0).copy()
     features = features[[x for x in features if x not in METADATA]]
