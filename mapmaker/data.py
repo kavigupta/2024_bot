@@ -105,8 +105,12 @@ def all_data(year, demographic_projection=False):
     all_data["turnout"] = all_data["total_votes"] / all_data["CVAP"]
 
     # Poverty Nonlinearities
-    all_data["poverty_black_nonlinearity"] = all_data["black %"] ** 2 * all_data["poverty"]
-    all_data["poverty_white_nonlinearity"] = all_data["white %"] ** 2 * all_data["poverty"]
+    all_data["poverty_black_nonlinearity"] = (
+        all_data["black %"] ** 2 * all_data["poverty"]
+    )
+    all_data["poverty_white_nonlinearity"] = (
+        all_data["white %"] ** 2 * all_data["poverty"]
+    )
 
     def logify(column):
         all_data[column] = np.log(all_data[column]).replace(-np.inf, -1000)

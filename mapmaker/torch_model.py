@@ -5,8 +5,11 @@ import torch.nn as nn
 
 import numpy as np
 
+from permacache import permacache, stable_hash
+
 from .model import Model
 from .trend_model import StableTrendModel
+from .utils import hash_model
 
 
 class DemographicCategoryPredictor(nn.Module):
@@ -69,15 +72,36 @@ class DemographicCategoryPredictor(nn.Module):
     ):
         torch.manual_seed(0)
         dcm = DemographicCategoryPredictor(dimensions + 1, 10, years)
-        opt = torch.optim.Adam(dcm.parameters(), lr=lr)
-        for itr in range(iters):
-            opt.zero_grad()
-            lv = dcm.loss(years, features, target_turnouts, target_partisanships, cvaps)
-            if (itr + 1) % 100 == 0:
-                print(itr, lv.item())
-            lv.backward()
-            opt.step()
+        dcm = train_torch_model(
+            dcm,
+            iters,
+            lr,
+            years,
+            features,
+            target_turnouts,
+            target_partisanships,
+            cvaps,
+        )
         return dcm
+
+
+@permacache(
+    "2024bot/torch_model/train_torch_model",
+    key_function=dict(
+        dcm=hash_model,
+        args=lambda args: [stable_hash(np.array(x)) for x in args],
+    ),
+)
+def train_torch_model(dcm, iters, lr, *args):
+    opt = torch.optim.Adam(dcm.parameters(), lr=lr)
+    for itr in range(iters):
+        opt.zero_grad()
+        lv = dcm.loss(*args)
+        if (itr + 1) % 100 == 0:
+            print(itr, lv.item())
+        lv.backward()
+        opt.step()
+    return dcm
 
 
 @attr.s

@@ -23,7 +23,9 @@ class Features:
     @staticmethod
     def fit(data_by_key, train_key, *, dimensions):
         data_by_key = {k: strip_columns(v) for k, v in data_by_key.items()}
-        featurizer = PCA(dimensions, whiten=True).fit(data_by_key[train_key])
+        featurizer = PCA(
+            dimensions, whiten=True, random_state=np.random.RandomState(0)
+        ).fit(data_by_key[train_key])
         return Features(
             featurizer,
             {k: add_ones(featurizer.transform(v)) for k, v in data_by_key.items()},
