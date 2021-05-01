@@ -68,7 +68,7 @@ class DemographicCategoryPredictor(nn.Module):
         dimensions,
     ):
         torch.manual_seed(0)
-        dcm = DemographicCategoryPredictor(dimensions + 1, 15, years)
+        dcm = DemographicCategoryPredictor(dimensions + 1, 10, years)
         opt = torch.optim.Adam(dcm.parameters(), lr=lr)
         for itr in range(iters):
             opt.zero_grad()
