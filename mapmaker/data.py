@@ -90,6 +90,7 @@ def all_data(year):
         # 2016 CVAP is centered in 2014
         # 2020 CVAP is centered in 2018
         # 2024 CVAP is centered in 2022
+        
         # 2024 = 2020 + (2020 - 2016)
         # 2024 = 2020 + (2020 - 2012) / 2
         all_data["CVAP"] = (
@@ -113,9 +114,6 @@ def all_data(year):
     all_data["county_diversity_hispanic_homogenity"] = all_data["hispanic %"] ** 2
     all_data["county_diversity_native_homogenity"] = all_data["native %"] ** 2
 
-    # all_data["turnout_spike"] = np.clip(
-    #     all_data["2018 votes"] / all_data["2016_votes"], 0, 3
-    # )
     all_data["hispanic_rural"] = all_data["hispanic %"] ** 2 * all_data["rural %"]
 
     all_data["turnout"] = all_data["total_votes"] / all_data["CVAP"]
@@ -137,10 +135,6 @@ def all_data(year):
 
     if year == 2020:
         all_data["biden_2020"] = all_data["dem_margin"]
-    # logify("2012votes")
-    # logify("2016_votes")
-    # logify("2018 votes")
-    # logify("medianincome_2012")
 
     return all_data
 
