@@ -3,6 +3,7 @@ import re
 import tempfile
 
 from PIL import Image, ImageDraw
+import numpy as np
 
 import svgutils.transform as sg
 from cairosvg import svg2png
@@ -23,6 +24,8 @@ from .colors import (
     STATE_GOP,
     STATE_DEM_CLOSE,
     STATE_GOP_CLOSE,
+    COUNTY_MAX_VAL,
+    COUNTY_MIN_VAL,
 )
 from .text import draw_text
 
@@ -33,6 +36,10 @@ BOTTOM_MARGIN = 15
 TEXT_CENTER = 760
 
 FIRST_LINE = 110
+
+LEGEND_STARTY = 170
+LEGEND_STARTX = 40
+LEGEND_SIZE = 10
 
 SCALE = 4
 
@@ -125,7 +132,7 @@ def produce_text(
     draw_text(
         draw,
         10 * scale,
-        [(f"Total Turnout: {total_turnout/1e6:.0f}m", TEXT_COLOR)],
+        [(f"Total Turnout: {total_turnout:.0%}", TEXT_COLOR)],
         TEXT_CENTER * scale,
         y * scale,
         align=("center"),
@@ -152,7 +159,46 @@ def produce_text(
         align=("center"),
     )
 
+    draw_legend(draw, scale)
+
     return im
+
+
+def draw_legend(draw, scale):
+    legend_y = LEGEND_STARTY
+
+    def add_square(color, text):
+        color = color.astype(np.int)
+        nonlocal legend_y
+        draw.rectangle(
+            (
+                LEGEND_STARTX * scale,
+                legend_y * scale,
+                (LEGEND_STARTX + LEGEND_SIZE) * scale,
+                (legend_y + LEGEND_SIZE) * scale,
+            ),
+            (*color, 255),
+        )
+        legend_y += LEGEND_SIZE
+        draw_text(
+            draw,
+            int(LEGEND_SIZE * 0.8) * scale,
+            [(text, "rgb" + str(tuple(color)))],
+            (LEGEND_STARTX - LEGEND_SIZE // 3) * scale,
+            int((legend_y - LEGEND_SIZE * 0.3) * scale),
+            align="right",
+        )
+
+    even = np.ones(3) * 255
+    most_con = np.array([COUNTY_MAX_VAL, 0, 0])
+    most_lib = np.array([0, 0, COUNTY_MAX_VAL])
+    for margin in np.arange(-0.8, 0, 0.2):
+        add_square(
+            most_con * (-margin) + even * (1 - (-margin)), f"R+{-margin * 100:.0f}"
+        )
+    add_square(even, "Even")
+    for margin in np.arange(0.8, 0, -0.2)[::-1]:
+        add_square(most_lib * (margin) + even * (1 - (margin)), f"D+{margin * 100:.0f}")
 
 
 def generate_map(data, title, out_path, *, dem_margin, turnout):
@@ -197,7 +243,8 @@ def generate_map(data, title, out_path, *, dem_margin, turnout):
         pop_vote_margin,
         tipping_point_state,
         tipping_point_margin,
-        total_turnout=number_votes(data, turnout=turnout),
+        total_turnout=number_votes(data, turnout=turnout)
+        / number_votes(data, turnout=1),
     )
     im.save(text_mask)
     with open(text_mask, "rb") as f:
