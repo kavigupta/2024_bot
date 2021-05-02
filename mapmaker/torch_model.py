@@ -13,7 +13,10 @@ from .utils import hash_model
 
 
 class DemographicCategoryPredictor(nn.Module):
-    def __init__(self, f, d, years, gamma=0.5):
+    # to refresh cache, increment this
+    version = 1.1
+
+    def __init__(self, f, d, years, previous_partisanships, gamma=0.5):
         super().__init__()
         self.f = f
         self.d = d
@@ -21,6 +24,8 @@ class DemographicCategoryPredictor(nn.Module):
         self.years = years
         self.min_turn = 0.4
         self.max_turn = 0.75
+        assert set(years) - set(previous_partisanships) == set()
+        self.previous_partisanships = previous_partisanships
         self.latent_demographic_model = nn.Sequential(nn.Linear(f, d), nn.Softmax(-1))
         self.turnout_heads = nn.Parameter(torch.randn(len(years), d, 1))
         self.partisanship_heads = nn.Parameter(torch.randn(len(years), d, 1))
@@ -33,7 +38,9 @@ class DemographicCategoryPredictor(nn.Module):
         turnout_weights=None,
     ):
         turnout, partisanship = (
-            torch.sigmoid(self.turnout_heads + turnout_noise) * (self.max_turn - self.min_turn) + self.min_turn,
+            torch.sigmoid(self.turnout_heads + turnout_noise)
+            * (self.max_turn - self.min_turn)
+            + self.min_turn,
             torch.tanh(self.partisanship_heads + partisanship_noise),
         )
         partisanship = partisanship[idxs]
@@ -51,10 +58,15 @@ class DemographicCategoryPredictor(nn.Module):
         # import IPython; IPython.embed()
         demos = self.latent_demographic_model(features)
         turnout_heads, partisanship_heads = self.get_heads(idxs, **kwargs)
-        return (
+        t, tp = (
             torch.bmm(demos, turnout_heads).squeeze(-1),
             torch.bmm(demos, partisanship_heads).squeeze(-1),
         )
+        previous_partisanship = torch.tensor(
+            [np.array(self.previous_partisanships[y]) for y in years]
+        ).float()
+        tp = tp + previous_partisanship * t
+        return t, tp
 
     def loss(self, years, features, target_turnouts, target_partisanships, cvaps):
 
@@ -76,6 +88,7 @@ class DemographicCategoryPredictor(nn.Module):
     def train(
         years,
         features,
+        previous_partisanships,
         target_turnouts,
         target_partisanships,
         cvaps,
@@ -88,7 +101,7 @@ class DemographicCategoryPredictor(nn.Module):
         if dimensions is None:
             # TODO check
             dimensions = features[0].shape[1] - 1
-        dcm = DemographicCategoryPredictor(dimensions + 1, 10, years)
+        dcm = DemographicCategoryPredictor(dimensions + 1, 10, years, previous_partisanships)
         dcm = train_torch_model(
             dcm,
             iters,
@@ -135,10 +148,11 @@ class AdjustedDemographicCategoryModel:
         turnouts = {y: data[y].total_votes / data[y].CVAP for y in years}
         dcm = DemographicCategoryPredictor.train(
             years,
-            [features.features(y) for y in years],
-            [turnouts[y] for y in years],
-            [data[y].dem_margin for y in years],
-            [data[y].CVAP for y in years],
+            features=[features.features(y) for y in years],
+            previous_partisanships={y : np.array(data[y].past_pres_partisanship) for y in years},
+            target_turnouts=[turnouts[y] for y in years],
+            target_partisanships=[data[y].dem_margin for y in years],
+            cvaps=[data[y].CVAP for y in years],
             iters=6000,
             **feature_kwargs,
         )

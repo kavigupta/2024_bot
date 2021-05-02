@@ -12,6 +12,7 @@ METADATA = {
     "county",
     "CVAP",
     "turnout",
+    "past_pres_partisanship",
 }
 
 
