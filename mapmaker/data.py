@@ -64,13 +64,34 @@ def all_data(year):
         all_data = data_for_year(2020)
         data_2016 = data_for_year(2016)
         data_2012 = data_for_year(2012)
-        all_data["past_pres_partisanship"] = all_data["dem_margin"]
-        all_data["dem_margin"] = 0.
-        keys = ["CVAP", "median_age", "bachelor %", "median_income", "white %", 
-                "black %", "native %", "asian %", "hispanic %", "poverty"]
+        print("2012", data_2012["CVAP"].sum())
+        print("2016", data_2016["CVAP"].sum())
+        print("2020", all_data["CVAP"].sum())
+
+        # correct for PVI
+        all_data["past_pres_partisanship"] = (
+            all_data["dem_margin"] - (4.46 - 2.09) * 1 / 100
+        )
+        all_data["dem_margin"] = 0
+        keys = [
+            "CVAP",
+            "median_age",
+            "bachelor %",
+            "median_income",
+            "white %",
+            "black %",
+            "native %",
+            "asian %",
+            "hispanic %",
+            "poverty",
+        ]
         for key in keys:
-            all_data[key] = all_data[key] + ((all_data[key] - data_2016[key])) 
-            #* 2./3 + ((all_data[key] - data_2012[key])) * 1./3
+            all_data[key] = (
+                all_data[key]
+                + ((all_data[key] - data_2016[key]) * 2) * 2.0 / 3
+                + ((all_data[key] - data_2012[key])) * 1.0 / 3
+            )
+        print("2024", all_data["CVAP"].sum())
 
     ## Nonlinearity
     all_data["county_diversity_black_white"] = all_data["black %"] * all_data["white %"]
@@ -117,10 +138,7 @@ def all_data(year):
 
 
 def data_by_year():
-    return {
-        year: all_data(year)
-        for year in (2012, 2016, 2020, 2024)
-    }
+    return {year: all_data(year) for year in (2012, 2016, 2020, 2024)}
 
 
 def ec():

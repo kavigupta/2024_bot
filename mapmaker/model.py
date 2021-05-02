@@ -20,7 +20,6 @@ class Model(ABC):
     def fully_random_sample(self, *, year, prediction_seed, correct):
         pass
 
-
     def with_alpha(self, alpha):
         self = copy.copy(self)
         self.alpha = alpha
@@ -39,7 +38,9 @@ class Model(ABC):
                 )
             )
             pop_votes.append(
-                get_popular_vote(self.data[year], dem_margin=predictions, turnout=turnout)
+                get_popular_vote(
+                    self.data[year], dem_margin=predictions, turnout=turnout
+                )
             )
         return np.array(county_results), np.array(state_results), np.array(pop_votes)
 

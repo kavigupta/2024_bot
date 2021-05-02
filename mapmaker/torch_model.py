@@ -23,20 +23,36 @@ class DemographicCategoryPredictor(nn.Module):
         self.turnout_heads = nn.Parameter(torch.randn(len(years), d, 1))
         self.partisanship_heads = nn.Parameter(torch.randn(len(years), d, 1))
 
-    def get_heads(self, idxs):
+    def get_heads(
+        self,
+        idxs,
+        partisanship_noise=0,
+        turnout_noise=0,
+        turnout_weights=None,
+    ):
         turnout, partisanship = (
-            torch.sigmoid(self.turnout_heads)[idxs],
-            torch.tanh(self.partisanship_heads)[idxs],
+            torch.sigmoid(self.turnout_heads + turnout_noise),
+            torch.tanh(self.partisanship_heads + partisanship_noise),
         )
+        partisanship = partisanship[idxs]
+        if turnout_weights is not None:
+            assert len(idxs) == 1
+            import IPython
+
+            IPython.embed()
+            turnout = (turnout * turnout_weights[:, None, None]).sum(0)[None]
+        else:
+            turnout = turnout[idxs]
+        print(turnout.shape, partisanship.shape)
         return turnout, turnout * partisanship
 
-    def forward(self, years, features):
+    def forward(self, years, features, **kwargs):
         assert len(features) == len(years)
         idxs = [self.years.index(y) for y in years]
         features = torch.tensor(features).float()
         # import IPython; IPython.embed()
         demos = self.latent_demographic_model(features)
-        turnout_heads, partisanship_heads = self.get_heads(idxs)
+        turnout_heads, partisanship_heads = self.get_heads(idxs, **kwargs)
         return (
             torch.bmm(demos, turnout_heads).squeeze(-1),
             torch.bmm(demos, partisanship_heads).squeeze(-1),
@@ -54,8 +70,8 @@ class DemographicCategoryPredictor(nn.Module):
         loss = (target_t - t) ** 2 * self.gamma + (target_tp - tp) ** 2
         return (loss * cvaps).sum() / cvaps.sum()
 
-    def predict(self, year, features):
-        t, tp = self([year], [features])
+    def predict(self, year, features, **kwargs):
+        t, tp = self([year], [features], **kwargs)
         return (tp / t).detach().numpy()[0], t.detach().numpy()[0]
 
     @staticmethod
@@ -112,6 +128,9 @@ class AdjustedDemographicCategoryModel:
     dcm = attr.ib()
     residuals = attr.ib()
     trend_model = attr.ib()
+    partisanship_noise = attr.ib(default=0)
+    turnout_noise = attr.ib(default=0)
+    turnout_weights = attr.ib(default=None)
 
     @staticmethod
     def train(*, years, features, data, feature_kwargs):
@@ -131,8 +150,37 @@ class AdjustedDemographicCategoryModel:
             residuals[y] = data[y].dem_margin - p, turnouts[y] - t
         return AdjustedDemographicCategoryModel(dcm, residuals, StableTrendModel(0))
 
+    def perturb(self, *, prediction_seed, alpha_partisanship, alpha_turnout):
+        if prediction_seed is None:
+            return self
+        torch.manual_seed(prediction_seed)
+        partisanship_noise = (torch.randn(self.dcm.d) * alpha_partisanship).float()
+        turnout_noise = (torch.randn(self.dcm.d) * alpha_turnout).float()
+        turnout_weights = torch.randn(len(self.dcm.years)).float()
+        turnout_weights /= turnout_weights.sum()
+
+        return AdjustedDemographicCategoryModel(
+            dcm=self.dcm,
+            residuals=self.residuals,
+            trend_model=self.trend_model,
+            partisanship_noise=partisanship_noise,
+            turnout_noise=turnout_noise,
+            turnout_weights=turnout_weights,
+        )
+
     def predict(self, *, model_year, year, features, correct):
-        p, t = self.dcm.predict(model_year, features)
+        turnout_weights = self.turnout_weights
+        # if turnout_weights is None and model_year != year:
+        #     turnout_weights = torch.tensor(
+        #         [1 / len(self.dcm.years)] * len(self.dcm.years)
+        #     )
+        p, t = self.dcm.predict(
+            model_year,
+            features,
+            partisanship_noise=self.partisanship_noise,
+            turnout_noise=self.turnout_noise,
+            turnout_weights=turnout_weights,
+        )
         if correct:
             pr = self.trend_model(
                 features,

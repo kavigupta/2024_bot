@@ -24,7 +24,7 @@ class Features:
     def fit(data_by_key, train_key, *, dimensions):
         data_by_key = {k: strip_columns(v) for k, v in data_by_key.items()}
         if dimensions is None:
-            return Features(None, {k : add_ones(v) for k, v in data_by_key.items()})
+            return Features(None, {k: add_ones(v) for k, v in data_by_key.items()})
         featurizer = PCA(
             dimensions, whiten=True, random_state=np.random.RandomState(0)
         ).fit(data_by_key[train_key])
