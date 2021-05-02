@@ -24,7 +24,7 @@ class DemographicCategoryPredictor(nn.Module):
         self.years = years
         self.min_turn = 0.4
         self.max_turn = 0.75
-        assert set(years) - set(previous_partisanships) == set()
+        assert set(years) == set(previous_partisanships)
         self.previous_partisanships = previous_partisanships
         self.latent_demographic_model = nn.Sequential(nn.Linear(f, d), nn.Softmax(-1))
         self.turnout_heads = nn.Parameter(torch.randn(len(years), d, 1))
@@ -55,7 +55,6 @@ class DemographicCategoryPredictor(nn.Module):
         assert len(features) == len(years)
         idxs = [self.years.index(y) for y in years]
         features = torch.tensor(features).float()
-        # import IPython; IPython.embed()
         demos = self.latent_demographic_model(features)
         turnout_heads, partisanship_heads = self.get_heads(idxs, **kwargs)
         t, tp = (
@@ -69,7 +68,6 @@ class DemographicCategoryPredictor(nn.Module):
         return t, tp
 
     def loss(self, years, features, target_turnouts, target_partisanships, cvaps):
-
         target_turnouts = np.array(target_turnouts)
         target_partisanships = np.array(target_partisanships)
         target_tp = target_turnouts * target_partisanships
@@ -99,7 +97,6 @@ class DemographicCategoryPredictor(nn.Module):
     ):
         torch.manual_seed(0)
         if dimensions is None:
-            # TODO check
             dimensions = features[0].shape[1] - 1
         dcm = DemographicCategoryPredictor(dimensions + 1, 10, years, previous_partisanships)
         dcm = train_torch_model(
@@ -180,9 +177,9 @@ class AdjustedDemographicCategoryModel:
             turnout_weights=turnout_weights,
         )
 
-    def predict(self, *, model_year, year, features, correct):
+    def predict(self, *, model_year, output_year, features, correct):
         turnout_weights = self.turnout_weights
-        if turnout_weights is None and model_year != year:
+        if turnout_weights is None and model_year != output_year:
             turnout_weights = torch.tensor(
                 [1/len(self.dcm.years)] * len(self.dcm.years)
             )
@@ -197,7 +194,7 @@ class AdjustedDemographicCategoryModel:
             pr = self.trend_model(
                 features,
                 self.residuals[model_year][0],
-                year=year,
+                year=output_year,
                 base_year=model_year,
             )
             if correct == "just_residuals":
@@ -226,7 +223,7 @@ class DemographicCategoryModel(Model):
         model_year = 2020 if year == 2024 else year
         return adcm.predict(
             model_year=model_year,
-            year=year,
+            output_year=year,
             features=self.features.features(year),
             correct=correct,
         )
