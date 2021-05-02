@@ -16,9 +16,9 @@ from .colors import (
 from .constants import CLOSE_MARGIN
 
 
-def fit(figure):
+def fit(*figure):
     figure = go.Figure(
-        [figure],
+        figure,
     )
     figure.update_geos(scope="usa")
     figure.update_layout(geo=dict(bgcolor=BACKGROUND, lakecolor=BACKGROUND))
@@ -32,14 +32,24 @@ def county_map(data, *, dem_margin):
         locations=data["FIPS"],
         z=dem_margin,
         zmid=0,
-        zmin=-1,
-        zmax=1,
+        zmin=-0.8,
+        zmax=0.8,
         colorscale=COUNTY_COLORSCALE,
         marker_line_width=0,
         name="margin",
         showscale=False,
     )
-    return fit(figure)
+    states_elements = sorted(set(data["state"]))
+    states = go.Choropleth(
+        locationmode="USA-states",
+        locations=[us.states.lookup(x).abbr for x in states_elements],
+        z=np.zeros(len(states_elements)),
+        colorscale=[(0, "rgba(0, 0, 0, 0)"), (1, "rgba(0, 0, 0, 0)")],
+        marker_line_color=BACKGROUND,
+        marker_line_width=0.5,
+        showscale=False,
+    )
+    return fit(figure, states)
 
 
 def classify(margin):

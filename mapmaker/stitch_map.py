@@ -34,6 +34,8 @@ TEXT_CENTER = 760
 
 FIRST_LINE = 110
 
+SCALE = 4
+
 
 def produce_text(
     title,
@@ -45,7 +47,7 @@ def produce_text(
     tipping_point_state,
     tipping_point_margin,
     total_turnout,
-    scale=5,
+    scale=SCALE,
 ):
     im = Image.new(mode="RGBA", size=(900 * scale, 450 * scale))
     draw = ImageDraw.Draw(im)
@@ -203,7 +205,9 @@ def generate_map(data, title, out_path, *, dem_margin, turnout):
     fig.save(out_path)
     add_background_back(out_path)
     with open(out_path) as f:
-        svg2png(bytestring=f.read(), write_to=out_path.replace(".svg", ".png"), scale=5)
+        svg2png(
+            bytestring=f.read(), write_to=out_path.replace(".svg", ".png"), scale=SCALE
+        )
     return get_state_results(data, dem_margin=dem_margin, turnout=turnout)
 
 
@@ -214,6 +218,8 @@ def remove_backgrounds(path):
     contents = re.sub(
         r"<rect[^/]*" + re.escape(re.escape(BACKGROUND_RGB)) + "[^/]*/>", "", contents
     )
+    contents = re.sub('<g class="layer land">.*?</g>', "", contents)
+    contents = re.sub('<g class="layer subunits">.*?</g>', "", contents)
     with open(path, "w") as f:
         f.write(contents)
 
