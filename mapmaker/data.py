@@ -21,7 +21,6 @@ def counties():
     return c
 
 
-@lru_cache(None)
 def data_for_year(year):
     data = pd.read_csv(
         f"{CSVS}/election_demographic_data - {year}.csv", dtype=dict(FIPS=str)
@@ -57,33 +56,21 @@ def data_for_year(year):
 
 
 @lru_cache(None)
-def all_data(year, demographic_projection=False):
+def all_data(year):
 
-    all_data = data_for_year(year)
-
-    ## PROJECTIONS (2018 --> 2024)
-    if demographic_projection:
-        all_data["CVAP"] = (
-            all_data["CVAP"] + (all_data["CVAP"] - all_data["CVAP 2016"]) * 3
-        )
-        all_data["white %"] = (
-            all_data["white %"] + (all_data["white %"] - all_data["white_2012"])
-        ).clip(0, 1)
-        all_data["black %"] = all_data["black %"] + (
-            all_data["black %"] - all_data["black_2012"]
-        ).clip(0, 1)
-        all_data["hispanic %"] = all_data["hispanic %"] + (
-            all_data["hispanic %"] - all_data["hispanic_2012"]
-        ).clip(0, 1)
-        all_data["asian %"] = all_data["asian %"] + (
-            all_data["asian %"] - all_data["asian_2012"]
-        ).clip(0, 1)
-        all_data["bachelor %"] = all_data["bachelor %"] + (
-            all_data["bachelor %"] - all_data["bachelorabove_2012"]
-        ).clip(0, 1)
-        all_data["median_income"] = all_data["median_income"] + (
-            all_data["median_income"] - all_data["medianincome_2012"]
-        )
+    if year != 2024:
+        all_data = data_for_year(year)
+    else:
+        all_data = data_for_year(2020)
+        data_2016 = data_for_year(2016)
+        data_2012 = data_for_year(2012)
+        all_data["past_pres_partisanship"] = all_data["dem_margin"]
+        all_data["dem_margin"] = 0.
+        keys = ["CVAP", "median_age", "bachelor %", "median_income", "white %", 
+                "black %", "native %", "asian %", "hispanic %", "poverty"]
+        for key in keys:
+            all_data[key] = all_data[key] + ((all_data[key] - data_2016[key])) 
+            #* 2./3 + ((all_data[key] - data_2012[key])) * 1./3
 
     ## Nonlinearity
     all_data["county_diversity_black_white"] = all_data["black %"] * all_data["white %"]
@@ -131,8 +118,8 @@ def all_data(year, demographic_projection=False):
 
 def data_by_year():
     return {
-        year: all_data(year, demographic_projection=False)
-        for year in (2012, 2016, 2020)
+        year: all_data(year)
+        for year in (2012, 2016, 2020, 2024)
     }
 
 
