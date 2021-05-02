@@ -73,7 +73,7 @@ class DemographicCategoryPredictor(nn.Module):
         torch.manual_seed(0)
         if dimensions is None:
             # TODO check
-            dimensions = features.features(2020).shape[1] - 1
+            dimensions = features[0].shape[1] - 1
         dcm = DemographicCategoryPredictor(dimensions + 1, 10, years)
         dcm = train_torch_model(
             dcm,
