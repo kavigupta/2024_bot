@@ -8,7 +8,7 @@ import numpy as np
 from permacache import permacache, stable_hash
 
 from .model import Model
-from .trend_model import StableTrendModel
+from .trend_model import StableTrendModel, NoisedTrendModel
 from .utils import hash_model
 
 
@@ -23,7 +23,7 @@ class DemographicCategoryPredictor(nn.Module):
         self.gamma = gamma
         self.years = years
         self.min_turn = 0.4
-        self.max_turn = 0.75
+        self.max_turn = 0.8
         assert set(years) == set(previous_partisanships)
         self.previous_partisanships = previous_partisanships
         self.latent_demographic_model = nn.Sequential(nn.Linear(f, d), nn.Softmax(-1))
@@ -162,16 +162,18 @@ class AdjustedDemographicCategoryModel:
     def perturb(self, *, prediction_seed, alpha_partisanship, alpha_turnout):
         if prediction_seed is None:
             return self
-        torch.manual_seed(prediction_seed)
+        rng = np.random.RandomState(prediction_seed)
+        torch.manual_seed(rng.randint(2**32))
         partisanship_noise = (torch.randn(self.dcm.d, 1) * alpha_partisanship).float()
         turnout_noise = (torch.randn(self.dcm.d, 1) * alpha_turnout).float()
         turnout_weights = torch.randn(len(self.dcm.years)).float()
         turnout_weights /= turnout_weights.sum()
+        trend_model = NoisedTrendModel.of(rng, self.dcm.f)
 
         return AdjustedDemographicCategoryModel(
             dcm=self.dcm,
             residuals=self.residuals,
-            trend_model=self.trend_model,
+            trend_model=trend_model,
             partisanship_noise=partisanship_noise,
             turnout_noise=turnout_noise,
             turnout_weights=turnout_weights,
@@ -203,7 +205,7 @@ class AdjustedDemographicCategoryModel:
                 p = p + pr
 
             t = t + self.residuals[model_year][1]
-        return p, t
+        return np.clip(p, -0.9, 0.9), np.clip(t, self.dcm.min_turn, self.dcm.max_turn)
 
 
 class DemographicCategoryModel(Model):
