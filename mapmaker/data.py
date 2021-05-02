@@ -90,7 +90,7 @@ def all_data(year):
         # 2016 CVAP is centered in 2014
         # 2020 CVAP is centered in 2018
         # 2024 CVAP is centered in 2022
-        
+
         # 2024 = 2020 + (2020 - 2016)
         # 2024 = 2020 + (2020 - 2012) / 2
         all_data["CVAP"] = (

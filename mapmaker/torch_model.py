@@ -98,7 +98,9 @@ class DemographicCategoryPredictor(nn.Module):
         torch.manual_seed(0)
         if dimensions is None:
             dimensions = features[0].shape[1] - 1
-        dcm = DemographicCategoryPredictor(dimensions + 1, 10, years, previous_partisanships)
+        dcm = DemographicCategoryPredictor(
+            dimensions + 1, 10, years, previous_partisanships
+        )
         dcm = train_torch_model(
             dcm,
             iters,
@@ -146,7 +148,9 @@ class AdjustedDemographicCategoryModel:
         dcm = DemographicCategoryPredictor.train(
             years,
             features=[features.features(y) for y in years],
-            previous_partisanships={y : np.array(data[y].past_pres_partisanship) for y in years},
+            previous_partisanships={
+                y: np.array(data[y].past_pres_partisanship) for y in years
+            },
             target_turnouts=[turnouts[y] for y in years],
             target_partisanships=[data[y].dem_margin for y in years],
             cvaps=[data[y].CVAP for y in years],
@@ -163,7 +167,7 @@ class AdjustedDemographicCategoryModel:
         if prediction_seed is None:
             return self
         rng = np.random.RandomState(prediction_seed)
-        torch.manual_seed(rng.randint(2**32))
+        torch.manual_seed(rng.randint(2 ** 32))
         partisanship_noise = (torch.randn(self.dcm.d, 1) * alpha_partisanship).float()
         turnout_noise = (torch.randn(self.dcm.d, 1) * alpha_turnout).float()
         turnout_weights = torch.randn(len(self.dcm.years)).float()
@@ -183,7 +187,7 @@ class AdjustedDemographicCategoryModel:
         turnout_weights = self.turnout_weights
         if turnout_weights is None and model_year != output_year:
             turnout_weights = torch.tensor(
-                [1/len(self.dcm.years)] * len(self.dcm.years)
+                [1 / len(self.dcm.years)] * len(self.dcm.years)
             )
         p, t = self.dcm.predict(
             model_year,
@@ -221,7 +225,11 @@ class DemographicCategoryModel(Model):
     def fully_random_sample(self, *, year, prediction_seed, correct):
         # use the 2020 predictor since that's the best we have
         # TODO ADD THE PERTURBATIONS
-        adcm = self.adcm.perturb(prediction_seed=prediction_seed, alpha_partisanship=self.alpha, alpha_turnout=self.alpha * 0.5)
+        adcm = self.adcm.perturb(
+            prediction_seed=prediction_seed,
+            alpha_partisanship=self.alpha,
+            alpha_turnout=self.alpha * 0.5,
+        )
         model_year = 2020 if year == 2024 else year
         return adcm.predict(
             model_year=model_year,
