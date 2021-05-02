@@ -166,8 +166,8 @@ class AdjustedDemographicCategoryModel:
         if prediction_seed is None:
             return self
         torch.manual_seed(prediction_seed)
-        partisanship_noise = (torch.randn(self.dcm.d) * alpha_partisanship).float()
-        turnout_noise = (torch.randn(self.dcm.d) * alpha_turnout).float()
+        partisanship_noise = (torch.randn(self.dcm.d, 1) * alpha_partisanship).float()
+        turnout_noise = (torch.randn(self.dcm.d, 1) * alpha_turnout).float()
         turnout_weights = torch.randn(len(self.dcm.years)).float()
         turnout_weights /= turnout_weights.sum()
 
@@ -224,7 +224,7 @@ class DemographicCategoryModel(Model):
         # TODO ADD THE PERTURBATIONS
         adcm = self.adcm.perturb(prediction_seed=prediction_seed, alpha_partisanship=self.alpha, alpha_turnout=self.alpha * 0.5)
         model_year = 2020 if year == 2024 else year
-        return self.adcm.predict(
+        return adcm.predict(
             model_year=model_year,
             year=year,
             features=self.features.features(year),
