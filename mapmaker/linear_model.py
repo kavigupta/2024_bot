@@ -72,14 +72,14 @@ class LinearMixtureModel(Model):
         super().__init__(data_by_year, feature_kwargs)
         self.predictor = LinearModel.train(
             self.features.features(2020),
-            self.metadata.biden_2020,
-            self.metadata.CVAP,
+            self.data[2020].biden_2020,
+            self.data[2020].CVAP,
             clip_range=(-0.9, 0.9),
         )
         self.turnout_predictor = LinearModel.train(
             self.features.features(2020),
-            self.metadata.turnout,
-            self.metadata.CVAP,
+            self.data[2020].turnout,
+            self.data[2020].CVAP,
             clip_range=(0.2, 0.9),
         )
 
