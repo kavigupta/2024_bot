@@ -13,7 +13,7 @@ IMAGE_FOLDER = os.path.join(
 
 
 @functools.lru_cache(None)
-def get_model(calibrated=False, *, dimensions=19):
+def get_model(calibrated=False, *, dimensions=22):
     model = DemographicCategoryModel(
         data_by_year(), feature_kwargs=dict(dimensions=dimensions)
     )

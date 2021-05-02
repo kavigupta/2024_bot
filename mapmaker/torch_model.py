@@ -209,7 +209,7 @@ class AdjustedDemographicCategoryModel:
                 p = p + pr
 
             t = t + self.residuals[model_year][1]
-        return np.clip(p, -0.9, 0.9), np.clip(t, self.dcm.min_turn, self.dcm.max_turn)
+        return np.clip(p, -0.99, 0.99), np.clip(t, 0.01, 0.99)
 
 
 class DemographicCategoryModel(Model):
