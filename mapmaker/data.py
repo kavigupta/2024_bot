@@ -68,10 +68,6 @@ def all_data(year):
         print("2016", data_2016["CVAP"].sum())
         print("2020", all_data["CVAP"].sum())
 
-        # correct for PVI
-        all_data["past_pres_partisanship"] = (
-            all_data["dem_margin"] - (4.46 - 2.09) * 1 / 100
-        )
         all_data["dem_margin"] = 0
         keys = [
             "CVAP",
@@ -91,6 +87,7 @@ def all_data(year):
                 + ((all_data[key] - data_2016[key]) * 2) * 2.0 / 3
                 + ((all_data[key] - data_2012[key])) * 1.0 / 3
             )
+        all_data["CVAP"] = np.clip(all_data["CVAP"], 10, np.inf)
         print("2024", all_data["CVAP"].sum())
 
     ## Nonlinearity

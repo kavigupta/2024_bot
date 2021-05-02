@@ -19,6 +19,8 @@ class DemographicCategoryPredictor(nn.Module):
         self.d = d
         self.gamma = gamma
         self.years = years
+        self.min_turn = 0.4
+        self.max_turn = 0.75
         self.latent_demographic_model = nn.Sequential(nn.Linear(f, d), nn.Softmax(-1))
         self.turnout_heads = nn.Parameter(torch.randn(len(years), d, 1))
         self.partisanship_heads = nn.Parameter(torch.randn(len(years), d, 1))
@@ -31,19 +33,15 @@ class DemographicCategoryPredictor(nn.Module):
         turnout_weights=None,
     ):
         turnout, partisanship = (
-            torch.sigmoid(self.turnout_heads + turnout_noise),
+            torch.sigmoid(self.turnout_heads + turnout_noise) * (self.max_turn - self.min_turn) + self.min_turn,
             torch.tanh(self.partisanship_heads + partisanship_noise),
         )
         partisanship = partisanship[idxs]
         if turnout_weights is not None:
             assert len(idxs) == 1
-            import IPython
-
-            IPython.embed()
             turnout = (turnout * turnout_weights[:, None, None]).sum(0)[None]
         else:
             turnout = turnout[idxs]
-        print(turnout.shape, partisanship.shape)
         return turnout, turnout * partisanship
 
     def forward(self, years, features, **kwargs):
@@ -172,7 +170,7 @@ class AdjustedDemographicCategoryModel:
         turnout_weights = self.turnout_weights
         # if turnout_weights is None and model_year != year:
         #     turnout_weights = torch.tensor(
-        #         [1 / len(self.dcm.years)] * len(self.dcm.years)
+        #         [0, 0.5, 0.5]
         #     )
         p, t = self.dcm.predict(
             model_year,
