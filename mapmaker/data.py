@@ -70,7 +70,6 @@ def all_data(year):
 
         all_data["dem_margin"] = 0
         keys = [
-            "CVAP",
             "median_age",
             "bachelor %",
             "median_income",
@@ -87,6 +86,18 @@ def all_data(year):
                 + ((all_data[key] - data_2016[key]) * 2) * 2.0 / 3
                 + ((all_data[key] - data_2012[key])) * 1.0 / 3
             )
+        # 2012 CVAP is centered in 2010
+        # 2016 CVAP is centered in 2014
+        # 2020 CVAP is centered in 2018
+        # 2024 CVAP is centered in 2022
+        # 2024 = 2020 + (2020 - 2016)
+        # 2024 = 2020 + (2020 - 2012) / 2
+        all_data["CVAP"] = (
+            all_data["CVAP"]
+            + ((all_data["CVAP"] - data_2016["CVAP"])) * 2.0 / 3
+            + ((all_data["CVAP"] - data_2012["CVAP"]) / 2) * 1.0 / 3
+        )
+
         all_data["CVAP"] = np.clip(all_data["CVAP"], 10, np.inf)
         print("2024", all_data["CVAP"].sum())
 

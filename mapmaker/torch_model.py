@@ -182,10 +182,10 @@ class AdjustedDemographicCategoryModel:
 
     def predict(self, *, model_year, year, features, correct):
         turnout_weights = self.turnout_weights
-        # if turnout_weights is None and model_year != year:
-        #     turnout_weights = torch.tensor(
-        #         [0, 0.5, 0.5]
-        #     )
+        if turnout_weights is None and model_year != year:
+            turnout_weights = torch.tensor(
+                [1/len(self.dcm.years)] * len(self.dcm.years)
+            )
         p, t = self.dcm.predict(
             model_year,
             features,
@@ -222,6 +222,7 @@ class DemographicCategoryModel(Model):
     def fully_random_sample(self, *, year, prediction_seed, correct):
         # use the 2020 predictor since that's the best we have
         # TODO ADD THE PERTURBATIONS
+        adcm = self.adcm.perturb(prediction_seed=prediction_seed, alpha_partisanship=self.alpha, alpha_turnout=self.alpha * 0.5)
         model_year = 2020 if year == 2024 else year
         return self.adcm.predict(
             model_year=model_year,

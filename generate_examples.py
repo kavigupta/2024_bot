@@ -3,7 +3,7 @@ import tqdm
 from mapmaker.generate_image import get_model, get_image
 
 model = get_model(calibrated=False)
-for y in 2012, 2016, 2020, 2024,:
+for y in 2024, 2012, 2016, 2020,:
     model.sample_map(
         f"{y} {'Actual' if y <= 2020 else 'Pred Corrected'}",
         seed=None,
