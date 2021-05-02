@@ -44,7 +44,7 @@ class Model(ABC):
             )
         return np.array(county_results), np.array(state_results), np.array(pop_votes)
 
-    def win_consistent_with(self, year, predictions, turnout, seed):
+    def win_consistent_with(self, predictions, turnout, seed, *, year):
         if seed is None:
             return True
         dem, gop = get_electoral_vote(
@@ -62,7 +62,7 @@ class Model(ABC):
                 prediction_seed=rng.randint(2 ** 32) if seed is not None else None,
                 correct=correct,
             )
-            if self.win_consistent_with(year, predictions, turnout, seed):
+            if self.win_consistent_with(predictions, turnout, seed, year=year):
                 break
         return predictions, turnout
 
