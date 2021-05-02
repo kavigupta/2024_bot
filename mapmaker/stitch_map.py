@@ -208,6 +208,7 @@ def generate_map(data, title, out_path, *, dem_margin, turnout):
         svg2png(
             bytestring=f.read(), write_to=out_path.replace(".svg", ".png"), scale=SCALE
         )
+    os.remove(out_path)
     return get_state_results(data, dem_margin=dem_margin, turnout=turnout)
 
 

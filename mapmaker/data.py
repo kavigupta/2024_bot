@@ -21,164 +21,126 @@ def counties():
     return c
 
 
-@lru_cache(None)
-def all_data(demographic_projection=False):
-    swing_2012_2016 = pd.read_csv(f"{CSVS}/2012 to 2016 swing.csv")
-    demo_2012 = pd.read_csv(f"{CSVS}/2012_demographics_votes.csv")
-    demo_2016 = pd.read_csv(f"{CSVS}/2016_demographics_votes.csv")
-    demo_2020 = pd.read_csv(
-        f"{CSVS}/2020_demographics_votes_fips.csv",
-        dtype=dict(FIPS=str),
+def data_for_year(year):
+    data = pd.read_csv(
+        f"{CSVS}/election_demographic_data - {year}.csv", dtype=dict(FIPS=str)
     )
-    demo_2020["FIPS"] = demo_2020["FIPS"].map(lambda x: x if len(x) == 5 else "0" + x)
-    relevant_demo_2012 = demo_2012[
-        [
-            "gisjoin",
-            "swing2008to12",
-            "obamamargin2012",
-            "medianage_2012",
-            "bachelorabove_2012",
-            "medianincome_2012",
-            "white_2012",
-            "black_2012",
-            "native_2012",
-            "asian_2012",
-            "hispanic_2012",
-            "evangelical_2012",
-            "mainlineprotestant_2012",
-            "catholic_2012",
-            "mormon_2012",
-            "other religion",
-            "2012votes",
-        ]
-    ]
-
-    relevant_demo_2016 = demo_2016[["gisjoin", "Total Population 2016", "2016_votes"]]
-
-    relevant_swing_2016 = swing_2012_2016[
-        [
-            "gisjoin",
-            "Obama 2012 %",
-            "Romney 2012 %",
-            "Other 2012 %",
-            "Obama 2-Party Margin",
-            "Clinton 2016 %",
-            "Trump 2016 %",
-            "Other 2016 %",
-            "Clinton 2-Party Margin",
-            "2012 to 2016 2-Party Swing",
-        ]
-    ]
-
-    relevant_demo_2020 = demo_2020[
+    data["FIPS"] = data["FIPS"].map(lambda x: x if len(x) == 5 else "0" + x)
+    return data[
         [
             "FIPS",
-            "gisjoin",
             "state",
-            "Median Age 2018",
-            "% Bachelor Degree or Above",
-            "Median Household Income",
-            "Total Population",
-            "White %",
-            "Black %",
-            "Native %",
-            "Asian %",
-            "Hispanic %",
-            "Rural % (2010)",
-            "Total Adherents (All Types) Per 1000 Population (2010)",
-            "Evangelical Per 1000 (2010)",
-            "Black Protestant Per 1000 (2010)",
-            "Mainline Protestant Per 1000 (2010)",
-            "Catholic Per 1000 (2010)",
-            "Mormon Per 1000 (2010)",
-            "2018 votes",
-            "2018 partisanship",
+            "county",
+            "total_votes",
+            "dem_margin",
+            "past_pres_partisanship",
             "CVAP",
+            "median_age",
+            "bachelor %",
+            "median_income",
+            "rural %",
+            "white %",
+            "black %",
+            "native %",
+            "asian %",
+            "hispanic %",
+            "evangelical",
+            "protestant",
+            "catholic",
+            "mormon",
+            "total_religious",
+            "black_protestant",
+            "poverty",
         ]
     ]
 
-    relevant_demo_2020.insert(
-        1, "total_votes", demo_2020["Total Votes 2020 (AK is Rough Estimate)"]
-    )
 
-    relevant_demo_2020.insert(1, "biden_2020", demo_2020["Biden 2020 Margin"])
-    all_data = (
-        relevant_demo_2020.merge(relevant_demo_2012, how="inner")
-        .merge(relevant_swing_2016, how="inner")
-        .merge(relevant_demo_2016, how="inner")
-    )
+@lru_cache(None)
+def all_data(year):
 
-    del all_data["gisjoin"]
+    if year != 2024:
+        all_data = data_for_year(year)
+    else:
+        all_data = data_for_year(2020)
+        data_2016 = data_for_year(2016)
+        data_2012 = data_for_year(2012)
+        print("2012", data_2012["CVAP"].sum())
+        print("2016", data_2016["CVAP"].sum())
+        print("2020", all_data["CVAP"].sum())
 
-    ## PROJECTIONS (2018 --> 2024)
-    if demographic_projection:
-        all_data["Total Population"] = (
-            all_data["Total Population"]
-            + (all_data["Total Population"] - all_data["Total Population 2016"]) * 3
+        all_data["dem_margin"] = 0
+        keys = [
+            "median_age",
+            "bachelor %",
+            "median_income",
+            "white %",
+            "black %",
+            "native %",
+            "asian %",
+            "hispanic %",
+            "poverty",
+        ]
+        for key in keys:
+            all_data[key] = (
+                all_data[key]
+                + ((all_data[key] - data_2016[key]) * 2) * 2.0 / 3
+                + ((all_data[key] - data_2012[key])) * 1.0 / 3
+            )
+        # 2012 CVAP is centered in 2010
+        # 2016 CVAP is centered in 2014
+        # 2020 CVAP is centered in 2018
+        # 2024 CVAP is centered in 2022
+        
+        # 2024 = 2020 + (2020 - 2016)
+        # 2024 = 2020 + (2020 - 2012) / 2
+        all_data["CVAP"] = (
+            all_data["CVAP"]
+            + ((all_data["CVAP"] - data_2016["CVAP"])) * 2.0 / 3
+            + ((all_data["CVAP"] - data_2012["CVAP"]) / 2) * 1.0 / 3
         )
-        all_data["White %"] = (
-            all_data["White %"] + (all_data["White %"] - all_data["white_2012"])
-        ).clip(0, 1)
-        all_data["Black %"] = all_data["Black %"] + (
-            all_data["Black %"] - all_data["black_2012"]
-        ).clip(0, 1)
-        all_data["Hispanic %"] = all_data["Hispanic %"] + (
-            all_data["Hispanic %"] - all_data["hispanic_2012"]
-        ).clip(0, 1)
-        all_data["Asian %"] = all_data["Asian %"] + (
-            all_data["Asian %"] - all_data["asian_2012"]
-        ).clip(0, 1)
-        all_data["% Bachelor Degree or Above"] = all_data[
-            "% Bachelor Degree or Above"
-        ] + (
-            all_data["% Bachelor Degree or Above"] - all_data["bachelorabove_2012"]
-        ).clip(
-            0, 1
-        )
-        all_data["Median Household Income"] = all_data["Median Household Income"] + (
-            all_data["Median Household Income"] - all_data["medianincome_2012"]
-        )
+
+        all_data["CVAP"] = np.clip(all_data["CVAP"], 10, np.inf)
+        print("2024", all_data["CVAP"].sum())
 
     ## Nonlinearity
-    all_data["county_diversity_black_white"] = all_data["Black %"] * all_data["White %"]
+    all_data["county_diversity_black_white"] = all_data["black %"] * all_data["white %"]
     all_data["county_diversity_hispanic_white"] = (
-        all_data["Hispanic %"] * all_data["White %"]
+        all_data["hispanic %"] * all_data["white %"]
     )
-    all_data["county_diversity_white_homogenity"] = all_data["White %"] ** 2
+    all_data["county_diversity_white_homogenity"] = all_data["white %"] ** 2
     all_data["county_diversity_white_education"] = (
-        all_data["White %"] ** 2 * all_data["% Bachelor Degree or Above"]
+        all_data["white %"] ** 2 * all_data["bachelor %"]
     )
-    all_data["county_diversity_hispanic_homogenity"] = all_data["Hispanic %"] ** 2
-    all_data["county_diversity_native_homogenity"] = all_data["Native %"] ** 2
+    all_data["county_diversity_hispanic_homogenity"] = all_data["hispanic %"] ** 2
+    all_data["county_diversity_native_homogenity"] = all_data["native %"] ** 2
 
-    all_data["turnout_spike"] = np.clip(
-        all_data["2018 votes"] / all_data["2016_votes"], 0, 3
-    )
-    all_data["hispanic_rural"] = (
-        all_data["Hispanic %"] ** 2 * all_data["Rural % (2010)"]
-    )
+    all_data["hispanic_rural"] = all_data["hispanic %"] ** 2 * all_data["rural %"]
 
     all_data["turnout"] = all_data["total_votes"] / all_data["CVAP"]
+
+    # Poverty Nonlinearities
+    all_data["poverty_black_nonlinearity"] = (
+        all_data["black %"] ** 2 * all_data["poverty"]
+    )
+    all_data["poverty_white_nonlinearity"] = (
+        all_data["white %"] ** 2 * all_data["poverty"]
+    )
 
     def logify(column):
         all_data[column] = np.log(all_data[column]).replace(-np.inf, -1000)
 
-    logify("Median Household Income")
-    logify("Total Population")
-    logify("Total Population 2016")
-    logify("2012votes")
-    logify("2016_votes")
-    logify("2018 votes")
-    logify("medianincome_2012")
+    logify("median_income")
+    all_data["population"] = all_data["CVAP"]
+    logify("population")
+
+    if year == 2020:
+        all_data["biden_2020"] = all_data["dem_margin"]
 
     return all_data
 
 
 def data_by_year():
-    return {
-        2020: all_data(demographic_projection=False),
-        2024: all_data(demographic_projection=True),
-    }
+    return {year: all_data(year) for year in (2012, 2016, 2020, 2024)}
 
 
 def ec():

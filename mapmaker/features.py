@@ -3,7 +3,17 @@ import attr
 import numpy as np
 from sklearn.decomposition import PCA
 
-METADATA = {"FIPS", "biden_2020", "total_votes", "state", "CVAP", "turnout"}
+METADATA = {
+    "FIPS",
+    "biden_2020",
+    "dem_margin",
+    "total_votes",
+    "state",
+    "county",
+    "CVAP",
+    "turnout",
+    "past_pres_partisanship",
+}
 
 
 @attr.s
@@ -14,7 +24,11 @@ class Features:
     @staticmethod
     def fit(data_by_key, train_key, *, dimensions):
         data_by_key = {k: strip_columns(v) for k, v in data_by_key.items()}
-        featurizer = PCA(dimensions, whiten=True).fit(data_by_key[train_key])
+        if dimensions is None:
+            return Features(None, {k: add_ones(v) for k, v in data_by_key.items()})
+        featurizer = PCA(
+            dimensions, whiten=True, random_state=np.random.RandomState(0)
+        ).fit(data_by_key[train_key])
         return Features(
             featurizer,
             {k: add_ones(featurizer.transform(v)) for k, v in data_by_key.items()},
