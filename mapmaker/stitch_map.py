@@ -20,10 +20,12 @@ from .version import version
 from .colors import (
     BACKGROUND_RGB,
     TEXT_COLOR,
-    STATE_DEM,
     STATE_GOP,
-    STATE_DEM_CLOSE,
+    STATE_DEM,
+    STATE_GOP_BATTLEGROUND,
+    STATE_DEM_BATTLEGROUND,
     STATE_GOP_CLOSE,
+    STATE_DEM_CLOSE,
     COUNTY_MAX_VAL,
     COUNTY_MIN_VAL,
 )
