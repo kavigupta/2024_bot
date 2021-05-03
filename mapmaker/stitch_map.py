@@ -39,8 +39,10 @@ TEXT_CENTER = 760
 
 FIRST_LINE = 110
 
-LEGEND_STARTY = 170
-LEGEND_STARTX = 40
+LEGEND_STARTY_COUNTY = 170
+LEGEND_STARTX_COUNTY = 40
+LEGEND_STARTY_STATE = 350
+LEGEND_STARTX_STATE = 870
 LEGEND_SIZE = 10
 
 SCALE = 4
@@ -58,7 +60,7 @@ def produce_text(
     total_turnout,
     scale=SCALE,
 ):
-    im = Image.new(mode="RGBA", size=(900 * scale, 450 * scale))
+    im = Image.new(mode="RGBA", size=(950 * scale, 450 * scale))
     draw = ImageDraw.Draw(im)
     draw.rectangle((0, 0, *im.size), (0, 0, 0, 0))
 
@@ -69,7 +71,7 @@ def produce_text(
         draw,
         15 * scale,
         [("@bot_2024", TEXT_COLOR)],
-        (900 - RIGHT_MARGIN) * scale,
+        (950 - RIGHT_MARGIN) * scale,
         TOP_MARGIN * scale,
         align="right",
     )
@@ -82,7 +84,7 @@ def produce_text(
                 TEXT_COLOR,
             )
         ],
-        (900 - RIGHT_MARGIN) * scale,
+        (950 - RIGHT_MARGIN) * scale,
         (450 - BOTTOM_MARGIN) * scale,
         align="right",
     )
@@ -161,16 +163,28 @@ def produce_text(
         align=("center"),
     )
 
-    draw_legend(draw, scale)
+    draw_legend(draw, scale, "county")
+    draw_legend(draw, scale, "state")
 
     return im
 
 
-def draw_legend(draw, scale):
-    legend_y = LEGEND_STARTY
+def draw_legend(draw, scale, mode):
+    if mode == "state":
+        legend_y = LEGEND_STARTY_STATE
+        LEGEND_STARTY = LEGEND_STARTY_STATE
+        LEGEND_STARTX = LEGEND_STARTX_STATE
+    else:
+        legend_y = LEGEND_STARTY_COUNTY
+        LEGEND_STARTY = LEGEND_STARTY_COUNTY
+        LEGEND_STARTX = LEGEND_STARTX_COUNTY
 
     def add_square(color, text):
-        color = color.astype(np.int)
+        if mode == "state":
+            color = color.lstrip('#')
+            color = tuple(int(color[i:i+2], 16) for i in (0, 2, 4))
+        else:
+            color = color.astype(np.int)
         nonlocal legend_y
         draw.rectangle(
             (
@@ -182,25 +196,42 @@ def draw_legend(draw, scale):
             (*color, 255),
         )
         legend_y += LEGEND_SIZE
-        draw_text(
-            draw,
-            int(LEGEND_SIZE * 0.8) * scale,
-            [(text, "rgb" + str(tuple(color)))],
-            (LEGEND_STARTX - LEGEND_SIZE // 3) * scale,
-            int((legend_y - LEGEND_SIZE * 0.3) * scale),
-            align="right",
-        )
-
-    even = np.ones(3) * 255
-    most_con = np.array([COUNTY_MAX_VAL, 0, 0])
-    most_lib = np.array([0, 0, COUNTY_MAX_VAL])
-    for margin in np.arange(-0.8, 0, 0.2):
-        add_square(
-            most_con * (-margin) + even * (1 - (-margin)), f"R+{-margin * 100:.0f}"
-        )
-    add_square(even, "Even")
-    for margin in np.arange(0.8, 0, -0.2)[::-1]:
-        add_square(most_lib * (margin) + even * (1 - (margin)), f"D+{margin * 100:.0f}")
+        if mode == "state":
+            draw_text(
+                draw,
+                int(LEGEND_SIZE * 0.8) * scale,
+                [(text, "rgb" + str(tuple(color)))],
+                (LEGEND_STARTX + LEGEND_SIZE * 1.25) * scale,
+                int((legend_y - LEGEND_SIZE * 0.3) * scale),
+                align="left",
+            )
+        else:
+            draw_text(
+                draw,
+                int(LEGEND_SIZE * 0.8) * scale,
+                [(text, "rgb" + str(tuple(color)))],
+                (LEGEND_STARTX - LEGEND_SIZE // 3) * scale,
+                int((legend_y - LEGEND_SIZE * 0.3) * scale),
+                align="right",
+            )
+    if mode == "county":
+        even = np.ones(3) * 255
+        most_con = np.array([COUNTY_MAX_VAL, 0, 0])
+        most_lib = np.array([0, 0, COUNTY_MAX_VAL])
+        for margin in np.arange(-0.8, 0, 0.2):
+            add_square(
+                most_con * (-margin) + even * (1 - (-margin)), f"R+{-margin * 100:.0f}"
+            )
+        add_square(even, "Even")
+        for margin in np.arange(0.8, 0, -0.2)[::-1]:
+            add_square(most_lib * (margin) + even * (1 - (margin)), f"D+{margin * 100:.0f}")
+    else:
+        state_buckets = ["> R+5", "R+1 - R+5", "< R+1", "< D+1", "D+1 - D+5", "> D+5"]
+        state_colors = [STATE_GOP, STATE_GOP_BATTLEGROUND, STATE_GOP_CLOSE, STATE_DEM_CLOSE, STATE_DEM_BATTLEGROUND, STATE_DEM]
+        for margin_text, color in zip(state_buckets, state_colors):
+            add_square(
+                color, margin_text
+            )
 
 
 def generate_map(data, title, out_path, *, dem_margin, turnout):
@@ -250,7 +281,7 @@ def generate_map(data, title, out_path, *, dem_margin, turnout):
     )
     im.save(text_mask)
     with open(text_mask, "rb") as f:
-        fig.append(sg.ImageElement(f, 900, 450))
+        fig.append(sg.ImageElement(f, 950, 450))
     fig.save(out_path)
     add_background_back(out_path)
     with open(out_path) as f:
@@ -278,10 +309,10 @@ def add_background_back(path):
     with open(path) as f:
         contents = f.read()
     start_content = contents.index("<g>")
-    insert_rect = f'<rect x="0" y="0" width="900" height="450" style="fill: {BACKGROUND_RGB}; fill-opacity: 1"/>'
+    insert_rect = f'<rect x="0" y="0" width="950" height="450" style="fill: {BACKGROUND_RGB}; fill-opacity: 1"/>'
     contents = contents[:start_content] + insert_rect + contents[start_content:]
     contents = contents.replace(
-        'version="1.1"', 'version="1.1" width="900" height="450"'
+        'version="1.1"', 'version="1.1" width="950" height="450"'
     )
     with open(path, "w") as f:
         f.write(contents)
