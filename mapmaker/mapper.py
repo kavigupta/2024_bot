@@ -8,12 +8,14 @@ from .aggregation import get_state_results
 from .colors import (
     BACKGROUND,
     COUNTY_COLORSCALE,
-    STATE_DEM,
     STATE_GOP,
-    STATE_DEM_CLOSE,
+    STATE_DEM,
+    STATE_GOP_BATTLEGROUND,
+    STATE_DEM_BATTLEGROUND,
     STATE_GOP_CLOSE,
+    STATE_DEM_CLOSE
 )
-from .constants import CLOSE_MARGIN
+from .constants import CLOSE_MARGIN, BATTLEGROUND_MARGIN, BLOWOUT_MARGIN
 
 
 def fit(*figure):
@@ -53,14 +55,18 @@ def county_map(data, *, dem_margin):
 
 
 def classify(margin):
-    if margin < -CLOSE_MARGIN:
+    if margin < -BATTLEGROUND_MARGIN:
         return 0
-    if margin > CLOSE_MARGIN:
-        return 1
-    if margin < 0:
-        return 0.25
+    if margin < -CLOSE_MARGIN:
+        return 0.20
+    elif margin < 0:
+        return 0.40
+    if margin < CLOSE_MARGIN:
+        return 0.60
+    elif margin < BATTLEGROUND_MARGIN:
+        return 0.80
     else:
-        return 0.75
+        return 1
 
 
 def state_map(data, *, dem_margin, turnout):
@@ -73,8 +79,10 @@ def state_map(data, *, dem_margin, turnout):
         locations=[us.states.lookup(x).abbr for x in state_margins.index],
         colorscale=[
             [0, STATE_GOP],
-            [0.25, STATE_GOP_CLOSE],
-            [0.75, STATE_DEM_CLOSE],
+            [0.20, STATE_GOP_BATTLEGROUND],
+            [0.40, STATE_GOP_CLOSE],
+            [0.60, STATE_DEM_CLOSE],
+            [0.80, STATE_DEM_BATTLEGROUND],
             [1, STATE_DEM],
         ],
         zmin=0,
