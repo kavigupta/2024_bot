@@ -181,8 +181,8 @@ def draw_legend(draw, scale, mode):
 
     def add_square(color, text):
         if mode == "state":
-            color = color.lstrip('#')
-            color = tuple(int(color[i:i+2], 16) for i in (0, 2, 4))
+            color = color.lstrip("#")
+            color = tuple(int(color[i : i + 2], 16) for i in (0, 2, 4))
         else:
             color = color.astype(np.int)
         nonlocal legend_y
@@ -214,6 +214,7 @@ def draw_legend(draw, scale, mode):
                 int((legend_y - LEGEND_SIZE * 0.3) * scale),
                 align="right",
             )
+
     if mode == "county":
         even = np.ones(3) * 255
         most_con = np.array([COUNTY_MAX_VAL, 0, 0])
@@ -224,14 +225,21 @@ def draw_legend(draw, scale, mode):
             )
         add_square(even, "Even")
         for margin in np.arange(0.8, 0, -0.2)[::-1]:
-            add_square(most_lib * (margin) + even * (1 - (margin)), f"D+{margin * 100:.0f}")
+            add_square(
+                most_lib * (margin) + even * (1 - (margin)), f"D+{margin * 100:.0f}"
+            )
     else:
         state_buckets = ["> R+5", "R+1 - R+5", "< R+1", "< D+1", "D+1 - D+5", "> D+5"]
-        state_colors = [STATE_GOP, STATE_GOP_BATTLEGROUND, STATE_GOP_CLOSE, STATE_DEM_CLOSE, STATE_DEM_BATTLEGROUND, STATE_DEM]
+        state_colors = [
+            STATE_GOP,
+            STATE_GOP_BATTLEGROUND,
+            STATE_GOP_CLOSE,
+            STATE_DEM_CLOSE,
+            STATE_DEM_BATTLEGROUND,
+            STATE_DEM,
+        ]
         for margin_text, color in zip(state_buckets, state_colors):
-            add_square(
-                color, margin_text
-            )
+            add_square(color, margin_text)
 
 
 def generate_map(data, title, out_path, *, dem_margin, turnout):
