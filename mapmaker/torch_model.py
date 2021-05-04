@@ -168,9 +168,9 @@ class AdjustedDemographicCategoryModel:
             return self
         rng = np.random.RandomState(prediction_seed)
         torch.manual_seed(rng.randint(2 ** 32))
-        partisanship_noise = (torch.randn(self.dcm.d, 1) * alpha_partisanship).float()
-        turnout_noise = (torch.randn(self.dcm.d, 1) * alpha_turnout).float()
-        turnout_weights = torch.randn(len(self.dcm.years)).float()
+        partisanship_noise = (self.sample_perturbations() * alpha_partisanship).float()
+        turnout_noise = (self.sample_perturbations() * alpha_turnout).float()
+        turnout_weights = torch.rand(len(self.dcm.years)).float()
         turnout_weights /= turnout_weights.sum()
         trend_model = NoisedTrendModel.of(rng, self.dcm.f)
 
@@ -182,6 +182,10 @@ class AdjustedDemographicCategoryModel:
             turnout_noise=turnout_noise,
             turnout_weights=turnout_weights,
         )
+
+    def sample_perturbations(self):
+        deltas = torch.rand(self.dcm.d, 1) - 0.5
+        return deltas
 
     def predict(self, *, model_year, output_year, features, correct):
         turnout_weights = self.turnout_weights
