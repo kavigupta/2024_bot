@@ -1,35 +1,13 @@
 import os
-import re
 import tempfile
 
-from PIL import Image, ImageDraw
-import numpy as np
+import tqdm
 
 import svgutils.transform as sg
 from cairosvg import svg2png
 
-from .aggregation import (
-    get_electoral_vote,
-    get_popular_vote,
-    get_state_results,
-    calculate_tipping_point,
-    number_votes,
-)
 from .mapper import map_county_demographics
-from .version import version
-from .colors import (
-    BACKGROUND_RGB,
-    TEXT_COLOR,
-    STATE_GOP,
-    STATE_DEM,
-    STATE_GOP_BATTLEGROUND,
-    STATE_DEM_BATTLEGROUND,
-    STATE_GOP_CLOSE,
-    STATE_DEM_CLOSE,
-    COUNTY_MAX_VAL,
-    COUNTY_MIN_VAL,
-)
-from .text import draw_text
+from .stitch_map import remove_backgrounds, add_background_back
 
 LEFT_MARGIN = 50
 RIGHT_MARGIN = 25
@@ -47,20 +25,32 @@ LEGEND_SIZE = 10
 
 SCALE = 4
 
+
 def generate_demographic_map(data, demographic_values, title, out_path):
-    cm = map_county_demographics(data, demographic_values=demographic_values)
+    print("generating", title)
+    num_demos = demographic_values.shape[1]
+    # import IPython; IPython.embed()
+    cms = [
+        map_county_demographics(data, demographic_values=demographic_values[:, i])
+        for i in tqdm.trange(num_demos)
+    ]
 
     fig = sg.SVGFigure("160cm", "65cm")
 
-    counties_svg, states_svg = [tempfile.mktemp(suffix=".svg") for _ in range(2)]
-    text_mask = tempfile.mktemp(suffix=".png")
+    counties_svgs = [tempfile.mktemp(suffix=".svg") for _ in range(num_demos)]
+    # text_mask = tempfile.mktemp(suffix=".png")
 
-    cm.write_image(counties_svg)
+    for cm, counties_svg in zip(cms, counties_svgs):
+        cm.write_image(counties_svg)
+        remove_backgrounds(counties_svg)
 
-    # load matpotlib-generated figures
-    remove_backgrounds(counties_svg)
+    cms = [sg.fromfile(counties_svg).getroot() for counties_svg in tqdm.tqdm(counties_svgs)]
 
-    fig.append([sg.fromfile(counties_svg).getroot()])
+    for i, cm in list(enumerate(cms)):
+        row, column = i // 3, i % 3
+        cm.moveto(column * 200 + 100, row * 100 + 100, scale_x=0.25, scale_y=0.25)
+
+    fig.append(cms)
 
     # im = produce_text(
     #     title,

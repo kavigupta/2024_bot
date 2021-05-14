@@ -13,12 +13,14 @@ from .utils import hash_model
 
 NUM_DEMOGRAPHICS = 10
 
+
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
-    version = 1.1
+    version = 1.2
 
     def __init__(self, f, d, years, previous_partisanships, gamma=0.5):
         super().__init__()
+        self.version = DemographicCategoryPredictor.version
         self.f = f
         self.d = d
         self.gamma = gamma
@@ -85,8 +87,7 @@ class DemographicCategoryPredictor(nn.Module):
 
     def get_demographics_by_county(self, features):
         features = torch.tensor(features).float()
-        return self.latent_demographic_model(features)
-
+        return self.latent_demographic_model(features).detach().numpy()
 
     @staticmethod
     def train(
@@ -249,5 +250,4 @@ class DemographicCategoryModel(Model):
         )
 
     def get_demographics_by_county(self, *, year):
-        # lakshya you fucking idiot fix this
-        return self.adcm.get_demographics_by_county(self.features)
+        return self.adcm.dcm.get_demographics_by_county(self.features.features(year))

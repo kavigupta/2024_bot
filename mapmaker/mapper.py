@@ -52,11 +52,27 @@ def county_map(data, *, variable_to_plot, zmid, zmin, zmax, colorscale):
     )
     return fit(figure, states)
 
+
 def map_county_margins(data, *, dem_margin):
-    return county_map(data, *, variable_to_plot=dem_margin, zmid=0, zmin=-0.8, zmax=0.8, colorscale=COUNTY_COLORSCALE):
+    return county_map(
+        data,
+        variable_to_plot=dem_margin,
+        zmid=0,
+        zmin=-0.8,
+        zmax=0.8,
+        colorscale=COUNTY_COLORSCALE,
+    )
+
 
 def map_county_demographics(data, *, demographic_values):
-    return county_map(data, *, variable_to_plot=demographic_values, zmid=0.45, zmin=0, zmax=0.9, colorscale='purples'):
+    return county_map(
+        data,
+        variable_to_plot=demographic_values,
+        zmid=0.45,
+        zmin=0,
+        zmax=0.9,
+        colorscale="jet",
+    )
 
 
 def classify(margin):

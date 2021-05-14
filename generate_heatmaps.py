@@ -9,7 +9,7 @@ for y in (
     2016,
     2020,
 ):
-    get_demographics_image(y, 'demographic_'+ str(y) + '.svg')
+    get_demographics_image(y, "demographic_" + str(y) + ".svg")
 #     model.sample_map(
 #         f"{y} {'Actual' if y <= 2020 else 'Pred Corrected'}",
 #         seed=None,

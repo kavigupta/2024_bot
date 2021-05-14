@@ -47,7 +47,11 @@ def get_image(seed, name):
         pickle.dump(stateres, f)
     return False, png_path, pkl_path
 
+
 def get_demographics_image(year, filepath):
-    county_demographic_data = get_model(calibrated=False).get_demographics_by_county(year=year)
-    generate_demographic_map(data_by_year()[year], county_demographic_data, title, out_path)
-    return False, filepath
+    county_demographic_data = get_model(calibrated=False).get_demographics_by_county(
+        year=year
+    )
+    generate_demographic_map(
+        data_by_year()[year], county_demographic_data, "sateohusaoteh", filepath
+    )
