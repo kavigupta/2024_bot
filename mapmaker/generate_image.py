@@ -6,6 +6,7 @@ from .data import data_by_year
 from .torch_model import DemographicCategoryModel
 from .version import version
 from .calibrator import calibrate
+from .stitch_demographic_map import generate_demographic_map
 
 IMAGE_FOLDER = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "images", version
@@ -45,3 +46,8 @@ def get_image(seed, name):
     with open(pkl_path, "wb") as f:
         pickle.dump(stateres, f)
     return False, png_path, pkl_path
+
+def get_demographics_image(year, filepath):
+    county_demographic_data = get_model(calibrated=False).get_demographics_by_county(year=year)
+    generate_demographic_map(data_by_year()[year], county_demographic_data, title, out_path)
+    return False, filepath

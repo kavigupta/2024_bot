@@ -11,6 +11,7 @@ from .model import Model
 from .trend_model import StableTrendModel, NoisedTrendModel
 from .utils import hash_model
 
+NUM_DEMOGRAPHICS = 10
 
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
@@ -82,6 +83,11 @@ class DemographicCategoryPredictor(nn.Module):
         t, tp = self([year], [features], **kwargs)
         return (tp / t).detach().numpy()[0], t.detach().numpy()[0]
 
+    def get_demographics_by_county(self, features):
+        features = torch.tensor(features).float()
+        return self.latent_demographic_model(features)
+
+
     @staticmethod
     def train(
         years,
@@ -99,7 +105,7 @@ class DemographicCategoryPredictor(nn.Module):
         if dimensions is None:
             dimensions = features[0].shape[1] - 1
         dcm = DemographicCategoryPredictor(
-            dimensions + 1, 10, years, previous_partisanships
+            dimensions + 1, NUM_DEMOGRAPHICS, years, previous_partisanships
         )
         dcm = train_torch_model(
             dcm,
@@ -241,3 +247,7 @@ class DemographicCategoryModel(Model):
             features=self.features.features(year),
             correct=correct,
         )
+
+    def get_demographics_by_county(self, *, year):
+        # lakshya you fucking idiot fix this
+        return self.adcm.get_demographics_by_county(self.features)
