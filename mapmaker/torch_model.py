@@ -19,7 +19,7 @@ YEAR_RESIDUAL_CORRECTIONS = {2022: -3e-2}
 
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
-    version = 1.5
+    version = 2.0
 
     def __init__(self, f, d, years, previous_partisanships, gamma=0.5):
         super().__init__()
@@ -189,15 +189,17 @@ class AdjustedDemographicCategoryModel:
             residuals[y] = data[y].dem_margin - p, turnouts[y] - t
         return AdjustedDemographicCategoryModel(dcm, residuals, StableTrendModel(0))
 
-    def perturb(self, *, prediction_seed, alpha_partisanship, alpha_turnout):
+    def perturb(self, *, for_year, prediction_seed, alpha_partisanship, alpha_turnout):
         if prediction_seed is None:
             return self
         rng = np.random.RandomState(prediction_seed)
         torch.manual_seed(rng.randint(2 ** 32))
         partisanship_noise = (self.sample_perturbations() * alpha_partisanship).float()
         turnout_noise = (self.sample_perturbations() * alpha_turnout).float()
-        turnout_weights = torch.rand(len(self.dcm.years)).float()
+        same_cycle_years = [y for y in self.dcm.years if y % 4 == for_year % 4]
+        turnout_weights = torch.rand(len(same_cycle_years)).float()
         turnout_weights /= turnout_weights.sum()
+        turnout_weights = {y: w for y, w in zip(same_cycle_years, turnout_weights)}
         trend_model = NoisedTrendModel.of(rng, self.dcm.f)
 
         return AdjustedDemographicCategoryModel(
@@ -257,6 +259,7 @@ class DemographicCategoryModel(Model):
         # use the 2020 predictor since that's the best we have
         # TODO ADD THE PERTURBATIONS
         adcm = self.adcm.perturb(
+            for_year=year,
             prediction_seed=prediction_seed,
             alpha_partisanship=self.alpha,
             alpha_turnout=self.alpha * 0.5,
