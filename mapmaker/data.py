@@ -71,14 +71,8 @@ def data_for_year(year):
     data["FIPS"] = data["FIPS"].map(
         lambda x: x if len(x) == 5 or x.startswith("02") else "0" + x
     )
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-=======
->>>>>>> 39bfd745ad8386eccc3e32193af2b8b80801d4c3
     data = data[data.dem_margin == data.dem_margin]
     data["FIPS"] = data["FIPS"].map(lambda x: x if len(x) == 5 else "0" + x)
->>>>>>> 39bfd745ad8386eccc3e32193af2b8b80801d4c3
     return data[
         [
             "FIPS",
