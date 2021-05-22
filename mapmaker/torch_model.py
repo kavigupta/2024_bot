@@ -14,9 +14,12 @@ from .trend_model import StableTrendModel, NoisedTrendModel
 from .utils import hash_model
 
 
+YEAR_RESIDUAL_CORRECTIONS = {2022: -3e-2}
+
+
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
-    version = 1.4
+    version = 1.5
 
     def __init__(self, f, d, years, previous_partisanships, gamma=0.5):
         super().__init__()
@@ -212,9 +215,9 @@ class AdjustedDemographicCategoryModel:
 
     def predict(self, *, model_year, output_year, features, correct):
         turnout_weights = self.turnout_weights
-        # if turnout_weights is None and model_year != output_year:
-        #     same_cycle_years = [y for y in self.dcm.years if y % 4 == output_year % 4]
-        #     turnout_weights = {y: 1 / len(same_cycle_years) for y in same_cycle_years}
+        if turnout_weights is None and model_year != output_year:
+            same_cycle_years = [y for y in self.dcm.years if y % 4 == output_year % 4]
+            turnout_weights = {y: 1 / len(same_cycle_years) for y in same_cycle_years}
         p, t = self.dcm.predict(
             model_year,
             features,
@@ -233,6 +236,8 @@ class AdjustedDemographicCategoryModel:
                 p = pr
             else:
                 p = p + pr
+
+            p = p + YEAR_RESIDUAL_CORRECTIONS.get(output_year, 0)
 
             t = t + self.residuals[model_year][1]
         return np.clip(p, -0.99, 0.99), np.clip(t, 0.01, 0.99)
@@ -256,7 +261,7 @@ class DemographicCategoryModel(Model):
             alpha_partisanship=self.alpha,
             alpha_turnout=self.alpha * 0.5,
         )
-        model_year = 2020 if year == 2024 else year
+        model_year = 2020 if year > 2020 else year
         return adcm.predict(
             model_year=model_year,
             output_year=year,
