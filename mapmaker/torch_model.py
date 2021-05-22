@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import attr
 
 import torch
@@ -14,7 +16,7 @@ from .utils import hash_model
 
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
-    version = 1.1
+    version = 1.4
 
     def __init__(self, f, d, years, previous_partisanships, gamma=0.5):
         super().__init__()
@@ -24,67 +26,88 @@ class DemographicCategoryPredictor(nn.Module):
         self.years = years
         self.min_turn = 0.4
         self.max_turn = 0.8
+        self.version = self.version
         assert set(years) == set(previous_partisanships)
         self.previous_partisanships = previous_partisanships
         self.latent_demographic_model = nn.Sequential(nn.Linear(f, d), nn.Softmax(-1))
-        self.turnout_heads = nn.Parameter(torch.randn(len(years), d, 1))
-        self.partisanship_heads = nn.Parameter(torch.randn(len(years), d, 1))
+        self.turnout_heads = nn.ParameterDict(
+            {str(y): nn.Parameter(torch.randn(d, 1)) for y in years}
+        )
+        self.partisanship_heads = nn.ParameterDict(
+            {str(y): nn.Parameter(torch.randn(d, 1)) for y in years}
+        )
 
     def get_heads(
         self,
-        idxs,
+        y,
+        *,
         partisanship_noise=0,
         turnout_noise=0,
         turnout_weights=None,
     ):
-        turnout, partisanship = (
-            torch.sigmoid(self.turnout_heads + turnout_noise)
+
+        turnout = {
+            year: torch.sigmoid(self.turnout_heads[str(year)] + turnout_noise)
             * (self.max_turn - self.min_turn)
-            + self.min_turn,
-            torch.tanh(self.partisanship_heads + partisanship_noise),
-        )
-        partisanship = partisanship[idxs]
+            + self.min_turn
+            for year in self.years
+        }
+        partisanship = torch.tanh(self.partisanship_heads[str(y)] + partisanship_noise)
+
         if turnout_weights is not None:
-            assert len(idxs) == 1
-            turnout = (turnout * turnout_weights[:, None, None]).sum(0)[None]
+            turnout = sum(
+                [turnout[year] * turnout_weights[year] for year in turnout_weights]
+            )
         else:
-            turnout = turnout[idxs]
+            turnout = turnout[y]
+
         return turnout, turnout * partisanship
 
-    def forward(self, years, features, **kwargs):
-        assert len(features) == len(years)
-        idxs = [self.years.index(y) for y in years]
-        features = torch.tensor(features).float()
-        demos = self.latent_demographic_model(features)
-        turnout_heads, partisanship_heads = self.get_heads(idxs, **kwargs)
-        t, tp = (
-            torch.bmm(demos, turnout_heads).squeeze(-1),
-            torch.bmm(demos, partisanship_heads).squeeze(-1),
-        )
-        previous_partisanship = torch.tensor(
-            [np.array(self.previous_partisanships[y]) for y in years]
-        ).float()
-        tp = tp + previous_partisanship * t
+    def forward(self, features, **kwargs):
+        years = list(features)
+        features = {y: torch.tensor(features[y]).float() for y in features}
+        demos = {y: self.latent_demographic_model(features[y]) for y in features}
+        heads = {y: self.get_heads(y, **kwargs) for y in years}
+        t, tp = {}, {}
+        for y in years:
+            turnout_heads, partisanship_heads = heads[y]
+            t[y] = (demos[y] @ turnout_heads).squeeze(-1)
+            tp[y] = (demos[y] @ partisanship_heads).squeeze(-1)
+            previous_partisanship = torch.tensor(
+                np.array(self.previous_partisanships[y])
+            ).float()
+            tp[y] = tp[y] + previous_partisanship * t[y]
         return t, tp
 
-    def loss(self, years, features, target_turnouts, target_partisanships, cvaps):
-        target_turnouts = np.array(target_turnouts)
-        target_partisanships = np.array(target_partisanships)
-        target_tp = target_turnouts * target_partisanships
-        target_t = torch.tensor(target_turnouts).float()
-        target_tp = torch.tensor(target_tp).float()
-        cvaps = torch.tensor(np.array(cvaps)).float()
-        t, tp = self(years, features)
-        loss = (target_t - t) ** 2 * self.gamma + (target_tp - tp) ** 2
-        return (loss * cvaps).sum() / cvaps.sum()
+    def loss(self, features, target_turnouts, target_partisanships, cvaps):
+        assert (
+            target_turnouts.keys()
+            == target_partisanships.keys()
+            == features.keys()
+            == cvaps.keys()
+        )
+
+        years = sorted(features.keys())
+        target_turnouts = {y: np.array(target_turnouts[y]) for y in years}
+        target_partisanships = {y: np.array(target_partisanships[y]) for y in years}
+        target_tp = {y: target_turnouts[y] * target_partisanships[y] for y in years}
+        target_t = {y: torch.tensor(target_turnouts[y]).float() for y in years}
+        target_tp = {y: torch.tensor(target_tp[y]).float() for y in years}
+        cvaps = {y: torch.tensor(np.array(cvaps[y])).float() for y in years}
+        t, tp = self(features)
+        losses = []
+        for y in years:
+            loss = (target_t[y] - t[y]) ** 2 * self.gamma + (target_tp[y] - tp[y]) ** 2
+            losses.append((loss * cvaps[y]).sum() / cvaps[y].sum())
+        return sum(losses) / len(losses)
 
     def predict(self, year, features, **kwargs):
-        t, tp = self([year], [features], **kwargs)
-        return (tp / t).detach().numpy()[0], t.detach().numpy()[0]
+        t, tp = self({year: features}, **kwargs)
+        t, tp = t[year], tp[year]
+        return (tp / t).detach().numpy(), t.detach().numpy()
 
     @staticmethod
     def train(
-        years,
         features,
         previous_partisanships,
         target_turnouts,
@@ -99,13 +122,12 @@ class DemographicCategoryPredictor(nn.Module):
         if dimensions is None:
             dimensions = features[0].shape[1] - 1
         dcm = DemographicCategoryPredictor(
-            dimensions + 1, 10, years, previous_partisanships
+            dimensions + 1, 10, list(target_turnouts), previous_partisanships
         )
         dcm = train_torch_model(
             dcm,
             iters,
             lr,
-            years,
             features,
             target_turnouts,
             target_partisanships,
@@ -118,7 +140,9 @@ class DemographicCategoryPredictor(nn.Module):
     "2024bot/torch_model/train_torch_model",
     key_function=dict(
         dcm=hash_model,
-        args=lambda args: [stable_hash(np.array(x)) for x in args],
+        args=lambda args: [
+            {y: stable_hash(np.array(x)) for y, x in xs.items()} for xs in args
+        ],
     ),
 )
 def train_torch_model(dcm, iters, lr, *args):
@@ -146,14 +170,13 @@ class AdjustedDemographicCategoryModel:
     def train(*, years, features, data, feature_kwargs):
         turnouts = {y: data[y].total_votes / data[y].CVAP for y in years}
         dcm = DemographicCategoryPredictor.train(
-            years,
-            features=[features.features(y) for y in years],
+            features={y: features.features(y) for y in years},
             previous_partisanships={
                 y: np.array(data[y].past_pres_partisanship) for y in years
             },
-            target_turnouts=[turnouts[y] for y in years],
-            target_partisanships=[data[y].dem_margin for y in years],
-            cvaps=[data[y].CVAP for y in years],
+            target_turnouts={y: turnouts[y] for y in years},
+            target_partisanships={y: data[y].dem_margin for y in years},
+            cvaps={y: data[y].CVAP for y in years},
             iters=6000,
             **feature_kwargs,
         )
@@ -189,10 +212,9 @@ class AdjustedDemographicCategoryModel:
 
     def predict(self, *, model_year, output_year, features, correct):
         turnout_weights = self.turnout_weights
-        if turnout_weights is None and model_year != output_year:
-            turnout_weights = torch.tensor(
-                [1 / len(self.dcm.years)] * len(self.dcm.years)
-            )
+        # if turnout_weights is None and model_year != output_year:
+        #     same_cycle_years = [y for y in self.dcm.years if y % 4 == output_year % 4]
+        #     turnout_weights = {y: 1 / len(same_cycle_years) for y in same_cycle_years}
         p, t = self.dcm.predict(
             model_year,
             features,

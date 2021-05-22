@@ -1,8 +1,7 @@
 import os
 from functools import lru_cache
 
-from urllib.request import urlopen
-import json
+from electiondata.examples.plotly_geojson import PlotlyGeoJSON
 
 import numpy as np
 import pandas as pd
@@ -12,19 +11,14 @@ CSVS = os.path.join(os.path.dirname(__file__), "../csvs")
 
 @lru_cache(None)
 def counties():
-    with urlopen(
-        "https://raw.githubusercontent.com/plotly/datasets/master/geojson-counties-fips.json"
-    ) as response:
-        c = json.load(response)
-    [lakota] = [x for x in c["features"] if x["id"] == "46113"]
-    lakota["id"] = "46102"
-    return c
+    return PlotlyGeoJSON().get()
 
 
 def data_for_year(year):
     data = pd.read_csv(
         f"{CSVS}/election_demographic_data - {year}.csv", dtype=dict(FIPS=str)
     )
+    data = data[data.dem_margin == data.dem_margin]
     data["FIPS"] = data["FIPS"].map(lambda x: x if len(x) == 5 else "0" + x)
     return data[
         [
