@@ -14,6 +14,9 @@ from .trend_model import StableTrendModel, NoisedTrendModel
 from .utils import hash_model
 
 
+YEAR_RESIDUAL_CORRECTIONS = {2022: -5.6e-2}
+
+
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
     version = 1.4
@@ -63,7 +66,7 @@ class DemographicCategoryPredictor(nn.Module):
 
         return turnout, turnout * partisanship
 
-    def forward(self, features, **kwargs):
+    def forward(self, features, partisanship_year=None, **kwargs):
         years = list(features)
         features = {y: torch.tensor(features[y]).float() for y in features}
         demos = {y: self.latent_demographic_model(features[y]) for y in features}
@@ -74,7 +77,11 @@ class DemographicCategoryPredictor(nn.Module):
             t[y] = (demos[y] @ turnout_heads).squeeze(-1)
             tp[y] = (demos[y] @ partisanship_heads).squeeze(-1)
             previous_partisanship = torch.tensor(
-                np.array(self.previous_partisanships[y])
+                np.array(
+                    self.previous_partisanships[
+                        y if partisanship_year is None else partisanship_year
+                    ]
+                )
             ).float()
             tp[y] = tp[y] + previous_partisanship * t[y]
         return t, tp
@@ -162,6 +169,7 @@ class AdjustedDemographicCategoryModel:
     dcm = attr.ib()
     residuals = attr.ib()
     trend_model = attr.ib()
+    fips = attr.ib()
     partisanship_noise = attr.ib(default=0)
     turnout_noise = attr.ib(default=0)
     turnout_weights = attr.ib(default=None)
@@ -184,7 +192,9 @@ class AdjustedDemographicCategoryModel:
         for y in years:
             p, t = dcm.predict(y, features.features(y))
             residuals[y] = data[y].dem_margin - p, turnouts[y] - t
-        return AdjustedDemographicCategoryModel(dcm, residuals, StableTrendModel(0))
+        return AdjustedDemographicCategoryModel(
+            dcm, residuals, StableTrendModel(0), {y: data[y].FIPS for y in years}
+        )
 
     def perturb(self, *, prediction_seed, alpha_partisanship, alpha_turnout):
         if prediction_seed is None:
@@ -201,6 +211,7 @@ class AdjustedDemographicCategoryModel:
             dcm=self.dcm,
             residuals=self.residuals,
             trend_model=trend_model,
+            fips=self.fips,
             partisanship_noise=partisanship_noise,
             turnout_noise=turnout_noise,
             turnout_weights=turnout_weights,
@@ -215,12 +226,14 @@ class AdjustedDemographicCategoryModel:
         # if turnout_weights is None and model_year != output_year:
         #     same_cycle_years = [y for y in self.dcm.years if y % 4 == output_year % 4]
         #     turnout_weights = {y: 1 / len(same_cycle_years) for y in same_cycle_years}
+        partisanship_year = min(output_year, 2020)
         p, t = self.dcm.predict(
             model_year,
             features,
             partisanship_noise=self.partisanship_noise,
             turnout_noise=self.turnout_noise,
             turnout_weights=turnout_weights,
+            partisanship_year=partisanship_year,
         )
         if correct:
             pr = self.trend_model(
@@ -229,12 +242,22 @@ class AdjustedDemographicCategoryModel:
                 year=output_year,
                 base_year=model_year,
             )
+            tr = self.residuals[model_year][1]
+            real_fips = self.fips[partisanship_year]
+            prev_fips = self.fips[model_year]
+
+            pr_map = dict(zip(prev_fips, pr))
+            tr_map = dict(zip(prev_fips, tr))
+            pr = np.array([pr_map.get(x, 0) for x in real_fips])
+            tr = np.array([tr_map.get(x, 0) for x in real_fips])
             if correct == "just_residuals":
                 p = pr
             else:
                 p = p + pr
 
-            t = t + self.residuals[model_year][1]
+            p = p + YEAR_RESIDUAL_CORRECTIONS.get(output_year, 0)
+
+            t = t + tr
         return np.clip(p, -0.99, 0.99), np.clip(t, 0.01, 0.99)
 
 
@@ -256,7 +279,7 @@ class DemographicCategoryModel(Model):
             alpha_partisanship=self.alpha,
             alpha_turnout=self.alpha * 0.5,
         )
-        model_year = 2020 if year == 2024 else year
+        model_year = year - 4 if year > 2020 else year
         return adcm.predict(
             model_year=model_year,
             output_year=year,

@@ -19,7 +19,7 @@ def counties():
 def data_2018():
     data1 = Canonical2018General(
         alaska_handler=e.alaska.AT_LARGE,
-        uncontested_replacements=["us state governor", "us senate"],
+        uncontested_replacements=["us state governor"],
         uncontested_replacement_mode="interpolate",
     ).get()
     data1 = e.Aggregator(
@@ -82,49 +82,12 @@ def data_for_year(year):
 @lru_cache(None)
 def all_data(year):
 
-    if year != 2024:
+    if year == 2022:
+        all_data = data_2024().copy()
+    elif year != 2024:
         all_data = data_for_year(year)
     else:
-        all_data = data_for_year(2020)
-        data_2016 = data_for_year(2016)
-        data_2012 = data_for_year(2012)
-        print("2012", data_2012["CVAP"].sum())
-        print("2016", data_2016["CVAP"].sum())
-        print("2020", all_data["CVAP"].sum())
-
-        all_data["dem_margin"] = 0
-        keys = [
-            "median_age",
-            "bachelor %",
-            "median_income",
-            "white %",
-            "black %",
-            "native %",
-            "asian %",
-            "hispanic %",
-            "poverty",
-        ]
-        for key in keys:
-            all_data[key] = (
-                all_data[key]
-                + ((all_data[key] - data_2016[key]) * 2) * 2.0 / 3
-                + ((all_data[key] - data_2012[key])) * 1.0 / 3
-            )
-        # 2012 CVAP is centered in 2010
-        # 2016 CVAP is centered in 2014
-        # 2020 CVAP is centered in 2018
-        # 2024 CVAP is centered in 2022
-
-        # 2024 = 2020 + (2020 - 2016)
-        # 2024 = 2020 + (2020 - 2012) / 2
-        all_data["CVAP"] = (
-            all_data["CVAP"]
-            + ((all_data["CVAP"] - data_2016["CVAP"])) * 2.0 / 3
-            + ((all_data["CVAP"] - data_2012["CVAP"]) / 2) * 1.0 / 3
-        )
-
-        all_data["CVAP"] = np.clip(all_data["CVAP"], 10, np.inf)
-        print("2024", all_data["CVAP"].sum())
+        all_data = data_2024().copy()
 
     ## Nonlinearity
     all_data["county_diversity_black_white"] = all_data["black %"] * all_data["white %"]
@@ -163,8 +126,52 @@ def all_data(year):
     return all_data
 
 
+def data_2024():
+    all_data = data_for_year(2020)
+    data_2016 = data_for_year(2016)
+    data_2012 = data_for_year(2012)
+    print("2012", data_2012["CVAP"].sum())
+    print("2016", data_2016["CVAP"].sum())
+    print("2020", all_data["CVAP"].sum())
+    all_data["dem_margin"] = 0
+    keys = [
+        "median_age",
+        "bachelor %",
+        "median_income",
+        "white %",
+        "black %",
+        "native %",
+        "asian %",
+        "hispanic %",
+        "poverty",
+    ]
+    for key in keys:
+        all_data[key] = (
+            all_data[key]
+            + ((all_data[key] - data_2016[key]) * 2) * 2.0 / 3
+            + ((all_data[key] - data_2012[key])) * 1.0 / 3
+        )
+    # 2012 CVAP is centered in 2010
+    # 2016 CVAP is centered in 2014
+    # 2020 CVAP is centered in 2018
+    # 2024 CVAP is centered in 2022
+    # 2024 = 2020 + (2020 - 2016)
+    # 2024 = 2020 + (2020 - 2012) / 2
+    all_data["CVAP"] = (
+        all_data["CVAP"]
+        + ((all_data["CVAP"] - data_2016["CVAP"])) * 2.0 / 3
+        + ((all_data["CVAP"] - data_2012["CVAP"]) / 2) * 1.0 / 3
+    )
+    all_data["CVAP"] = np.clip(all_data["CVAP"], 10, np.inf)
+    print("2024", all_data["CVAP"].sum())
+    return all_data
+
+
 def data_by_year():
-    return {year: all_data(year) for year in (2010, 2012, 2014, 2016, 2018, 2020, 2024)}
+    return {
+        year: all_data(year)
+        for year in (2010, 2012, 2014, 2016, 2018, 2020, 2022, 2024)
+    }
 
 
 def ec():
