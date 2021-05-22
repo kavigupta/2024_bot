@@ -5,7 +5,6 @@ from mapmaker.generate_image import get_model, get_image
 model = get_model(calibrated=False)
 for y in (
     2024,
-    2022,
     2010,
     2012,
     2014,
