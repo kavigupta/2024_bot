@@ -68,11 +68,10 @@ def read_csv(path):
 def data_for_year(year):
     data = read_csv(f"{CSVS}/election_demographic_data - {year}.csv")
 
+    data = data[data.dem_margin == data.dem_margin]
     data["FIPS"] = data["FIPS"].map(
         lambda x: x if len(x) == 5 or x.startswith("02") else "0" + x
     )
-    data = data[data.dem_margin == data.dem_margin]
-    data["FIPS"] = data["FIPS"].map(lambda x: x if len(x) == 5 else "0" + x)
     return data[
         [
             "FIPS",
