@@ -1,6 +1,8 @@
 import os
 from functools import lru_cache
 
+import electiondata as e
+from electiondata.examples.canonical_2018_general import Canonical2018General
 from electiondata.examples.plotly_geojson import PlotlyGeoJSON
 
 import numpy as np
@@ -14,11 +16,39 @@ def counties():
     return PlotlyGeoJSON().get()
 
 
-def data_for_year(year):
-    data = pd.read_csv(
-        f"{CSVS}/election_demographic_data - {year}.csv", dtype=dict(FIPS=str)
+def data_2018():
+    data1 = Canonical2018General(
+        alaska_handler=e.alaska.AT_LARGE,
+        uncontested_replacements=["us state governor", "us senate"],
+        uncontested_replacement_mode="interpolate",
+    ).get()
+    data1 = e.Aggregator(
+        grouped_columns=["county_fips"],
+        aggregation_functions={"votes_other": sum, "votes_DEM": sum, "votes_GOP": sum},
+        removed_columns=["district"],
+    )(data1[(data1.office == "us house") & (~data1.special)])
+    data1 = data1.rename(columns={"county_fips": "FIPS"})
+    data1["total_votes"] = data1.votes_other + data1.votes_DEM + data1.votes_GOP
+    data1["dem_margin"] = (data1.votes_DEM - data1.votes_GOP) / data1.total_votes
+    data1 = data1[["FIPS", "total_votes", "dem_margin"]]
+    data = data_for_year(2020)
+    return data1.merge(
+        data[[x for x in data if x not in {"total_votes", "dem_margin"}]], how="inner"
     )
+
+
+def data_for_year(year):
+    if year == 2018:
+        data = data_2018()
+    else:
+        data = pd.read_csv(
+            f"{CSVS}/election_demographic_data - {year}.csv", dtype=dict(FIPS=str)
+        )
+    # delete nans
     data = data[data.dem_margin == data.dem_margin]
+    if year % 4 == 2:
+        # exclude uncontested races
+        data = data[data.dem_margin.abs() < 0.95]
     data["FIPS"] = data["FIPS"].map(lambda x: x if len(x) == 5 else "0" + x)
     return data[
         [
@@ -134,7 +164,7 @@ def all_data(year):
 
 
 def data_by_year():
-    return {year: all_data(year) for year in (2012, 2016, 2020, 2024)}
+    return {year: all_data(year) for year in (2010, 2012, 2014, 2016, 2018, 2020, 2024)}
 
 
 def ec():
