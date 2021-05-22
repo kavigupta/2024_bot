@@ -24,6 +24,7 @@ class DemographicCategoryPredictor(nn.Module):
         self.years = years
         self.min_turn = 0.4
         self.max_turn = 0.8
+        self.version = self.version
         assert set(years) == set(previous_partisanships)
         self.previous_partisanships = previous_partisanships
         self.latent_demographic_model = nn.Sequential(nn.Linear(f, d), nn.Softmax(-1))
