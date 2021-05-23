@@ -28,17 +28,16 @@ def fit(*figure):
     return figure
 
 
-def county_map(data, *, dem_margin):
+def county_map(data, *, variable_to_plot, zmid, zmin, zmax, colorscale):
     figure = go.Choropleth(
         geojson=counties(),
         locations=data["FIPS"],
-        z=dem_margin,
-        zmid=0,
-        zmin=-0.8,
-        zmax=0.8,
-        colorscale=COUNTY_COLORSCALE,
+        z=variable_to_plot,
+        zmid=zmid,
+        zmin=zmin,
+        zmax=zmax,
+        colorscale=colorscale,
         marker_line_width=0,
-        name="margin",
         showscale=False,
     )
     states_elements = sorted(set(data["state"]))
@@ -52,6 +51,28 @@ def county_map(data, *, dem_margin):
         showscale=False,
     )
     return fit(figure, states)
+
+
+def map_county_margins(data, *, dem_margin):
+    return county_map(
+        data,
+        variable_to_plot=dem_margin,
+        zmid=0,
+        zmin=-0.8,
+        zmax=0.8,
+        colorscale=COUNTY_COLORSCALE,
+    )
+
+
+def map_county_demographics(data, *, demographic_values):
+    return county_map(
+        data,
+        variable_to_plot=demographic_values,
+        zmid=0.45,
+        zmin=0,
+        zmax=0.9,
+        colorscale="jet",
+    )
 
 
 def classify(margin):

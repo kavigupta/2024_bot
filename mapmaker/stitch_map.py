@@ -15,7 +15,7 @@ from .aggregation import (
     calculate_tipping_point,
     number_votes,
 )
-from .mapper import county_map, state_map
+from .mapper import map_county_margins, state_map
 from .version import version
 from .colors import (
     BACKGROUND_RGB,
@@ -254,7 +254,7 @@ def generate_map(data, title, out_path, *, dem_margin, turnout):
 
     dem_ec_close, gop_ec_close = dem_ec - dem_ec_safe, gop_ec - gop_ec_safe
     assert dem_ec_close >= 0 and gop_ec_close >= 0
-    cm = county_map(data, dem_margin=dem_margin)
+    cm = map_county_margins(data, dem_margin=dem_margin)
     sm = state_map(data, dem_margin=dem_margin, turnout=turnout)
     pop_vote_margin = get_popular_vote(data, dem_margin=dem_margin, turnout=turnout)
 
