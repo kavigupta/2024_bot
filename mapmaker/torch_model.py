@@ -16,15 +16,10 @@ NUM_DEMOGRAPHICS = 10
 
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
-<<<<<<< HEAD
-    version = 1.2
-=======
     version = 1.4
->>>>>>> 848b4d944272f6e0088fdacd181c9e0ca302125a
 
     def __init__(self, f, d, years, previous_partisanships, gamma=0.5):
         super().__init__()
-        self.version = DemographicCategoryPredictor.version
         self.f = f
         self.d = d
         self.gamma = gamma
@@ -131,11 +126,7 @@ class DemographicCategoryPredictor(nn.Module):
         if dimensions is None:
             dimensions = features[0].shape[1] - 1
         dcm = DemographicCategoryPredictor(
-<<<<<<< HEAD
-            dimensions + 1, NUM_DEMOGRAPHICS, years, previous_partisanships
-=======
-            dimensions + 1, 10, list(target_turnouts), previous_partisanships
->>>>>>> 848b4d944272f6e0088fdacd181c9e0ca302125a
+            dimensions + 1, NUM_DEMOGRAPHICS, list(target_turnouts), previous_partisanships
         )
         dcm = train_torch_model(
             dcm,
