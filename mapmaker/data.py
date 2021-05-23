@@ -25,6 +25,7 @@ def data_for_year(year):
     data = pd.read_csv(
         f"{CSVS}/election_demographic_data - {year}.csv", dtype=dict(FIPS=str)
     )
+    data = data[data.dem_margin == data.dem_margin]
     data["FIPS"] = data["FIPS"].map(lambda x: x if len(x) == 5 else "0" + x)
     return data[
         [
