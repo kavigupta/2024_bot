@@ -13,6 +13,8 @@ from .model import Model
 from .trend_model import StableTrendModel, NoisedTrendModel
 from .utils import hash_model
 
+NUM_DEMOGRAPHICS = 10
+
 
 YEAR_RESIDUAL_CORRECTIONS = {2022: -3e-2}
 
@@ -109,6 +111,10 @@ class DemographicCategoryPredictor(nn.Module):
         t, tp = t[year], tp[year]
         return (tp / t).detach().numpy(), t.detach().numpy()
 
+    def get_demographics_by_county(self, features):
+        features = torch.tensor(features).float()
+        return self.latent_demographic_model(features).detach().numpy()
+
     @staticmethod
     def train(
         features,
@@ -125,7 +131,7 @@ class DemographicCategoryPredictor(nn.Module):
         if dimensions is None:
             dimensions = features[0].shape[1] - 1
         dcm = DemographicCategoryPredictor(
-            dimensions + 1, 10, list(target_turnouts), previous_partisanships
+            dimensions + 1, NUM_DEMOGRAPHICS, list(target_turnouts), previous_partisanships
         )
         dcm = train_torch_model(
             dcm,
@@ -271,3 +277,6 @@ class DemographicCategoryModel(Model):
             features=self.features.features(year),
             correct=correct,
         )
+
+    def get_demographics_by_county(self, *, year):
+        return self.adcm.dcm.get_demographics_by_county(self.features.features(year))
