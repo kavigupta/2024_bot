@@ -1,6 +1,8 @@
 *.pyc
+*.ipynb_checkpoints
 images/*/*.svg
 images/*.svg
 images/*/*.pkl
 SECRET.py
 env
+Untitled.ipynb
