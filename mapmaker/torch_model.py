@@ -22,7 +22,7 @@ YEAR_RESIDUAL_CORRECTIONS = {2022: -4e-2}
 
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
-    version = 2.2
+    version = 2.3
 
     def __init__(self, f, d, years, previous_partisanships, fipses, gamma=0.5):
         super().__init__()
@@ -244,7 +244,6 @@ class AdjustedDemographicCategoryModel:
         return deltas
 
     def predict(self, *, model_year, output_year, features, correct):
-        print(model_year, output_year)
         turnout_weights = self.turnout_weights
         if turnout_weights is None and model_year != output_year:
             same_cycle_years = [y for y in self.dcm.years if y % 4 == output_year % 4]
