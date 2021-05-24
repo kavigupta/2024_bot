@@ -13,11 +13,11 @@ from .model import Model
 from .trend_model import StableTrendModel, NoisedTrendModel
 from .utils import hash_model, intersect_all
 
-NUM_DEMOGRAPHICS = 10
+NUM_DEMOGRAPHICS = 15
 ITERS = 12000
-DEMOS_SIMILARITY_LOSS_WEIGHT = 5e-4
+DEMOS_SIMILARITY_LOSS_WEIGHT = 1
 
-YEAR_RESIDUAL_CORRECTIONS = {2022: -3e-2}
+YEAR_RESIDUAL_CORRECTIONS = {2022: -4e-2}
 
 
 class DemographicCategoryPredictor(nn.Module):
@@ -63,8 +63,6 @@ class DemographicCategoryPredictor(nn.Module):
         }
 
         partisanship = torch.tanh(self.partisanship_heads[str(y)] + partisanship_noise)
-
-        print(turnout_weights)
 
         if turnout_weights is not None:
             turnout = sum(
@@ -112,7 +110,9 @@ class DemographicCategoryPredictor(nn.Module):
 
         demos = torch.stack([demos[y][self.index_to_common[y]] for y in years])
         cvaps_common = cvaps[2020][self.index_to_common[2020]]
-        demos_similarity_loss = (demos.var(0) * cvaps_common[:,None]).sum() / cvaps_common.sum()
+        demos_similarity_loss = (
+            demos.var(0) * cvaps_common[:, None]
+        ).sum() / cvaps_common.sum()
         losses = []
         for y in years:
             loss = (target_t[y] - t[y]) ** 2 * self.gamma + (target_tp[y] - tp[y]) ** 2
@@ -247,8 +247,7 @@ class AdjustedDemographicCategoryModel:
         print(model_year, output_year)
         turnout_weights = self.turnout_weights
         if turnout_weights is None and model_year != output_year:
-            same_cycle_years = [2010, 2018]
-            print("anetouhdasneoudasnetho")
+            same_cycle_years = [y for y in self.dcm.years if y % 4 == output_year % 4]
             turnout_weights = {y: 1 / len(same_cycle_years) for y in same_cycle_years}
         p, t = self.dcm.predict(
             model_year,
