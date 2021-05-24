@@ -1,5 +1,7 @@
 import numpy as np
 
+from electiondata.examples.nytimes_num_colleges import NYTimesNumColleges
+
 from .aggregation import get_popular_vote
 from .data import data_by_year
 from .stitch_map import generate_map
@@ -32,6 +34,10 @@ def get_margin_auto(data, statistic):
 
 def generate_challenge_maps(i, title, extractor):
     data = data_by_year()[2020]
+    valid_fips = set(data.FIPS)
+    college = NYTimesNumColleges().get().rename(columns={"county_fips" : "FIPS"})
+    college = college[college.FIPS.apply(lambda x: x in valid_fips)]
+    data = data.merge(college, how="outer").fillna(0)
     turnout = data.total_votes / data.CVAP
     dem_margin = get_margin_auto(data, extractor(data))
     for is_solution in True, False:
