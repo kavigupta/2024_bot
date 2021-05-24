@@ -49,8 +49,8 @@ def generate_demographic_map(data, demographic_values, title, out_path):
     ]
 
     for i, cm in list(enumerate(cms)):
-        row, column = i // 3, i % 3
-        cm.moveto(column * 200 + 100, row * 100 + 100, scale_x=0.25, scale_y=0.25)
+        row, column = i // 4, i % 4
+        cm.moveto(column * 200, row * 100, scale_x=0.2, scale_y=0.2)
 
     fig.append(cms)
 

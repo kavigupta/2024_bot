@@ -12,6 +12,7 @@ from .trend_model import StableTrendModel, NoisedTrendModel
 from .utils import hash_model
 
 NUM_DEMOGRAPHICS = 10
+ITERS = 6000
 
 
 class DemographicCategoryPredictor(nn.Module):
@@ -63,7 +64,7 @@ class DemographicCategoryPredictor(nn.Module):
 
         return turnout, turnout * partisanship
 
-    def forward(self, features, **kwargs):
+    def forward(self, features, full_output=False, **kwargs):
         years = list(features)
         features = {y: torch.tensor(features[y]).float() for y in features}
         demos = {y: self.latent_demographic_model(features[y]) for y in features}
@@ -77,6 +78,8 @@ class DemographicCategoryPredictor(nn.Module):
                 np.array(self.previous_partisanships[y])
             ).float()
             tp[y] = tp[y] + previous_partisanship * t[y]
+        if full_output:
+            return t, tp, demos
         return t, tp
 
     def loss(self, features, target_turnouts, target_partisanships, cvaps):
@@ -184,7 +187,7 @@ class AdjustedDemographicCategoryModel:
             target_turnouts={y: turnouts[y] for y in years},
             target_partisanships={y: data[y].dem_margin for y in years},
             cvaps={y: data[y].CVAP for y in years},
-            iters=6000,
+            iters=ITERS,
             **feature_kwargs,
         )
         residuals = {}
@@ -266,7 +269,7 @@ class DemographicCategoryModel(Model):
             alpha_partisanship=self.alpha,
             alpha_turnout=self.alpha * 0.5,
         )
-        model_year = 2020 if year == 2024 else year
+        model_year = 2020 if year > 2020 else year
         return adcm.predict(
             model_year=model_year,
             output_year=year,
