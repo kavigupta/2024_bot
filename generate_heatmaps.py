@@ -9,4 +9,4 @@ for y in (
     2016,
     2020,
 ):
-    get_demographics_image(y, "demographic_" + str(y) + ".svg")
+    get_demographics_image(y, "images/demographic_" + str(y) + ".svg")

@@ -9,17 +9,19 @@ from permacache import permacache, stable_hash
 
 from .model import Model
 from .trend_model import StableTrendModel, NoisedTrendModel
-from .utils import hash_model
+from .utils import hash_model, intersect_all
 
-NUM_DEMOGRAPHICS = 10
-ITERS = 6000
+NUM_DEMOGRAPHICS = 15
+ITERS = 12000
+DEMOS_SIMILARITY_LOSS_WEIGHT = 1
+
 
 
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
-    version = 1.4
+    version = 1.5
 
-    def __init__(self, f, d, years, previous_partisanships, gamma=0.5):
+    def __init__(self, f, d, years, previous_partisanships, fipses, gamma=0.5):
         super().__init__()
         self.f = f
         self.d = d
@@ -28,8 +30,11 @@ class DemographicCategoryPredictor(nn.Module):
         self.min_turn = 0.4
         self.max_turn = 0.8
         self.version = self.version
-        assert set(years) == set(previous_partisanships)
+        self.demos_similarity_loss_weight = DEMOS_SIMILARITY_LOSS_WEIGHT
+        assert set(years) == set(previous_partisanships) == set(fipses)
         self.previous_partisanships = previous_partisanships
+        common_fips = intersect_all(fipses.values())
+        self.index_to_common = {y: np.in1d(fipses[y], common_fips) for y in years}
         self.latent_demographic_model = nn.Sequential(nn.Linear(f, d), nn.Softmax(-1))
         self.turnout_heads = nn.ParameterDict(
             {str(y): nn.Parameter(torch.randn(d, 1)) for y in years}
@@ -53,6 +58,7 @@ class DemographicCategoryPredictor(nn.Module):
             + self.min_turn
             for year in self.years
         }
+
         partisanship = torch.tanh(self.partisanship_heads[str(y)] + partisanship_noise)
 
         if turnout_weights is not None:
@@ -97,12 +103,21 @@ class DemographicCategoryPredictor(nn.Module):
         target_t = {y: torch.tensor(target_turnouts[y]).float() for y in years}
         target_tp = {y: torch.tensor(target_tp[y]).float() for y in years}
         cvaps = {y: torch.tensor(np.array(cvaps[y])).float() for y in years}
-        t, tp = self(features)
+        t, tp, demos = self(features, full_output=True)
+
+        demos = torch.stack([demos[y][self.index_to_common[y]] for y in years])
+        cvaps_common = cvaps[2020][self.index_to_common[2020]]
+        demos_similarity_loss = (
+            demos.var(0) * cvaps_common[:, None]
+        ).sum() / cvaps_common.sum()
         losses = []
         for y in years:
             loss = (target_t[y] - t[y]) ** 2 * self.gamma + (target_tp[y] - tp[y]) ** 2
             losses.append((loss * cvaps[y]).sum() / cvaps[y].sum())
-        return sum(losses) / len(losses)
+        return (
+            sum(losses) / len(losses),
+            demos_similarity_loss * self.demos_similarity_loss_weight,
+        )
 
     def predict(self, year, features, **kwargs):
         t, tp = self({year: features}, **kwargs)
@@ -117,6 +132,7 @@ class DemographicCategoryPredictor(nn.Module):
     def train(
         features,
         previous_partisanships,
+        fipses,
         target_turnouts,
         target_partisanships,
         cvaps,
@@ -133,6 +149,7 @@ class DemographicCategoryPredictor(nn.Module):
             NUM_DEMOGRAPHICS,
             list(target_turnouts),
             previous_partisanships,
+            fipses,
         )
         dcm = train_torch_model(
             dcm,
@@ -159,10 +176,10 @@ def train_torch_model(dcm, iters, lr, *args):
     opt = torch.optim.Adam(dcm.parameters(), lr=lr)
     for itr in range(iters):
         opt.zero_grad()
-        lv = dcm.loss(*args)
+        lv, lvdemo = dcm.loss(*args)
         if (itr + 1) % 100 == 0:
-            print(itr, lv.item())
-        lv.backward()
+            print(f"{itr:4d} {lv.item():.6f} {lvdemo.item():.6f}")
+        (lv + lvdemo).backward()
         opt.step()
     return dcm
 
@@ -184,6 +201,7 @@ class AdjustedDemographicCategoryModel:
             previous_partisanships={
                 y: np.array(data[y].past_pres_partisanship) for y in years
             },
+            fipses={y: np.array(data[y].FIPS) for y in years},
             target_turnouts={y: turnouts[y] for y in years},
             target_partisanships={y: data[y].dem_margin for y in years},
             cvaps={y: data[y].CVAP for y in years},
