@@ -7,6 +7,8 @@ CHALLENGES = {
     1: ("By Population", lambda x: x["CVAP"]),
     2: ("Non-mainline prot", lambda x: x["evangelical"] + x["mormon"] + x["black_protestant"]),
     3: ("2016 margin", lambda x: x["past_pres_partisanship"]),
+    4: ("Bachelor %", lambda x: x["bachelor %"]),
+    5: ("Number of Colleges", lambda x: x["college"]),
 }
 
 challenges_to_generate = [int(x) for x in sys.argv[1:]]
