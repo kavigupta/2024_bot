@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 import attr
 
 import torch
@@ -15,11 +17,12 @@ NUM_DEMOGRAPHICS = 15
 ITERS = 12000
 DEMOS_SIMILARITY_LOSS_WEIGHT = 1
 
+YEAR_RESIDUAL_CORRECTIONS = {2022: -4e-2}
 
 
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
-    version = 1.5
+    version = 2.3
 
     def __init__(self, f, d, years, previous_partisanships, fipses, gamma=0.5):
         super().__init__()
@@ -263,6 +266,8 @@ class AdjustedDemographicCategoryModel:
                 p = pr
             else:
                 p = p + pr
+
+            p = p + YEAR_RESIDUAL_CORRECTIONS.get(output_year, 0)
 
             t = t + self.residuals[model_year][1]
         return np.clip(p, -0.99, 0.99), np.clip(t, 0.01, 0.99)
