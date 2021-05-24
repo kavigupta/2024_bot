@@ -35,7 +35,7 @@ def get_margin_auto(data, statistic):
 def generate_challenge_maps(i, title, extractor):
     data = data_by_year()[2020]
     valid_fips = set(data.FIPS)
-    college = NYTimesNumColleges().get().rename(columns={"county_fips" : "FIPS"})
+    college = NYTimesNumColleges().get().rename(columns={"county_fips": "FIPS"})
     college = college[college.FIPS.apply(lambda x: x in valid_fips)]
     data = data.merge(college, how="outer").fillna(0)
     turnout = data.total_votes / data.CVAP

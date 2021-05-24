@@ -44,7 +44,9 @@ def generate_demographic_map(data, demographic_values, title, out_path):
         cm.write_image(counties_svg)
         remove_backgrounds(counties_svg)
 
-    cms = [sg.fromfile(counties_svg).getroot() for counties_svg in tqdm.tqdm(counties_svgs)]
+    cms = [
+        sg.fromfile(counties_svg).getroot() for counties_svg in tqdm.tqdm(counties_svgs)
+    ]
 
     for i, cm in list(enumerate(cms)):
         row, column = i // 3, i % 3

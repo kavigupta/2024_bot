@@ -126,7 +126,10 @@ class DemographicCategoryPredictor(nn.Module):
         if dimensions is None:
             dimensions = features[0].shape[1] - 1
         dcm = DemographicCategoryPredictor(
-            dimensions + 1, NUM_DEMOGRAPHICS, list(target_turnouts), previous_partisanships
+            dimensions + 1,
+            NUM_DEMOGRAPHICS,
+            list(target_turnouts),
+            previous_partisanships,
         )
         dcm = train_torch_model(
             dcm,
