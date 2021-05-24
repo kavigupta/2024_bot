@@ -107,7 +107,7 @@ def all_data(year):
     if year != 2024:
         all_data = data_for_year(year)
     else:
-        all_data = data_2024()
+        all_data = data_2024().copy()
 
     ## Nonlinearity
     all_data["county_diversity_black_white"] = all_data["black %"] * all_data["white %"]
