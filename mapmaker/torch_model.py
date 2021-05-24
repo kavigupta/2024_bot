@@ -19,7 +19,7 @@ DEMOS_SIMILARITY_LOSS_WEIGHT = 1
 
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
-    version = 1.4
+    version = 1.5
 
     def __init__(self, f, d, years, previous_partisanships, fipses, gamma=0.5):
         super().__init__()
