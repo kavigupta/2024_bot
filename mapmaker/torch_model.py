@@ -53,6 +53,7 @@ class DemographicCategoryPredictor(nn.Module):
         partisanship_noise=0,
         turnout_noise=0,
         turnout_weights=None,
+        turnout_year,
     ):
 
         turnout = {
@@ -65,11 +66,13 @@ class DemographicCategoryPredictor(nn.Module):
         partisanship = torch.tanh(self.partisanship_heads[str(y)] + partisanship_noise)
 
         if turnout_weights is not None:
+            assert turnout_year is None
             turnout = sum(
                 [turnout[year] * turnout_weights[year] for year in turnout_weights]
             )
         else:
-            turnout = turnout[y]
+            turnout_year = y if turnout_year is None else turnout_year
+            turnout = turnout[turnout_year]
 
         return turnout, turnout * partisanship
 
@@ -213,7 +216,7 @@ class AdjustedDemographicCategoryModel:
         )
         residuals = {}
         for y in years:
-            p, t = dcm.predict(y, features.features(y))
+            p, t = dcm.predict(y, features.features(y), turnout_year=None)
             residuals[y] = data[y].dem_margin - p, turnouts[y] - t
         return AdjustedDemographicCategoryModel(dcm, residuals, StableTrendModel(0))
 
@@ -243,7 +246,7 @@ class AdjustedDemographicCategoryModel:
         deltas = torch.rand(self.dcm.d, 1) - 0.5
         return deltas
 
-    def predict(self, *, model_year, output_year, features, correct):
+    def predict(self, *, model_year, output_year, features, correct, turnout_year):
         turnout_weights = self.turnout_weights
         if turnout_weights is None and model_year != output_year:
             same_cycle_years = [y for y in self.dcm.years if y % 4 == output_year % 4]
@@ -254,6 +257,7 @@ class AdjustedDemographicCategoryModel:
             partisanship_noise=self.partisanship_noise,
             turnout_noise=self.turnout_noise,
             turnout_weights=turnout_weights,
+            turnout_year=turnout_year,
         )
         if correct:
             pr = self.trend_model(
@@ -283,7 +287,7 @@ class DemographicCategoryModel(Model):
             feature_kwargs=feature_kwargs,
         )
 
-    def fully_random_sample(self, *, year, prediction_seed, correct):
+    def fully_random_sample(self, *, year, prediction_seed, correct, turnout_year):
         # use the 2020 predictor since that's the best we have
         # TODO ADD THE PERTURBATIONS
         adcm = self.adcm.perturb(
@@ -298,6 +302,7 @@ class DemographicCategoryModel(Model):
             output_year=year,
             features=self.features.features(year),
             correct=correct,
+            turnout_year=turnout_year,
         )
 
     def get_demographics_by_county(self, *, year):

@@ -88,7 +88,8 @@ class LinearMixtureModel(Model):
         self.predictor = predictor
         return self
 
-    def fully_random_sample(self, *, year, prediction_seed, correct):
+    def fully_random_sample(self, *, year, prediction_seed, correct, turnout_year):
+        assert turnout_year is None
         predictor = self.predictor
         turnout_predictor = self.turnout_predictor
         if prediction_seed is not None:
