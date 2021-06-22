@@ -53,7 +53,7 @@ class DemographicCategoryPredictor(nn.Module):
         partisanship_noise=0,
         turnout_noise=0,
         turnout_weights=None,
-        turnout_year,
+        turnout_year=None,
     ):
 
         turnout = {
