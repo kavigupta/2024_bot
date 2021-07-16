@@ -26,8 +26,10 @@ from .colors import (
     STATE_DEM_BATTLEGROUND,
     STATE_GOP_CLOSE,
     STATE_DEM_CLOSE,
-    COUNTY_MAX_VAL,
-    COUNTY_MIN_VAL,
+    COUNTY_COLORSCALE,
+    COUNTY_SCALE_MARGIN_MAX,
+    COUNTY_SCALE_MARGIN_MIN,
+    get_color,
 )
 from .text import draw_text
 
@@ -43,6 +45,7 @@ LEGEND_STARTY_COUNTY = 170
 LEGEND_STARTX_COUNTY = 40
 LEGEND_STARTY_STATE = 350
 LEGEND_STARTX_STATE = 870
+
 LEGEND_SIZE = 10
 
 SCALE = 4
@@ -172,12 +175,10 @@ def produce_text(
 def draw_legend(draw, scale, mode):
     if mode == "state":
         legend_y = LEGEND_STARTY_STATE
-        LEGEND_STARTY = LEGEND_STARTY_STATE
-        LEGEND_STARTX = LEGEND_STARTX_STATE
+        legend_x = LEGEND_STARTX_STATE
     else:
         legend_y = LEGEND_STARTY_COUNTY
-        LEGEND_STARTY = LEGEND_STARTY_COUNTY
-        LEGEND_STARTX = LEGEND_STARTX_COUNTY
+        legend_x = LEGEND_STARTX_COUNTY
 
     def add_square(color, text):
         if mode == "state":
@@ -188,9 +189,9 @@ def draw_legend(draw, scale, mode):
         nonlocal legend_y
         draw.rectangle(
             (
-                LEGEND_STARTX * scale,
+                legend_x * scale,
                 legend_y * scale,
-                (LEGEND_STARTX + LEGEND_SIZE) * scale,
+                (legend_x + LEGEND_SIZE) * scale,
                 (legend_y + LEGEND_SIZE) * scale,
             ),
             (*color, 255),
@@ -201,7 +202,7 @@ def draw_legend(draw, scale, mode):
                 draw,
                 int(LEGEND_SIZE * 0.8) * scale,
                 [(text, "rgb" + str(tuple(color)))],
-                (LEGEND_STARTX + LEGEND_SIZE * 1.25) * scale,
+                (legend_x + LEGEND_SIZE * 1.25) * scale,
                 int((legend_y - LEGEND_SIZE * 0.3) * scale),
                 align="left",
             )
@@ -210,23 +211,24 @@ def draw_legend(draw, scale, mode):
                 draw,
                 int(LEGEND_SIZE * 0.8) * scale,
                 [(text, "rgb" + str(tuple(color)))],
-                (LEGEND_STARTX - LEGEND_SIZE // 3) * scale,
+                (legend_x - LEGEND_SIZE // 3) * scale,
                 int((legend_y - LEGEND_SIZE * 0.3) * scale),
                 align="right",
             )
 
     if mode == "county":
-        even = np.ones(3) * 255
-        most_con = np.array([COUNTY_MAX_VAL, 0, 0])
-        most_lib = np.array([0, 0, COUNTY_MAX_VAL])
-        for margin in np.arange(-0.8, 0, 0.2):
+        for margin in np.arange(-0.8, 0.8 + 1e-1, 0.2):
             add_square(
-                most_con * (-margin) + even * (1 - (-margin)), f"R+{-margin * 100:.0f}"
-            )
-        add_square(even, "Even")
-        for margin in np.arange(0.8, 0, -0.2)[::-1]:
-            add_square(
-                most_lib * (margin) + even * (1 - (margin)), f"D+{margin * 100:.0f}"
+                get_color(
+                    COUNTY_COLORSCALE,
+                    (margin - COUNTY_SCALE_MARGIN_MIN)
+                    / (COUNTY_SCALE_MARGIN_MAX - COUNTY_SCALE_MARGIN_MIN),
+                ),
+                f"R+{-margin * 100:.0f}"
+                if margin < -0.001
+                else f"D+{margin * 100:.0f}"
+                if margin > 0.001
+                else "Even",
             )
     else:
         state_buckets = ["> R+5", "R+1 - R+5", "< R+1", "< D+1", "D+1 - D+5", "> D+5"]

@@ -8,6 +8,8 @@ from .aggregation import get_state_results
 from .colors import (
     BACKGROUND,
     COUNTY_COLORSCALE,
+    COUNTY_SCALE_MARGIN_MIN,
+    COUNTY_SCALE_MARGIN_MAX,
     STATE_GOP,
     STATE_DEM,
     STATE_GOP_BATTLEGROUND,
@@ -58,8 +60,8 @@ def map_county_margins(data, *, dem_margin):
         data,
         variable_to_plot=dem_margin,
         zmid=0,
-        zmin=-0.8,
-        zmax=0.8,
+        zmin=COUNTY_SCALE_MARGIN_MIN,
+        zmax=COUNTY_SCALE_MARGIN_MAX,
         colorscale=COUNTY_COLORSCALE,
     )
 
