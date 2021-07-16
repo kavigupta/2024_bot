@@ -42,17 +42,7 @@ def county_map(data, *, variable_to_plot, zmid, zmin, zmax, colorscale):
         marker_line_width=0,
         showscale=False,
     )
-    states_elements = sorted(set(data["state"]))
-    states = go.Choropleth(
-        locationmode="USA-states",
-        locations=[us.states.lookup(x).abbr for x in states_elements],
-        z=np.zeros(len(states_elements)),
-        colorscale=[(0, "rgba(0, 0, 0, 0)"), (1, "rgba(0, 0, 0, 0)")],
-        marker_line_color=BACKGROUND,
-        marker_line_width=0.5,
-        showscale=False,
-    )
-    return fit(figure, states)
+    return fit(figure)
 
 
 def map_county_margins(data, *, dem_margin):

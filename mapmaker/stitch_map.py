@@ -273,6 +273,7 @@ def generate_map(data, title, out_path, *, dem_margin, turnout):
     remove_backgrounds(states_svg)
 
     fig.append([sg.fromfile(counties_svg).getroot()])
+    fig.append([sg.fromfile("stateboundariesinternal.svg").getroot()])
     states = sg.fromfile(states_svg).getroot()
     states.moveto(575, 200, scale_x=0.5, scale_y=0.5)
     fig.append([states])
