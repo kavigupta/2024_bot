@@ -13,12 +13,12 @@ CSVS = os.path.join(os.path.dirname(__file__), "../csvs")
 
 @lru_cache(None)
 def counties():
-    return PlotlyGeoJSON(e.alaska.FOUR_REGIONS()).get()
+    return PlotlyGeoJSON(e.alaska.FIVE_REGIONS()).get()
 
 
 def data_2018():
     data1 = Canonical2018General(
-        alaska_handler=e.alaska.FOUR_REGIONS(),
+        alaska_handler=e.alaska.FIVE_REGIONS(),
         uncontested_replacements=["us state governor"],
         uncontested_replacement_mode="interpolate",
     ).get()
@@ -42,7 +42,7 @@ def read_csv(path):
     data = data[[x for x in data if x != "Unnamed: 0"]]
     data_ak = data[data.state == "Alaska"].copy()
     data_not_ak = data[data.state != "Alaska"].copy()
-    normalizer = e.usa_county_to_fips("state", alaska_handler=e.alaska.FOUR_REGIONS())
+    normalizer = e.usa_county_to_fips("state", alaska_handler=e.alaska.FIVE_REGIONS())
     normalizer.apply_to_df(data_ak, "county", "FIPS")
     data_ak.dem_margin *= data_ak.CVAP
     data_ak.past_pres_partisanship *= data_ak.CVAP
