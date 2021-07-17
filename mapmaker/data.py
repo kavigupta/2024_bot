@@ -87,7 +87,67 @@ def read_csv(path):
     return pd.concat([data_ak, data_not_ak])
 
 
-def data_for_year(year):
+def load_educational_data(year):
+    if year % 4 == 2:
+        year += 2
+    education_df = pd.read_csv(f"csvs/{year}_data_education_split.csv").set_index(
+        "FIPS"
+    )
+    cvap_df = pd.read_csv(f"csvs/election_demographic_data - {year}.csv")[
+        ["FIPS", "CVAP"]
+    ].set_index("FIPS")
+
+    education_df = education_df.join(cvap_df, how="inner")
+
+    normalizer = e.usa_county_to_fips("state", alaska_handler=e.alaska.FOUR_REGIONS())
+    normalizer.rewrite["juneau city and"] = "juneau city and borough"
+    normalizer.rewrite["sitka city and"] = "sitka city and borough"
+    normalizer.rewrite["wrangell city and"] = "wrangell city and borough"
+    normalizer.rewrite["yakutat city and"] = "yakutat city and borough"
+
+    normalizer.rewrite["baltimore"] = "baltimore county"
+    normalizer.rewrite["charles"] = "charles city"
+    normalizer.rewrite["st. louis"] = "st. louis county"
+    normalizer.rewrite["franklin"] = "franklin county"
+    normalizer.rewrite["richmond"] = "richmond county"
+    normalizer.rewrite["bedford"] = "bedford county"
+    normalizer.rewrite["fairfax"] = "fairfax county"
+    normalizer.rewrite["roanoke"] = "roanoke county"
+    normalizer.rewrite["james"] = "james city"
+
+    normalizer.apply_to_df(education_df, "county", "fips", var_name="normalizer")
+    columns = [
+        "white_only_noncollege_pct",
+        "white_only_educated_pct",
+        "hispanic_only_pct",
+        "hispanic_educated_pct",
+        "asian_only_pct",
+        "asian_educated_pct",
+        "black_only_pct",
+        "black_educated_pct",
+        "white_and_white_hispanic_educated_pct",
+        "white_and_white_hispanic_noncollege_pct",
+        "other_pct",
+    ]
+    for col in columns:
+        education_df[col] *= education_df.CVAP
+    firsts = ["county", "state"]
+    sums = columns + ["CVAP"]
+    education_df = e.Aggregator(
+        grouped_columns=["fips"],
+        aggregation_functions={
+            **{k: lambda x: list(x)[0] for k in firsts},
+            **{k: np.sum for k in sums},
+            #         **{k: np.mean for k in means},
+        },
+    )(education_df)
+    for col in columns:
+        education_df[col] /= education_df.CVAP
+    education_df = education_df.rename(columns={"fips": "FIPS"}).set_index("FIPS")
+    return education_df[columns]
+
+
+def data_without_education(year):
     if year == 2018:
         data = data_2018()
     else:
@@ -127,6 +187,14 @@ def data_for_year(year):
             "poverty",
         ]
     ]
+
+
+@lru_cache(None)
+def data_for_year(year):
+    data = data_without_education(year).set_index("FIPS")
+    # ed = load_educational_data(year)
+    # data = data.join(ed)
+    return data.reset_index()
 
 
 @lru_cache(None)

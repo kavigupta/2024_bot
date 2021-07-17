@@ -22,7 +22,7 @@ YEAR_RESIDUAL_CORRECTIONS = {2022: -4e-2}
 
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
-    version = 2.3
+    version = 2.7
 
     def __init__(self, f, d, years, previous_partisanships, fipses, gamma=0.5):
         super().__init__()
@@ -149,7 +149,7 @@ class DemographicCategoryPredictor(nn.Module):
     ):
         torch.manual_seed(0)
         if dimensions is None:
-            dimensions = features[0].shape[1] - 1
+            dimensions = features[list(features)[0]].shape[1] - 1
         dcm = DemographicCategoryPredictor(
             dimensions + 1,
             NUM_DEMOGRAPHICS,
