@@ -10,12 +10,14 @@ from .colors import (
     COUNTY_COLORSCALE,
     STATE_GOP,
     STATE_DEM,
-    STATE_GOP_BATTLEGROUND,
-    STATE_DEM_BATTLEGROUND,
-    STATE_GOP_CLOSE,
-    STATE_DEM_CLOSE,
+    STATE_GOP_TILT,
+    STATE_DEM_TILT,
+    STATE_GOP_LEAN,
+    STATE_DEM_LEAN,
+    STATE_GOP_LIKELY,
+    STATE_DEM_LIKELY,
 )
-from .constants import CLOSE_MARGIN, BATTLEGROUND_MARGIN, BLOWOUT_MARGIN
+from .constants import TILT_MARGIN, LEAN_MARGIN, LIKELY_MARGIN, SAFE_MARGIN
 
 
 def fit(*figure):
@@ -76,16 +78,20 @@ def map_county_demographics(data, *, demographic_values):
 
 
 def classify(margin):
-    if margin < -BATTLEGROUND_MARGIN:
+    if margin < -LIKELY_MARGIN:
         return 0
-    if margin < -CLOSE_MARGIN:
-        return 0.20
+    if margin < -LEAN_MARGIN:
+        return 0.15
+    elif margin < -TILT_MARGIN:
+        return 0.30
     elif margin < 0:
-        return 0.40
-    if margin < CLOSE_MARGIN:
+        return 0.45
+    if margin < TILT_MARGIN:
         return 0.60
-    elif margin < BATTLEGROUND_MARGIN:
-        return 0.80
+    elif margin < LEAN_MARGIN:
+        return 0.75
+    elif margin < LIKELY_MARGIN:
+        return 0.90
     else:
         return 1
 
@@ -100,10 +106,12 @@ def state_map(data, *, dem_margin, turnout):
         locations=[us.states.lookup(x).abbr for x in state_margins.index],
         colorscale=[
             [0, STATE_GOP],
-            [0.20, STATE_GOP_BATTLEGROUND],
-            [0.40, STATE_GOP_CLOSE],
-            [0.60, STATE_DEM_CLOSE],
-            [0.80, STATE_DEM_BATTLEGROUND],
+            [0.15, STATE_GOP_LIKELY],
+            [0.30, STATE_GOP_LEAN],
+            [0.45, STATE_GOP_TILT],
+            [0.60, STATE_DEM_TILT],
+            [0.75, STATE_DEM_LEAN],
+            [0.90, STATE_DEM_LIKELY],
             [1, STATE_DEM],
         ],
         zmin=0,
