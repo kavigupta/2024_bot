@@ -15,14 +15,16 @@ from .utils import hash_model, intersect_all
 
 NUM_DEMOGRAPHICS = 15
 ITERS = 12000
-DEMOS_SIMILARITY_LOSS_WEIGHT = 1
+DEMOS_SIMILARITY_LOSS_WEIGHT = 5
+HIDDEN_SIZE = 100
+LEARNING_RATE = 1e-2
 
 YEAR_RESIDUAL_CORRECTIONS = {2022: -4e-2}
 
 
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
-    version = 2.3
+    version = 4.4
 
     def __init__(self, f, d, years, previous_partisanships, fipses, gamma=0.5):
         super().__init__()
@@ -38,6 +40,7 @@ class DemographicCategoryPredictor(nn.Module):
         self.previous_partisanships = previous_partisanships
         common_fips = intersect_all(fipses.values())
         self.index_to_common = {y: np.in1d(fipses[y], common_fips) for y in years}
+        # self.latent_demographic_model = nn.Sequential(nn.Linear(f, HIDDEN_SIZE), nn.ReLU(), nn.Linear(HIDDEN_SIZE, d), nn.Softmax(-1))
         self.latent_demographic_model = nn.Sequential(nn.Linear(f, d), nn.Softmax(-1))
         self.turnout_heads = nn.ParameterDict(
             {str(y): nn.Parameter(torch.randn(d, 1)) for y in years}
@@ -143,13 +146,12 @@ class DemographicCategoryPredictor(nn.Module):
         target_partisanships,
         cvaps,
         iters=1000,
-        lr=1e-2,
         *,
         dimensions,
     ):
         torch.manual_seed(0)
         if dimensions is None:
-            dimensions = features[0].shape[1] - 1
+            dimensions = features[list(features)[0]].shape[1] - 1
         dcm = DemographicCategoryPredictor(
             dimensions + 1,
             NUM_DEMOGRAPHICS,
@@ -160,7 +162,7 @@ class DemographicCategoryPredictor(nn.Module):
         dcm = train_torch_model(
             dcm,
             iters,
-            lr,
+            LEARNING_RATE,
             features,
             target_turnouts,
             target_partisanships,
