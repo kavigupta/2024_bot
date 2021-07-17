@@ -22,10 +22,12 @@ from .colors import (
     TEXT_COLOR,
     STATE_GOP,
     STATE_DEM,
-    STATE_GOP_BATTLEGROUND,
-    STATE_DEM_BATTLEGROUND,
-    STATE_GOP_CLOSE,
-    STATE_DEM_CLOSE,
+    STATE_GOP_TILT,
+    STATE_DEM_TILT,
+    STATE_GOP_LEAN,
+    STATE_DEM_LEAN,
+    STATE_GOP_LIKELY,
+    STATE_DEM_LIKELY,
     COUNTY_MAX_VAL,
     COUNTY_MIN_VAL,
 )
@@ -107,9 +109,9 @@ def produce_text(
         15 * scale,
         [
             ("Close: ", TEXT_COLOR),
-            (str(dem_ec_close), STATE_DEM_CLOSE),
+            (str(dem_ec_close), STATE_DEM_TILT),
             (" - ", TEXT_COLOR),
-            (str(gop_ec_close), STATE_GOP_CLOSE),
+            (str(gop_ec_close), STATE_GOP_TILT),
         ],
         TEXT_CENTER * scale,
         y * scale,
@@ -149,10 +151,10 @@ def produce_text(
 
     if tipping_point_margin > 0:
         tipping_point_str = f"{tipping_point_state} D+{tipping_point_margin:.2%}"
-        tipping_point_color = STATE_DEM_CLOSE
+        tipping_point_color = STATE_DEM_TILT
     else:
         tipping_point_str = f"{tipping_point_state} R+{-tipping_point_margin:.2%}"
-        tipping_point_color = STATE_GOP_CLOSE
+        tipping_point_color = STATE_GOP_TILT
 
     draw_text(
         draw,
@@ -229,13 +231,15 @@ def draw_legend(draw, scale, mode):
                 most_lib * (margin) + even * (1 - (margin)), f"D+{margin * 100:.0f}"
             )
     else:
-        state_buckets = ["> R+5", "R+1 - R+5", "< R+1", "< D+1", "D+1 - D+5", "> D+5"]
+        state_buckets = ["> R+8", "R+4 - R+8", "R+2 - R+4", "R+1 - R+2", "< R+1", "< D+1", "D+1 - D+2", "D+2 - D+4", "D+4 - D+8", "> D+8"]
         state_colors = [
             STATE_GOP,
-            STATE_GOP_BATTLEGROUND,
-            STATE_GOP_CLOSE,
-            STATE_DEM_CLOSE,
-            STATE_DEM_BATTLEGROUND,
+            STATE_GOP_LIKELY,
+            STATE_GOP_LEAN,
+            STATE_GOP_TILT,
+            STATE_DEM_TILT,
+            STATE_DEM_LEAN,
+            STATE_DEM_LIKELY,
             STATE_DEM,
         ]
         for margin_text, color in zip(state_buckets, state_colors):
