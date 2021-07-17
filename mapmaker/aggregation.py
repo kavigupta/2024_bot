@@ -1,5 +1,5 @@
 from .data import ec
-from .constants import CLOSE_MARGIN
+from .constants import TILT_MARGIN
 
 
 def get_state_results(data, *, dem_margin, turnout):
@@ -22,7 +22,7 @@ def number_votes(data, *, turnout):
 
 def get_electoral_vote(data, *, dem_margin, turnout, only_nonclose=False):
     if only_nonclose:
-        m = CLOSE_MARGIN
+        m = TILT_MARGIN
     else:
         m = 0
     ec_results = ec().join(

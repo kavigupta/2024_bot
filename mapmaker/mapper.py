@@ -8,15 +8,18 @@ from .aggregation import get_state_results
 from .colors import (
     BACKGROUND,
     COUNTY_COLORSCALE,
+    COUNTY_SCALE_MARGIN_MIN,
+    COUNTY_SCALE_MARGIN_MAX,
     STATE_GOP,
     STATE_DEM,
-    STATE_GOP_BATTLEGROUND,
-    STATE_DEM_BATTLEGROUND,
-    STATE_GOP_CLOSE,
-    STATE_DEM_CLOSE,
+    STATE_GOP_TILT,
+    STATE_DEM_TILT,
+    STATE_GOP_LEAN,
+    STATE_DEM_LEAN,
+    STATE_GOP_LIKELY,
+    STATE_DEM_LIKELY,
 )
-from .constants import CLOSE_MARGIN, BATTLEGROUND_MARGIN, BLOWOUT_MARGIN
-
+from .constants import TILT_MARGIN, LEAN_MARGIN, LIKELY_MARGIN
 
 def fit(*figure):
     figure = go.Figure(
@@ -40,17 +43,7 @@ def county_map(data, *, variable_to_plot, zmid, zmin, zmax, colorscale):
         marker_line_width=0,
         showscale=False,
     )
-    states_elements = sorted(set(data["state"]))
-    states = go.Choropleth(
-        locationmode="USA-states",
-        locations=[us.states.lookup(x).abbr for x in states_elements],
-        z=np.zeros(len(states_elements)),
-        colorscale=[(0, "rgba(0, 0, 0, 0)"), (1, "rgba(0, 0, 0, 0)")],
-        marker_line_color=BACKGROUND,
-        marker_line_width=0.5,
-        showscale=False,
-    )
-    return fit(figure, states)
+    return fit(figure)
 
 
 def map_county_margins(data, *, dem_margin):
@@ -58,8 +51,8 @@ def map_county_margins(data, *, dem_margin):
         data,
         variable_to_plot=dem_margin,
         zmid=0,
-        zmin=-0.8,
-        zmax=0.8,
+        zmin=COUNTY_SCALE_MARGIN_MIN,
+        zmax=COUNTY_SCALE_MARGIN_MAX,
         colorscale=COUNTY_COLORSCALE,
     )
 
@@ -76,16 +69,20 @@ def map_county_demographics(data, *, demographic_values):
 
 
 def classify(margin):
-    if margin < -BATTLEGROUND_MARGIN:
+    if margin < -LIKELY_MARGIN:
         return 0
-    if margin < -CLOSE_MARGIN:
-        return 0.20
+    if margin < -LEAN_MARGIN:
+        return 0.15
+    elif margin < -TILT_MARGIN:
+        return 0.30
     elif margin < 0:
-        return 0.40
-    if margin < CLOSE_MARGIN:
+        return 0.45
+    if margin < TILT_MARGIN:
         return 0.60
-    elif margin < BATTLEGROUND_MARGIN:
-        return 0.80
+    elif margin < LEAN_MARGIN:
+        return 0.75
+    elif margin < LIKELY_MARGIN:
+        return 0.90
     else:
         return 1
 
@@ -100,10 +97,12 @@ def state_map(data, *, dem_margin, turnout):
         locations=[us.states.lookup(x).abbr for x in state_margins.index],
         colorscale=[
             [0, STATE_GOP],
-            [0.20, STATE_GOP_BATTLEGROUND],
-            [0.40, STATE_GOP_CLOSE],
-            [0.60, STATE_DEM_CLOSE],
-            [0.80, STATE_DEM_BATTLEGROUND],
+            [0.15, STATE_GOP_LIKELY],
+            [0.30, STATE_GOP_LEAN],
+            [0.45, STATE_GOP_TILT],
+            [0.60, STATE_DEM_TILT],
+            [0.75, STATE_DEM_LEAN],
+            [0.90, STATE_DEM_LIKELY],
             [1, STATE_DEM],
         ],
         zmin=0,
