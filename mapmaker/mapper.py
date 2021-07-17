@@ -8,6 +8,8 @@ from .aggregation import get_state_results
 from .colors import (
     BACKGROUND,
     COUNTY_COLORSCALE,
+    COUNTY_SCALE_MARGIN_MIN,
+    COUNTY_SCALE_MARGIN_MAX,
     STATE_GOP,
     STATE_DEM,
     STATE_GOP_TILT,
@@ -17,8 +19,7 @@ from .colors import (
     STATE_GOP_LIKELY,
     STATE_DEM_LIKELY,
 )
-from .constants import TILT_MARGIN, LEAN_MARGIN, LIKELY_MARGIN, SAFE_MARGIN
-
+from .constants import TILT_MARGIN, LEAN_MARGIN, LIKELY_MARGIN
 
 def fit(*figure):
     figure = go.Figure(
@@ -42,17 +43,7 @@ def county_map(data, *, variable_to_plot, zmid, zmin, zmax, colorscale):
         marker_line_width=0,
         showscale=False,
     )
-    states_elements = sorted(set(data["state"]))
-    states = go.Choropleth(
-        locationmode="USA-states",
-        locations=[us.states.lookup(x).abbr for x in states_elements],
-        z=np.zeros(len(states_elements)),
-        colorscale=[(0, "rgba(0, 0, 0, 0)"), (1, "rgba(0, 0, 0, 0)")],
-        marker_line_color=BACKGROUND,
-        marker_line_width=0.5,
-        showscale=False,
-    )
-    return fit(figure, states)
+    return fit(figure)
 
 
 def map_county_margins(data, *, dem_margin):
@@ -60,8 +51,8 @@ def map_county_margins(data, *, dem_margin):
         data,
         variable_to_plot=dem_margin,
         zmid=0,
-        zmin=-0.8,
-        zmax=0.8,
+        zmin=COUNTY_SCALE_MARGIN_MIN,
+        zmax=COUNTY_SCALE_MARGIN_MAX,
         colorscale=COUNTY_COLORSCALE,
     )
 
