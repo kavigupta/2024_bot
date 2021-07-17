@@ -26,17 +26,17 @@ COUNTY_COLORSCALE = [
 ]
 
 
-STATE_GOP_TILT = "#ffe6e6"
-STATE_DEM_TILT = "#e6e6ff"
+STATE_GOP_TILT = "#ffcfcf"
+STATE_DEM_TILT = "#cfcfff"
 
-STATE_GOP_LEAN = "#ffb3b3"
-STATE_DEM_LEAN = "#b3b3ff"
+STATE_GOP_LEAN = "#ff9d9c"
+STATE_DEM_LEAN = "#9d9dff"
 
-STATE_GOP_LIKELY = "#ff8080"
-STATE_DEM_LIKELY = "#8080ff"
+STATE_GOP_LIKELY = "#ff6a69"
+STATE_DEM_LIKELY = "#6a69ff"
 
-STATE_GOP = "#ff4d4d"
-STATE_DEM = "#4d4dff"
+STATE_GOP = "#ff3836"
+STATE_DEM = "#3836ff"
 
 TEXT_COLOR = "white"
 

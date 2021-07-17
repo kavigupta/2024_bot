@@ -22,29 +22,31 @@ from .colors import (
     TEXT_COLOR,
     STATE_GOP,
     STATE_DEM,
-    STATE_GOP_BATTLEGROUND,
-    STATE_DEM_BATTLEGROUND,
-    STATE_GOP_CLOSE,
-    STATE_DEM_CLOSE,
+    STATE_GOP_TILT,
+    STATE_DEM_TILT,
+    STATE_GOP_LEAN,
+    STATE_DEM_LEAN,
+    STATE_GOP_LIKELY,
+    STATE_DEM_LIKELY,
     COUNTY_COLORSCALE,
     COUNTY_SCALE_MARGIN_MAX,
     COUNTY_SCALE_MARGIN_MIN,
-    get_color,
+    get_color
 )
 from .text import draw_text
 
 LEFT_MARGIN = 50
 RIGHT_MARGIN = 25
 TOP_MARGIN = 55
-BOTTOM_MARGIN = 15
+BOTTOM_MARGIN = 10
 TEXT_CENTER = 760
 
 FIRST_LINE = 110
 
 LEGEND_STARTY_COUNTY = 170
 LEGEND_STARTX_COUNTY = 40
-LEGEND_STARTY_STATE = 350
-LEGEND_STARTX_STATE = 870
+LEGEND_STARTY_STATE = 330
+LEGEND_STARTX_STATE = 885
 
 LEGEND_SIZE = 10
 
@@ -110,9 +112,9 @@ def produce_text(
         15 * scale,
         [
             ("Close: ", TEXT_COLOR),
-            (str(dem_ec_close), STATE_DEM_CLOSE),
+            (str(dem_ec_close), STATE_DEM_TILT),
             (" - ", TEXT_COLOR),
-            (str(gop_ec_close), STATE_GOP_CLOSE),
+            (str(gop_ec_close), STATE_GOP_TILT),
         ],
         TEXT_CENTER * scale,
         y * scale,
@@ -152,10 +154,10 @@ def produce_text(
 
     if tipping_point_margin > 0:
         tipping_point_str = f"{tipping_point_state} D+{tipping_point_margin:.2%}"
-        tipping_point_color = STATE_DEM_CLOSE
+        tipping_point_color = STATE_DEM_TILT
     else:
         tipping_point_str = f"{tipping_point_state} R+{-tipping_point_margin:.2%}"
-        tipping_point_color = STATE_GOP_CLOSE
+        tipping_point_color = STATE_GOP_TILT
 
     draw_text(
         draw,
@@ -231,13 +233,15 @@ def draw_legend(draw, scale, mode):
                 else "Even",
             )
     else:
-        state_buckets = ["> R+5", "R+1 - R+5", "< R+1", "< D+1", "D+1 - D+5", "> D+5"]
+        state_buckets = ["> R+7", "R+3 - R+7", "R+1 - R+3", "< R+1", "< D+1", "D+1 - D+3", "D+3 - D+7", "> D+7"]
         state_colors = [
             STATE_GOP,
-            STATE_GOP_BATTLEGROUND,
-            STATE_GOP_CLOSE,
-            STATE_DEM_CLOSE,
-            STATE_DEM_BATTLEGROUND,
+            STATE_GOP_LIKELY,
+            STATE_GOP_LEAN,
+            STATE_GOP_TILT,
+            STATE_DEM_TILT,
+            STATE_DEM_LEAN,
+            STATE_DEM_LIKELY,
             STATE_DEM,
         ]
         for margin_text, color in zip(state_buckets, state_colors):

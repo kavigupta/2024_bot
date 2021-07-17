@@ -19,7 +19,7 @@ from .colors import (
     STATE_GOP_LIKELY,
     STATE_DEM_LIKELY,
 )
-from .constants import TILT_MARGIN, LEAN_MARGIN, LIKELY_MARGIN, SAFE_MARGIN
+from .constants import TILT_MARGIN, LEAN_MARGIN, LIKELY_MARGIN
 
 
 def fit(*figure):
