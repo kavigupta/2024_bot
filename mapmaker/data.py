@@ -189,11 +189,10 @@ def data_without_education(year):
     ]
 
 
-@lru_cache(None)
 def data_for_year(year):
     data = data_without_education(year).set_index("FIPS")
-    # ed = load_educational_data(year)
-    # data = data.join(ed)
+    ed = load_educational_data(year)
+    data = data.join(ed)
     return data.reset_index()
 
 

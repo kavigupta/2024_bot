@@ -3,6 +3,7 @@ import functools
 import pickle
 
 from .data import data_by_year
+from .constants import PCA_DIMENSIONS
 from .torch_model import DemographicCategoryModel
 from .version import version
 from .calibrator import calibrate
@@ -14,7 +15,7 @@ IMAGE_FOLDER = os.path.join(
 
 
 @functools.lru_cache(None)
-def get_model(calibrated=False, *, dimensions=22):
+def get_model(calibrated=False, *, dimensions=PCA_DIMENSIONS):
     model = DemographicCategoryModel(
         data_by_year(), feature_kwargs=dict(dimensions=dimensions)
     )
