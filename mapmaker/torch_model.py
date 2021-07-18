@@ -13,9 +13,9 @@ from .model import Model
 from .trend_model import StableTrendModel, NoisedTrendModel
 from .utils import hash_model, intersect_all
 
-NUM_DEMOGRAPHICS = 15
+NUM_DEMOGRAPHICS = 10
 ITERS = 12000
-DEMOS_SIMILARITY_LOSS_WEIGHT = 5
+DEMOS_SIMILARITY_LOSS_WEIGHT = 2.5
 HIDDEN_SIZE = 100
 LEARNING_RATE = 1e-2
 
