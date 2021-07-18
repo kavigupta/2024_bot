@@ -24,6 +24,7 @@ EDUCATION_COLUMNS = [
     "other_pct",
 ]
 
+
 @lru_cache(None)
 def counties():
     return PlotlyGeoJSON(e.alaska.FIVE_REGIONS()).get()
@@ -264,12 +265,8 @@ def data_2024():
     for key in keys + EDUCATION_COLUMNS:
         change_from_2016 = all_data[key] - data_2016[key]
         change_from_2012_halved = (all_data[key] - data_2012[key]) / 2
-        change_estimate = (change_from_2016 * 2.0 / 3
-        + change_from_2012_halved * 1.0 / 3)
-        all_data[key] = (
-            all_data[key]
-            + change_estimate
-        )
+        change_estimate = change_from_2016 * 2.0 / 3 + change_from_2012_halved * 1.0 / 3
+        all_data[key] = all_data[key] + change_estimate
     # 2012 CVAP is centered in 2010
     # 2016 CVAP is centered in 2014
     # 2020 CVAP is centered in 2018

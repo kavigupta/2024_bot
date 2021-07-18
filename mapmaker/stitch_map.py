@@ -31,7 +31,7 @@ from .colors import (
     COUNTY_COLORSCALE,
     COUNTY_SCALE_MARGIN_MAX,
     COUNTY_SCALE_MARGIN_MIN,
-    get_color
+    get_color,
 )
 from .text import draw_text
 
@@ -233,7 +233,16 @@ def draw_legend(draw, scale, mode):
                 else "Even",
             )
     else:
-        state_buckets = ["> R+7", "R+3 - R+7", "R+1 - R+3", "< R+1", "< D+1", "D+1 - D+3", "D+3 - D+7", "> D+7"]
+        state_buckets = [
+            "> R+7",
+            "R+3 - R+7",
+            "R+1 - R+3",
+            "< R+1",
+            "< D+1",
+            "D+1 - D+3",
+            "D+3 - D+7",
+            "> D+7",
+        ]
         state_colors = [
             STATE_GOP,
             STATE_GOP_LIKELY,

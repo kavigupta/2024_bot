@@ -21,6 +21,7 @@ from .colors import (
 )
 from .constants import TILT_MARGIN, LEAN_MARGIN, LIKELY_MARGIN
 
+
 def fit(*figure):
     figure = go.Figure(
         figure,
