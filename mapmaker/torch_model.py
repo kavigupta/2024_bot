@@ -24,7 +24,7 @@ YEAR_RESIDUAL_CORRECTIONS = {2022: -4e-2}
 
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
-    version = 4.5
+    version = 4.6
 
     def __init__(self, f, d, years, previous_partisanships, fipses, gamma=0.5):
         super().__init__()
