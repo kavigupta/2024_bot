@@ -11,18 +11,18 @@ def bias(preds):
     return ((ecs * dems).sum(1) > (ecs * gop).sum(1)).mean()
 
 
-def calibrate(model, *, for_year, target_pv_spread_90=15.0e-2):
+def calibrate(model, *, for_year, target_pv_spread_50=10.0e-2):
     low_alpha, high_alpha = 0, 1
     while True:
         mid_alpha = (low_alpha + high_alpha) / 2
         model = model.with_alpha(mid_alpha)
         _, state_preds, pv = model.family_of_predictions(year=for_year)
-        pv_spread_90 = np.percentile(pv, 95) - np.percentile(pv, 5)
+        pv_spread_50 = np.percentile(pv, 75) - np.percentile(pv, 25)
         print(f"Alpha: {mid_alpha:.4f}")
-        print(f"Spread: {pv_spread_90:.2%}")
-        if abs(pv_spread_90 - target_pv_spread_90) < 0.5e-2:
+        print(f"Spread: {pv_spread_50:.2%}")
+        if abs(pv_spread_50 - target_pv_spread_50) < 0.5e-2:
             break
-        if pv_spread_90 > target_pv_spread_90:
+        if pv_spread_50 > target_pv_spread_50:
             high_alpha = mid_alpha
         else:
             low_alpha = mid_alpha
