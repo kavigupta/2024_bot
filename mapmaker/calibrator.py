@@ -11,8 +11,8 @@ def bias(preds):
     return ((ecs * dems).sum(1) > (ecs * gop).sum(1)).mean()
 
 
-def calibrate(model, *, for_year, target_pv_spread_50=10.0e-2):
-    low_alpha, high_alpha = 0, 1
+def calibrate(model, *, for_year, target_pv_spread_50=16.0e-2):
+    low_alpha, high_alpha = 0, 2
     while True:
         mid_alpha = (low_alpha + high_alpha) / 2
         model = model.with_alpha(mid_alpha)
