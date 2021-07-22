@@ -208,6 +208,10 @@ def all_data(year):
     else:
         all_data = data_2024().copy()
 
+    # Education nonlinearities
+    all_data["white_college_nonlinearity"] = all_data["white_and_white_hispanic_educated_pct"] ** 2
+    all_data["white_noncollege_nonlinearity"] = all_data["white_and_white_hispanic_noncollege_pct"] ** 2
+
     ## Nonlinearity
     all_data["county_diversity_black_white"] = all_data["black %"] * all_data["white %"]
     all_data["county_diversity_hispanic_white"] = (

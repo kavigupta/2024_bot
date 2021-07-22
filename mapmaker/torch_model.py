@@ -13,7 +13,7 @@ from .model import Model
 from .trend_model import StableTrendModel, NoisedTrendModel
 from .utils import hash_model, intersect_all
 
-NUM_DEMOGRAPHICS = 10
+NUM_DEMOGRAPHICS = 15
 ITERS = 12000
 DEMOS_SIMILARITY_LOSS_WEIGHT = 3
 HIDDEN_SIZE = 100
@@ -24,7 +24,7 @@ YEAR_RESIDUAL_CORRECTIONS = {2022: -4e-2}
 
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
-    version = 4.4
+    version = 4.5
 
     def __init__(self, f, d, years, previous_partisanships, fipses, gamma=0.5):
         super().__init__()
@@ -92,7 +92,8 @@ class DemographicCategoryPredictor(nn.Module):
             previous_partisanship = torch.tensor(
                 np.array(self.previous_partisanships[y])
             ).float()
-            tp[y] = tp[y] + previous_partisanship * t[y]
+            # tp[y] = tp[y] + previous_partisanship * t[y]
+            tp[y] = torch.tanh(torch.atanh(tp[y]/t[y]) + torch.atanh(previous_partisanship)) * t[y]
         if full_output:
             return t, tp, demos
         return t, tp
