@@ -29,5 +29,5 @@ for y in (
         year=y,
         correct="just_residuals",
     )
-for i in tqdm.trange(107, 108):
+for i in tqdm.trange(10, 20):
     get_image(i, i)
