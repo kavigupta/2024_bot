@@ -327,7 +327,7 @@ class DemographicCategoryModel(Model):
             for_year=year,
             prediction_seed=prediction_seed,
             alpha_partisanship=self.alpha,
-            alpha_turnout=self.alpha * 0.5,
+            alpha_turnout=self.alpha * 10,
         )
         model_year = 2020 if year > 2020 else year
         return adcm.predict(

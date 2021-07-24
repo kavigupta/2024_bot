@@ -1,6 +1,7 @@
 import numpy as np
 import tqdm
 
+from .constants import TARGET_PV_SPREAD_50
 from .data import ec
 
 
@@ -11,7 +12,7 @@ def bias(preds):
     return ((ecs * dems).sum(1) > (ecs * gop).sum(1)).mean()
 
 
-def calibrate(model, *, for_year, target_pv_spread_50=16.0e-2):
+def calibrate(model, *, for_year):
     low_alpha, high_alpha = 0, 2
     while True:
         mid_alpha = (low_alpha + high_alpha) / 2
@@ -20,9 +21,9 @@ def calibrate(model, *, for_year, target_pv_spread_50=16.0e-2):
         pv_spread_50 = np.percentile(pv, 75) - np.percentile(pv, 25)
         print(f"Alpha: {mid_alpha:.4f}")
         print(f"Spread: {pv_spread_50:.2%}")
-        if abs(pv_spread_50 - target_pv_spread_50) < 0.5e-2:
+        if abs(pv_spread_50 - TARGET_PV_SPREAD_50) < 0.5e-2:
             break
-        if pv_spread_50 > target_pv_spread_50:
+        if pv_spread_50 > TARGET_PV_SPREAD_50:
             high_alpha = mid_alpha
         else:
             low_alpha = mid_alpha
