@@ -15,7 +15,7 @@ from .utils import hash_model, intersect_all
 
 NUM_DEMOGRAPHICS = 15
 ITERS = 12000
-DEMOS_SIMILARITY_LOSS_WEIGHT = 3
+DEMOS_SIMILARITY_LOSS_WEIGHT = 1
 HIDDEN_SIZE = 100
 LEARNING_RATE = 1e-2
 
@@ -24,7 +24,7 @@ YEAR_RESIDUAL_CORRECTIONS = {2022: -4e-2}
 
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
-    version = 4.6
+    version = 4.8
 
     def __init__(self, f, d, years, previous_partisanships, fipses, gamma=0.5):
         super().__init__()
@@ -46,13 +46,18 @@ class DemographicCategoryPredictor(nn.Module):
             {str(y): nn.Parameter(torch.randn(d, 1)) for y in years}
         )
         self.partisanship_heads = nn.ParameterDict(
-            {str(y): nn.Parameter(torch.randn(d, 1)) for y in years}
+            {
+                str((y, use_past)): nn.Parameter(torch.randn(d, 1))
+                for y in years
+                for use_past in (True, False)
+            }
         )
 
     def get_heads(
         self,
         y,
         *,
+        use_past_partisanship,
         partisanship_noise=0,
         turnout_noise=0,
         turnout_weights=None,
@@ -66,7 +71,10 @@ class DemographicCategoryPredictor(nn.Module):
             for year in self.years
         }
 
-        partisanship = torch.tanh(self.partisanship_heads[str(y)] + partisanship_noise)
+        partisanship = torch.tanh(
+            self.partisanship_heads[str((y, use_past_partisanship))]
+            + partisanship_noise
+        )
 
         if turnout_weights is not None:
             assert turnout_year is None
@@ -79,11 +87,16 @@ class DemographicCategoryPredictor(nn.Module):
 
         return turnout, turnout * partisanship
 
-    def forward(self, features, full_output=False, **kwargs):
+    def forward(
+        self, features, full_output=False, use_past_partisanship=True, **kwargs
+    ):
         years = list(features)
         features = {y: torch.tensor(features[y]).float() for y in features}
         demos = {y: self.latent_demographic_model(features[y]) for y in features}
-        heads = {y: self.get_heads(y, **kwargs) for y in years}
+        heads = {
+            y: self.get_heads(y, **kwargs, use_past_partisanship=use_past_partisanship)
+            for y in years
+        }
         t, tp = {}, {}
         for y in years:
             turnout_heads, partisanship_heads = heads[y]
@@ -93,17 +106,26 @@ class DemographicCategoryPredictor(nn.Module):
                 np.array(self.previous_partisanships[y])
             ).float()
             # tp[y] = tp[y] + previous_partisanship * t[y]
-            tp[y] = (
-                torch.tanh(
-                    torch.atanh(tp[y] / t[y]) + torch.atanh(previous_partisanship)
+            if use_past_partisanship:
+                tp[y] = (
+                    torch.tanh(
+                        torch.atanh(tp[y] / t[y]) + torch.atanh(previous_partisanship)
+                    )
+                    * t[y]
                 )
-                * t[y]
-            )
         if full_output:
             return t, tp, demos
         return t, tp
 
-    def loss(self, features, target_turnouts, target_partisanships, cvaps):
+    def loss(
+        self,
+        features,
+        target_turnouts,
+        target_partisanships,
+        cvaps,
+        *,
+        use_past_partisanship,
+    ):
         assert (
             target_turnouts.keys()
             == target_partisanships.keys()
@@ -118,7 +140,9 @@ class DemographicCategoryPredictor(nn.Module):
         target_t = {y: torch.tensor(target_turnouts[y]).float() for y in years}
         target_tp = {y: torch.tensor(target_tp[y]).float() for y in years}
         cvaps = {y: torch.tensor(np.array(cvaps[y])).float() for y in years}
-        t, tp, demos = self(features, full_output=True)
+        t, tp, demos = self(
+            features, full_output=True, use_past_partisanship=use_past_partisanship
+        )
 
         demos = torch.stack([demos[y][self.index_to_common[y]] for y in years])
         cvaps_common = cvaps[2020][self.index_to_common[2020]]
@@ -189,12 +213,13 @@ class DemographicCategoryPredictor(nn.Module):
 def train_torch_model(dcm, iters, lr, *args):
     opt = torch.optim.Adam(dcm.parameters(), lr=lr)
     for itr in range(iters):
-        opt.zero_grad()
-        lv, lvdemo = dcm.loss(*args)
-        if (itr + 1) % 100 == 0:
-            print(f"{itr:4d} {lv.item():.6f} {lvdemo.item():.6f}")
-        (lv + lvdemo).backward()
-        opt.step()
+        for use_past_partisanship in True, False:
+            opt.zero_grad()
+            lv, lvdemo = dcm.loss(*args, use_past_partisanship=use_past_partisanship)
+            if (itr + 1) % 100 == 0:
+                print(f"{itr:4d} {lv.item():.6f} {lvdemo.item():.6f}")
+            (lv + lvdemo).backward()
+            opt.step()
     return dcm
 
 
