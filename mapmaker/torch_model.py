@@ -93,7 +93,12 @@ class DemographicCategoryPredictor(nn.Module):
                 np.array(self.previous_partisanships[y])
             ).float()
             # tp[y] = tp[y] + previous_partisanship * t[y]
-            tp[y] = torch.tanh(torch.atanh(tp[y]/t[y]) + torch.atanh(previous_partisanship)) * t[y]
+            tp[y] = (
+                torch.tanh(
+                    torch.atanh(tp[y] / t[y]) + torch.atanh(previous_partisanship)
+                )
+                * t[y]
+            )
         if full_output:
             return t, tp, demos
         return t, tp
