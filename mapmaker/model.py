@@ -77,4 +77,6 @@ class Model(ABC):
             path,
             dem_margin=predictions,
             turnout=turnout,
+            map_type=map_type,
+            year=year,
         )

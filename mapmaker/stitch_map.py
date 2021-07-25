@@ -257,7 +257,7 @@ def draw_legend(draw, scale, mode):
             add_square(color, margin_text)
 
 
-def generate_map(data, title, out_path, *, dem_margin, turnout):
+def generate_map(data, title, out_path, *, dem_margin, turnout, map_type, year):
     dem_ec, gop_ec = get_electoral_vote(data, dem_margin=dem_margin, turnout=turnout)
     dem_ec_safe, gop_ec_safe = get_electoral_vote(
         data, dem_margin=dem_margin, turnout=turnout, only_nonclose=True
