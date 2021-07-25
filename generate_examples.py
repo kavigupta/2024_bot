@@ -39,4 +39,4 @@ for y in YEARS:
             map_type=map_type,
         )
 for i in tqdm.trange(10, 20):
-    get_image(i, i)
+    get_image(i, i, map_type="president")

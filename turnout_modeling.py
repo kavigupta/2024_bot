@@ -17,4 +17,5 @@ for y in (
         path=f"turnout_modeling/{y}_actual.svg",
         year=2020,
         turnout_year=y,
+        map_type="president",
     )
