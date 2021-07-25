@@ -24,7 +24,7 @@ def get_model(calibrated=False, *, dimensions=PCA_DIMENSIONS):
     return model
 
 
-def get_image(seed, name):
+def get_image(seed, name, *, map_type):
     name = str(name)
     try:
         os.makedirs(IMAGE_FOLDER)
@@ -43,6 +43,7 @@ def get_image(seed, name):
         year=2024,
         seed=seed,
         path=svg_path,
+        map_type=map_type,
     )
     with open(pkl_path, "wb") as f:
         pickle.dump(stateres, f)

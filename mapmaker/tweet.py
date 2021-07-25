@@ -40,7 +40,7 @@ def tweet_map():
     my_auth.set_access_token(my_access_token, my_access_token_secret)
     my_api = tweepy.API(my_auth)
     number = current_tweet_id(my_api)
-    used, image, pkl = get_image(number, number)
+    used, image, pkl = get_image(number, number, map_type="president")
     post(f"scenario_{number}", pkl)
     message = f"2024 scenario {number}"
     my_api.update_with_media(image, status=message)

@@ -4,23 +4,37 @@ from mapmaker.generate_image import get_model, get_image
 
 YEARS = (2024, 2022, 2010, 2012, 2014, 2016, 2018, 2020)
 
+MAP_TYPES = ["president"]
+
 model = get_model(calibrated=False)
 for y in YEARS:
-    model.sample_map(
-        f"{y} {'Actual' if y <= 2020 else 'Pred Corrected'}",
-        seed=None,
-        path=f"images/{y}_actual.svg",
-        year=y,
-    )
-    model.sample_map(
-        f"{y} Pred", seed=None, path=f"images/{y}_pred.svg", year=y, correct=False
-    )
-    model.sample_map(
-        f"{y} Residuals",
-        seed=None,
-        path=f"images/{y}_residuals.svg",
-        year=y,
-        correct="just_residuals",
-    )
+    for map_type in MAP_TYPES:
+        if map_type == "senate" and y != 2022:
+            continue
+        prefix = f"{y}" if map_type == "president" else f"{y}_sen"
+        prefix_name = prefix.replace("_sen", " Senate")
+        model.sample_map(
+            f"{prefix_name} {'Actual' if y <= 2020 else 'Pred Corrected'}",
+            seed=None,
+            path=f"images/{prefix}_actual.svg",
+            year=y,
+            map_type=map_type,
+        )
+        model.sample_map(
+            f"{prefix_name} Pred",
+            seed=None,
+            path=f"images/{prefix}_pred.svg",
+            year=y,
+            correct=False,
+            map_type=map_type,
+        )
+        model.sample_map(
+            f"{prefix_name} Residuals",
+            seed=None,
+            path=f"images/{prefix}_residuals.svg",
+            year=y,
+            correct="just_residuals",
+            map_type=map_type,
+        )
 for i in tqdm.trange(10, 20):
-    get_image(i, i)
+    get_image(i, i, map_type="president")
