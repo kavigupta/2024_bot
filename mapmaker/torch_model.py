@@ -9,6 +9,7 @@ import numpy as np
 
 from permacache import permacache, stable_hash
 
+from .aggregation import get_popular_vote
 from .model import Model
 from .trend_model import StableTrendModel, NoisedTrendModel
 from .utils import hash_model, intersect_all
@@ -19,7 +20,7 @@ DEMOS_SIMILARITY_LOSS_WEIGHT = 1
 HIDDEN_SIZE = 100
 LEARNING_RATE = 1e-2
 
-YEAR_RESIDUAL_CORRECTIONS = {2022: -4e-2}
+YEAR_FORCE_ENVIRONMENT = {2022: 2e-2}
 
 
 class DemographicCategoryPredictor(nn.Module):
@@ -279,7 +280,9 @@ class AdjustedDemographicCategoryModel:
         deltas = torch.rand(self.dcm.d, 1) - 0.5
         return deltas
 
-    def predict(self, *, model_year, output_year, features, correct, turnout_year):
+    def predict(
+        self, *, data, model_year, output_year, features, correct, turnout_year
+    ):
         turnout_weights = self.turnout_weights
         if turnout_weights is None and model_year != output_year:
             same_cycle_years = [y for y in self.dcm.years if y % 4 == output_year % 4]
@@ -304,9 +307,11 @@ class AdjustedDemographicCategoryModel:
             else:
                 p = p + pr
 
-            p = p + YEAR_RESIDUAL_CORRECTIONS.get(output_year, 0)
-
             t = t + self.residuals[model_year][1]
+            if output_year in YEAR_FORCE_ENVIRONMENT:
+                empirical = get_popular_vote(data, dem_margin=p, turnout=t)
+                p = p - empirical + YEAR_FORCE_ENVIRONMENT[output_year]
+
         return np.clip(p, -0.99, 0.99), np.clip(t, 0.01, 0.99)
 
 
@@ -331,6 +336,7 @@ class DemographicCategoryModel(Model):
         )
         model_year = 2020 if year > 2020 else year
         return adcm.predict(
+            data=self.data[year],
             model_year=model_year,
             output_year=year,
             features=self.features.features(year),

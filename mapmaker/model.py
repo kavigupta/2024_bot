@@ -67,7 +67,7 @@ class Model(ABC):
                 break
         return predictions, turnout
 
-    def sample_map(self, title, path, *, year, **kwargs):
+    def sample_map(self, title, path, *, year, map_type, **kwargs):
         print(f"Generating {title}")
         predictions, turnout = self.sample(year=year, **kwargs)
         return generate_map(
@@ -76,4 +76,6 @@ class Model(ABC):
             path,
             dem_margin=predictions,
             turnout=turnout,
+            map_type=map_type,
+            year=year,
         )

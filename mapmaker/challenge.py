@@ -47,4 +47,6 @@ def generate_challenge_maps(i, title, extractor):
             f"challenges/{i}" + "_solution" * is_solution + ".svg",
             dem_margin=dem_margin,
             turnout=turnout,
+            map_type="president",
+            year=2020,
         )

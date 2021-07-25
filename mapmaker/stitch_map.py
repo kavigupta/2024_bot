@@ -3,6 +3,7 @@ import re
 import tempfile
 
 from PIL import Image, ImageDraw
+import us
 import numpy as np
 
 import svgutils.transform as sg
@@ -10,6 +11,7 @@ from cairosvg import svg2png
 
 from .aggregation import (
     get_electoral_vote,
+    get_senate_vote,
     get_popular_vote,
     get_state_results,
     calculate_tipping_point,
@@ -33,6 +35,7 @@ from .colors import (
     COUNTY_SCALE_MARGIN_MIN,
     get_color,
 )
+from .senate import senate_2022
 from .text import draw_text
 
 LEFT_MARGIN = 50
@@ -64,6 +67,10 @@ def produce_text(
     tipping_point_margin,
     total_turnout,
     scale=SCALE,
+    *,
+    dem_senate,
+    gop_senate,
+    map_type,
 ):
     im = Image.new(mode="RGBA", size=(950 * scale, 450 * scale))
     draw = ImageDraw.Draw(im)
@@ -96,30 +103,45 @@ def produce_text(
 
     y = FIRST_LINE
 
-    draw_text(
-        draw,
-        40 * scale,
-        [(str(dem_ec), STATE_DEM), (" - ", TEXT_COLOR), (str(gop_ec), STATE_GOP)],
-        TEXT_CENTER * scale,
-        y * scale,
-        align=("center", 1),
-    )
+    if map_type == "president":
+        draw_text(
+            draw,
+            40 * scale,
+            [(str(dem_ec), STATE_DEM), (" - ", TEXT_COLOR), (str(gop_ec), STATE_GOP)],
+            TEXT_CENTER * scale,
+            y * scale,
+            align=("center", 1),
+        )
 
-    y += 15 // 2 + 20
+        y += 15 // 2 + 20
 
-    draw_text(
-        draw,
-        15 * scale,
-        [
-            ("Close: ", TEXT_COLOR),
-            (str(dem_ec_close), STATE_DEM_TILT),
-            (" - ", TEXT_COLOR),
-            (str(gop_ec_close), STATE_GOP_TILT),
-        ],
-        TEXT_CENTER * scale,
-        y * scale,
-        align=("center"),
-    )
+        draw_text(
+            draw,
+            15 * scale,
+            [
+                ("Close: ", TEXT_COLOR),
+                (str(dem_ec_close), STATE_DEM_TILT),
+                (" - ", TEXT_COLOR),
+                (str(gop_ec_close), STATE_GOP_TILT),
+            ],
+            TEXT_CENTER * scale,
+            y * scale,
+            align=("center"),
+        )
+    if map_type == "senate":
+        y += 15 // 2 + 20
+        draw_text(
+            draw,
+            40 * scale,
+            [
+                (str(dem_senate), STATE_DEM),
+                (" - ", TEXT_COLOR),
+                (str(gop_senate), STATE_GOP),
+            ],
+            TEXT_CENTER * scale,
+            y * scale,
+            align=("center", 1),
+        )
 
     y += 40 // 2 + 20
 
@@ -159,14 +181,15 @@ def produce_text(
         tipping_point_str = f"{tipping_point_state} R+{-tipping_point_margin:.2%}"
         tipping_point_color = STATE_GOP_TILT
 
-    draw_text(
-        draw,
-        10 * scale,
-        [("Tipping Point: ", TEXT_COLOR), (tipping_point_str, tipping_point_color)],
-        TEXT_CENTER * scale,
-        y * scale,
-        align=("center"),
-    )
+    if map_type == "president":
+        draw_text(
+            draw,
+            10 * scale,
+            [("Tipping Point: ", TEXT_COLOR), (tipping_point_str, tipping_point_color)],
+            TEXT_CENTER * scale,
+            y * scale,
+            align=("center"),
+        )
 
     draw_legend(draw, scale, "county")
     draw_legend(draw, scale, "state")
@@ -257,10 +280,25 @@ def draw_legend(draw, scale, mode):
             add_square(color, margin_text)
 
 
-def generate_map(data, title, out_path, *, dem_margin, turnout):
+def county_mask(data, map_type, year):
+    if map_type == "senate":
+        assert year == 2022
+        return data.state.apply(
+            lambda x: 1 if us.states.lookup(x).abbr in senate_2022 else np.nan
+        )
+    assert map_type == "president"
+    return 1
+
+
+def generate_map(data, title, out_path, *, dem_margin, turnout, map_type, year):
+    dem_margin_to_map = dem_margin * county_mask(data, map_type, year)
+
     dem_ec, gop_ec = get_electoral_vote(data, dem_margin=dem_margin, turnout=turnout)
     dem_ec_safe, gop_ec_safe = get_electoral_vote(
         data, dem_margin=dem_margin, turnout=turnout, only_nonclose=True
+    )
+    dem_senate, gop_senate = get_senate_vote(
+        data, dem_margin=dem_margin_to_map, turnout=turnout
     )
 
     tipping_point_state, tipping_point_margin = calculate_tipping_point(
@@ -269,8 +307,8 @@ def generate_map(data, title, out_path, *, dem_margin, turnout):
 
     dem_ec_close, gop_ec_close = dem_ec - dem_ec_safe, gop_ec - gop_ec_safe
     assert dem_ec_close >= 0 and gop_ec_close >= 0
-    cm = map_county_margins(data, dem_margin=dem_margin)
-    sm = state_map(data, dem_margin=dem_margin, turnout=turnout)
+    cm = map_county_margins(data, dem_margin=dem_margin_to_map)
+    sm = state_map(data, dem_margin=dem_margin_to_map, turnout=turnout)
     pop_vote_margin = get_popular_vote(data, dem_margin=dem_margin, turnout=turnout)
 
     fig = sg.SVGFigure("160cm", "65cm")
@@ -302,6 +340,9 @@ def generate_map(data, title, out_path, *, dem_margin, turnout):
         tipping_point_margin,
         total_turnout=number_votes(data, turnout=turnout)
         / number_votes(data, turnout=1),
+        dem_senate=dem_senate,
+        gop_senate=gop_senate,
+        map_type=map_type,
     )
     im.save(text_mask)
     with open(text_mask, "rb") as f:
