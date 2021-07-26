@@ -17,7 +17,9 @@ class Model(ABC):
         self.alpha = 0
 
     @abstractmethod
-    def fully_random_sample(self, *, year, prediction_seed, correct, turnout_year, map_type):
+    def fully_random_sample(
+        self, *, year, prediction_seed, correct, turnout_year, map_type
+    ):
         pass
 
     def with_alpha(self, alpha):
@@ -29,7 +31,11 @@ class Model(ABC):
         county_results, state_results, pop_votes = [], [], []
         for seed in range(n_seeds):
             predictions, turnout = self.fully_random_sample(
-                year=year, correct=correct, prediction_seed=seed, turnout_year=None, map_type="president",
+                year=year,
+                correct=correct,
+                prediction_seed=seed,
+                turnout_year=None,
+                map_type="president",
             )
             county_results.append(predictions)
             state_results.append(

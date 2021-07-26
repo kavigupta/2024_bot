@@ -122,6 +122,7 @@ INCUMBENCY_EFFECT_MEAN = 2.7e-2
 # ????? complete guess for now
 CANDIDATE_EFFECT_MEAN = 2e-2
 
+
 @lru_cache(None)
 def race_effect(state, seed):
     assert state not in d_incumbents_up_2022 or state not in r_incumbents_up_2022
@@ -129,7 +130,9 @@ def race_effect(state, seed):
         candidate_effect = 0
         incumbency_effect = INCUMBENCY_EFFECT_MEAN
     else:
-        rng = np.random.RandomState((seed + zlib.adler32(state.encode("utf-8"))) % 2 ** 32)
+        rng = np.random.RandomState(
+            (seed + zlib.adler32(state.encode("utf-8"))) % 2 ** 32
+        )
         # mean of absolute value normal value == sqrt(2 / pi)
         candidate_effect = rng.randn() * (np.pi / 2) ** 0.5 * CANDIDATE_EFFECT_MEAN
         # chi squared mode = df - 2

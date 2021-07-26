@@ -26,6 +26,7 @@ LEARNING_RATE = 1e-2
 YEAR_FORCE_ENVIRONMENT = {2022: 2e-2}
 EXCLUDE_TURNOUT_YEARS = [2014]
 
+
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
     version = 4.8
@@ -290,7 +291,15 @@ class AdjustedDemographicCategoryModel:
         return [2018]
 
     def predict(
-        self, *, data, model_year, output_year, features, correct, turnout_year, map_type
+        self,
+        *,
+        data,
+        model_year,
+        output_year,
+        features,
+        correct,
+        turnout_year,
+        map_type,
     ):
         turnout_weights = self.turnout_weights
         if turnout_weights is None and model_year != output_year:
@@ -315,7 +324,9 @@ class AdjustedDemographicCategoryModel:
                 for ty, tw in turnout_weights.items():
                     # complete mess. Map both sets of indices to a common basis and add the residuals at that site
                     # Just default to residual 0 for ones we we don't have direct access to
-                    t[self.dcm.index_to_common[model_year]] += (self.residuals[ty][1] * tw)[self.dcm.index_to_common[ty]]
+                    t[self.dcm.index_to_common[model_year]] += (
+                        self.residuals[ty][1] * tw
+                    )[self.dcm.index_to_common[ty]]
             if correct == "just_residuals":
                 p = pr
             else:
@@ -326,9 +337,12 @@ class AdjustedDemographicCategoryModel:
                     p = p - empirical + YEAR_FORCE_ENVIRONMENT[output_year]
                 if map_type == "senate":
                     assert output_year == 2022
-                    effect_by_state = data["state"].map(lambda x: race_effect(us.states.lookup(x).abbr, self.candidate_effect_seed))
+                    effect_by_state = data["state"].map(
+                        lambda x: race_effect(
+                            us.states.lookup(x).abbr, self.candidate_effect_seed
+                        )
+                    )
                     p = p + effect_by_state
-
 
         return np.clip(p, -0.99, 0.99), np.clip(t, 0.01, 0.99)
 
@@ -343,7 +357,9 @@ class DemographicCategoryModel(Model):
             feature_kwargs=feature_kwargs,
         )
 
-    def fully_random_sample(self, *, year, prediction_seed, correct, turnout_year, map_type):
+    def fully_random_sample(
+        self, *, year, prediction_seed, correct, turnout_year, map_type
+    ):
         # use the 2020 predictor since that's the best we have
         # TODO ADD THE PERTURBATIONS
         adcm = self.adcm.perturb(
