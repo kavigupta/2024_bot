@@ -6,8 +6,6 @@ YEARS = (2024, 2022, 2010, 2012, 2014, 2016, 2018, 2020)
 
 MAP_TYPES = ["senate", "president"]
 
-MAP_TYPES = ["senate"]
-
 model = get_model(calibrated=False)
 for y in YEARS:
     for map_type in MAP_TYPES:
