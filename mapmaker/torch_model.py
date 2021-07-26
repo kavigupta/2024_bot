@@ -2,15 +2,18 @@ from collections import defaultdict
 
 import attr
 
+
 import torch
 import torch.nn as nn
 
 import numpy as np
 
+import us
 from permacache import permacache, stable_hash
 
 from .aggregation import get_popular_vote
 from .model import Model
+from .senate import race_effect
 from .trend_model import StableTrendModel, NoisedTrendModel
 from .utils import hash_model, intersect_all
 
@@ -232,6 +235,7 @@ class AdjustedDemographicCategoryModel:
     partisanship_noise = attr.ib(default=0)
     turnout_noise = attr.ib(default=0)
     turnout_weights = attr.ib(default=None)
+    candidate_effect_seed = attr.ib(default=None)
 
     @staticmethod
     def train(*, years, features, data, feature_kwargs):
@@ -266,6 +270,7 @@ class AdjustedDemographicCategoryModel:
         turnout_weights /= turnout_weights.sum()
         turnout_weights = {y: w for y, w in zip(same_cycle_years, turnout_weights)}
         trend_model = NoisedTrendModel.of(rng, self.dcm.f)
+        candidate_effect_seed = rng.randint(2 ** 32)
 
         return AdjustedDemographicCategoryModel(
             dcm=self.dcm,
@@ -274,6 +279,7 @@ class AdjustedDemographicCategoryModel:
             partisanship_noise=partisanship_noise,
             turnout_noise=turnout_noise,
             turnout_weights=turnout_weights,
+            candidate_effect_seed=candidate_effect_seed,
         )
 
     def sample_perturbations(self):
@@ -281,7 +287,7 @@ class AdjustedDemographicCategoryModel:
         return deltas
 
     def turnout_relevant_years(self, output_year):
-        return [y for y in self.dcm.years if y % 4 == output_year % 4 and y not in EXCLUDE_TURNOUT_YEARS]
+        return [2018]
 
     def predict(
         self, *, data, model_year, output_year, features, correct, turnout_year, map_type
@@ -305,14 +311,23 @@ class AdjustedDemographicCategoryModel:
                 year=output_year,
                 base_year=model_year,
             )
-            t = t + self.residuals[model_year][1]
+            if turnout_weights is not None:
+                for ty, tw in turnout_weights.items():
+                    # complete mess. Map both sets of indices to a common basis and add the residuals at that site
+                    # Just default to residual 0 for ones we we don't have direct access to
+                    t[self.dcm.index_to_common[model_year]] += (self.residuals[ty][1] * tw)[self.dcm.index_to_common[ty]]
             if correct == "just_residuals":
                 p = pr
             else:
                 p = p + pr
                 if output_year in YEAR_FORCE_ENVIRONMENT:
                     empirical = get_popular_vote(data, dem_margin=p, turnout=t)
+                    print("Expected popular vote", empirical)
                     p = p - empirical + YEAR_FORCE_ENVIRONMENT[output_year]
+                if map_type == "senate":
+                    assert output_year == 2022
+                    effect_by_state = data["state"].map(lambda x: race_effect(us.states.lookup(x).abbr, self.candidate_effect_seed))
+                    p = p + effect_by_state
 
 
         return np.clip(p, -0.99, 0.99), np.clip(t, 0.01, 0.99)
