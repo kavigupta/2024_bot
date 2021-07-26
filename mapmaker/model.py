@@ -68,7 +68,6 @@ class Model(ABC):
         return predictions, turnout
 
     def sample_map(self, title, path, *, year, map_type, **kwargs):
-        assert map_type == "president"
         print(f"Generating {title}")
         predictions, turnout = self.sample(year=year, **kwargs)
         return generate_map(

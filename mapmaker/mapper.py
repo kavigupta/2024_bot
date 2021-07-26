@@ -70,6 +70,8 @@ def map_county_demographics(data, *, demographic_values):
 
 
 def classify(margin):
+    if margin != margin:
+        return np.nan
     if margin < -LIKELY_MARGIN:
         return 0
     if margin < -LEAN_MARGIN:
