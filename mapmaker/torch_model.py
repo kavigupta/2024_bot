@@ -284,7 +284,7 @@ class AdjustedDemographicCategoryModel:
         return [y for y in self.dcm.years if y % 4 == output_year % 4 and y not in EXCLUDE_TURNOUT_YEARS]
 
     def predict(
-        self, *, data, model_year, output_year, features, correct, turnout_year
+        self, *, data, model_year, output_year, features, correct, turnout_year, map_type
     ):
         turnout_weights = self.turnout_weights
         if turnout_weights is None and model_year != output_year:
@@ -328,7 +328,7 @@ class DemographicCategoryModel(Model):
             feature_kwargs=feature_kwargs,
         )
 
-    def fully_random_sample(self, *, year, prediction_seed, correct, turnout_year):
+    def fully_random_sample(self, *, year, prediction_seed, correct, turnout_year, map_type):
         # use the 2020 predictor since that's the best we have
         # TODO ADD THE PERTURBATIONS
         adcm = self.adcm.perturb(
@@ -345,6 +345,7 @@ class DemographicCategoryModel(Model):
             features=self.features.features(year),
             correct=correct,
             turnout_year=turnout_year,
+            map_type=map_type,
         )
 
     def get_demographics_by_county(self, *, year):
