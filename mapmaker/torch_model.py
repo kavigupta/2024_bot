@@ -290,7 +290,6 @@ class AdjustedDemographicCategoryModel:
         if turnout_weights is None and model_year != output_year:
             same_cycle_years = self.turnout_relevant_years(output_year)
             turnout_weights = {y: 1 / len(same_cycle_years) for y in same_cycle_years}
-        print(f"{turnout_weights=} {turnout_year=} {model_year=} {output_year=}")
         p, t = self.dcm.predict(
             model_year,
             features,
