@@ -17,7 +17,7 @@ class Model(ABC):
         self.alpha = 0
 
     @abstractmethod
-    def fully_random_sample(self, *, year, prediction_seed, correct, turnout_year):
+    def fully_random_sample(self, *, year, prediction_seed, correct, turnout_year, map_type):
         pass
 
     def with_alpha(self, alpha):
@@ -29,7 +29,7 @@ class Model(ABC):
         county_results, state_results, pop_votes = [], [], []
         for seed in range(n_seeds):
             predictions, turnout = self.fully_random_sample(
-                year=year, correct=correct, prediction_seed=seed, turnout_year=None
+                year=year, correct=correct, prediction_seed=seed, turnout_year=None, map_type="president",
             )
             county_results.append(predictions)
             state_results.append(
@@ -54,7 +54,7 @@ class Model(ABC):
         # even days, democrat. odd days, gop
         return dem_win == (seed % 2 == 0)
 
-    def sample(self, *, year, seed=None, correct=True, turnout_year=None):
+    def sample(self, *, year, seed=None, correct=True, turnout_year=None, map_type):
         rng = np.random.RandomState(seed)
         while True:
             predictions, turnout = self.fully_random_sample(
@@ -62,6 +62,7 @@ class Model(ABC):
                 prediction_seed=rng.randint(2 ** 32) if seed is not None else None,
                 correct=correct,
                 turnout_year=turnout_year,
+                map_type=map_type,
             )
             if self.win_consistent_with(predictions, turnout, seed, year=year):
                 break
@@ -69,7 +70,7 @@ class Model(ABC):
 
     def sample_map(self, title, path, *, year, map_type, **kwargs):
         print(f"Generating {title}")
-        predictions, turnout = self.sample(year=year, **kwargs)
+        predictions, turnout = self.sample(year=year, **kwargs, map_type=map_type)
         return generate_map(
             self.data[year],
             title,
