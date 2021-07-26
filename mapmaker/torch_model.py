@@ -21,7 +21,7 @@ HIDDEN_SIZE = 100
 LEARNING_RATE = 1e-2
 
 YEAR_FORCE_ENVIRONMENT = {2022: 2e-2}
-
+EXCLUDE_TURNOUT_YEARS = [2014]
 
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
@@ -261,7 +261,7 @@ class AdjustedDemographicCategoryModel:
         torch.manual_seed(rng.randint(2 ** 32))
         partisanship_noise = (self.sample_perturbations() * alpha_partisanship).float()
         turnout_noise = (self.sample_perturbations() * alpha_turnout).float()
-        same_cycle_years = [y for y in self.dcm.years if y % 4 == for_year % 4]
+        same_cycle_years = self.turnout_relevant_years(for_year)
         turnout_weights = torch.rand(len(same_cycle_years)).float()
         turnout_weights /= turnout_weights.sum()
         turnout_weights = {y: w for y, w in zip(same_cycle_years, turnout_weights)}
@@ -280,13 +280,17 @@ class AdjustedDemographicCategoryModel:
         deltas = torch.rand(self.dcm.d, 1) - 0.5
         return deltas
 
+    def turnout_relevant_years(self, output_year):
+        return [y for y in self.dcm.years if y % 4 == output_year % 4 and y not in EXCLUDE_TURNOUT_YEARS]
+
     def predict(
         self, *, data, model_year, output_year, features, correct, turnout_year
     ):
         turnout_weights = self.turnout_weights
         if turnout_weights is None and model_year != output_year:
-            same_cycle_years = [y for y in self.dcm.years if y % 4 == output_year % 4]
+            same_cycle_years = self.turnout_relevant_years(output_year)
             turnout_weights = {y: 1 / len(same_cycle_years) for y in same_cycle_years}
+        print(f"{turnout_weights=} {turnout_year=} {model_year=} {output_year=}")
         p, t = self.dcm.predict(
             model_year,
             features,
@@ -302,15 +306,15 @@ class AdjustedDemographicCategoryModel:
                 year=output_year,
                 base_year=model_year,
             )
+            t = t + self.residuals[model_year][1]
             if correct == "just_residuals":
                 p = pr
             else:
                 p = p + pr
+                if output_year in YEAR_FORCE_ENVIRONMENT:
+                    empirical = get_popular_vote(data, dem_margin=p, turnout=t)
+                    p = p - empirical + YEAR_FORCE_ENVIRONMENT[output_year]
 
-            t = t + self.residuals[model_year][1]
-            if output_year in YEAR_FORCE_ENVIRONMENT:
-                empirical = get_popular_vote(data, dem_margin=p, turnout=t)
-                p = p - empirical + YEAR_FORCE_ENVIRONMENT[output_year]
 
         return np.clip(p, -0.99, 0.99), np.clip(t, 0.01, 0.99)
 
