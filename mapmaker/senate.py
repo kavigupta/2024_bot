@@ -106,8 +106,8 @@ d_incumbents_up_2022 = {
 
 d_open_2022 = set()
 
-r_pocket_2022 = 50 - len(r_open_2022) - len(r_incumbents_up_2022)
-d_pocket_2022 = 50 - len(d_open_2022) - len(d_incumbents_up_2022)
+r_lock_2022 = 50 - len(r_open_2022) - len(r_incumbents_up_2022)
+d_lock_2022 = 50 - len(d_open_2022) - len(d_incumbents_up_2022)
 
 assert (
     r_incumbents_up_2022 | d_incumbents_up_2022 | r_open_2022 | d_open_2022

@@ -1,6 +1,6 @@
 from .data import ec
 from .constants import TILT_MARGIN
-from .senate import d_pocket_2022, r_pocket_2022
+from .senate import d_lock_2022, r_lock_2022
 
 
 def get_state_results(data, *, dem_margin, turnout):
@@ -40,7 +40,7 @@ def get_senate_vote(data, *, dem_margin, turnout):
     state_results = get_state_results(data, turnout=turnout, dem_margin=dem_margin)
     dem_states = (state_results > 0).sum()
     gop_states = (state_results <= 0).sum()
-    return dem_states + d_pocket_2022, gop_states + r_pocket_2022
+    return dem_states + d_lock_2022, gop_states + r_lock_2022
 
 
 def calculate_tipping_point(data, *, dem_margin, turnout):
