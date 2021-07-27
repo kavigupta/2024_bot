@@ -318,7 +318,13 @@ class AdjustedDemographicCategoryModel:
                 year=output_year,
                 base_year=model_year,
             )
-            t = t + self.residuals[model_year][1]
+            if turnout_weights is not None:
+                for ty, tw in turnout_weights.items():
+                    # complete mess. Map both sets of indices to a common basis and add the residuals at that site
+                    # Just default to residual 0 for ones we we don't have direct access to
+                    t[self.dcm.index_to_common[model_year]] += (
+                        self.residuals[ty][1] * tw
+                    )[self.dcm.index_to_common[ty]]
             if correct == "just_residuals":
                 p = pr
             else:
