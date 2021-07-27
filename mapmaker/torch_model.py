@@ -23,6 +23,7 @@ LEARNING_RATE = 1e-2
 YEAR_FORCE_ENVIRONMENT = {2022: 2e-2}
 EXCLUDE_TURNOUT_YEARS = [2014]
 
+
 class DemographicCategoryPredictor(nn.Module):
     # to refresh cache, increment this
     version = 4.8
@@ -281,10 +282,22 @@ class AdjustedDemographicCategoryModel:
         return deltas
 
     def turnout_relevant_years(self, output_year):
-        return [y for y in self.dcm.years if y % 4 == output_year % 4 and y not in EXCLUDE_TURNOUT_YEARS]
+        return [
+            y
+            for y in self.dcm.years
+            if y % 4 == output_year % 4 and y not in EXCLUDE_TURNOUT_YEARS
+        ]
 
     def predict(
-        self, *, data, model_year, output_year, features, correct, turnout_year, map_type
+        self,
+        *,
+        data,
+        model_year,
+        output_year,
+        features,
+        correct,
+        turnout_year,
+        map_type,
     ):
         turnout_weights = self.turnout_weights
         if turnout_weights is None and model_year != output_year:
@@ -314,7 +327,6 @@ class AdjustedDemographicCategoryModel:
                     empirical = get_popular_vote(data, dem_margin=p, turnout=t)
                     p = p - empirical + YEAR_FORCE_ENVIRONMENT[output_year]
 
-
         return np.clip(p, -0.99, 0.99), np.clip(t, 0.01, 0.99)
 
 
@@ -328,7 +340,9 @@ class DemographicCategoryModel(Model):
             feature_kwargs=feature_kwargs,
         )
 
-    def fully_random_sample(self, *, year, prediction_seed, correct, turnout_year, map_type):
+    def fully_random_sample(
+        self, *, year, prediction_seed, correct, turnout_year, map_type
+    ):
         # use the 2020 predictor since that's the best we have
         # TODO ADD THE PERTURBATIONS
         adcm = self.adcm.perturb(
