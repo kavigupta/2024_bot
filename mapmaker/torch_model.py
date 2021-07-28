@@ -288,7 +288,11 @@ class AdjustedDemographicCategoryModel:
         return deltas
 
     def turnout_relevant_years(self, output_year):
-        return [2018]
+        return [
+            y
+            for y in self.dcm.years
+            if y % 4 == output_year % 4 and y not in EXCLUDE_TURNOUT_YEARS
+        ]
 
     def predict(
         self,
@@ -322,11 +326,14 @@ class AdjustedDemographicCategoryModel:
             )
             if turnout_weights is not None:
                 for ty, tw in turnout_weights.items():
+                    tw = float(tw)
                     # complete mess. Map both sets of indices to a common basis and add the residuals at that site
                     # Just default to residual 0 for ones we we don't have direct access to
                     t[self.dcm.index_to_common[model_year]] += (
                         self.residuals[ty][1] * tw
                     )[self.dcm.index_to_common[ty]]
+            else:
+                t = t + self.residuals[turnout_year or model_year][1]
             if correct == "just_residuals":
                 p = pr
             else:
