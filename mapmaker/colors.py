@@ -40,6 +40,9 @@ STATE_DEM = "#3836ff"
 
 TEXT_COLOR = "white"
 
+DEMOCRATIC_SYMBOL = "D"
+REPUBLICAN_SYMBOL = "R"
+
 
 def get_continuous_color(colorscale, intermed):
     """

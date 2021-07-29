@@ -33,6 +33,8 @@ from .colors import (
     COUNTY_COLORSCALE,
     COUNTY_SCALE_MARGIN_MAX,
     COUNTY_SCALE_MARGIN_MIN,
+    DEMOCRATIC_SYMBOL,
+    REPUBLICAN_SYMBOL,
     get_color,
 )
 from .senate import senate_2022
@@ -149,9 +151,9 @@ def produce_text(
         draw,
         30 * scale,
         [
-            (f"D+{pop_vote_margin:.2%}", STATE_DEM)
+            (f"{DEMOCRATIC_SYMBOL}+{pop_vote_margin:.2%}", STATE_DEM)
             if pop_vote_margin > 0
-            else (f"R+{-pop_vote_margin:.2%}", STATE_GOP)
+            else (f"{REPUBLICAN_SYMBOL}+{-pop_vote_margin:.2%}", STATE_GOP)
         ],
         TEXT_CENTER * scale,
         y * scale,
@@ -175,10 +177,10 @@ def produce_text(
     tipping_point_color = None
 
     if tipping_point_margin > 0:
-        tipping_point_str = f"{tipping_point_state} D+{tipping_point_margin:.2%}"
+        tipping_point_str = f"{tipping_point_state} {DEMOCRATIC_SYMBOL}+{tipping_point_margin:.2%}"
         tipping_point_color = STATE_DEM_TILT
     else:
-        tipping_point_str = f"{tipping_point_state} R+{-tipping_point_margin:.2%}"
+        tipping_point_str = f"{tipping_point_state} {REPUBLICAN_SYMBOL}+{-tipping_point_margin:.2%}"
         tipping_point_color = STATE_GOP_TILT
 
     if map_type == "president":
@@ -249,22 +251,22 @@ def draw_legend(draw, scale, mode):
                     (margin - COUNTY_SCALE_MARGIN_MIN)
                     / (COUNTY_SCALE_MARGIN_MAX - COUNTY_SCALE_MARGIN_MIN),
                 ),
-                f"R+{-margin * 100:.0f}"
+                f"{REPUBLICAN_SYMBOL}+{-margin * 100:.0f}"
                 if margin < -0.001
-                else f"D+{margin * 100:.0f}"
+                else f"{DEMOCRATIC_SYMBOL}+{margin * 100:.0f}"
                 if margin > 0.001
                 else "Even",
             )
     else:
         state_buckets = [
-            "> R+7",
-            "R+3 - R+7",
-            "R+1 - R+3",
-            "< R+1",
-            "< D+1",
-            "D+1 - D+3",
-            "D+3 - D+7",
-            "> D+7",
+            f"> {REPUBLICAN_SYMBOL}+7",
+            f"{REPUBLICAN_SYMBOL}+3 - {REPUBLICAN_SYMBOL}+7",
+            f"{REPUBLICAN_SYMBOL}+1 - {REPUBLICAN_SYMBOL}+3",
+            f"< {REPUBLICAN_SYMBOL}+1",
+            f"< {DEMOCRATIC_SYMBOL}+1",
+            f"{DEMOCRATIC_SYMBOL}+1 - {DEMOCRATIC_SYMBOL}+3",
+            f"{DEMOCRATIC_SYMBOL}+3 - {DEMOCRATIC_SYMBOL}+7",
+            f"> {DEMOCRATIC_SYMBOL}+7",
         ]
         state_colors = [
             STATE_GOP,
