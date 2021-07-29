@@ -25,7 +25,7 @@ class Profile:
     hue = attr.ib()
 
     def color(self, party, saturation):
-        rgb = np.array(colorsys.hsv_to_rgb(STANDARD_PROFILE.hue[party], saturation, 1))
+        rgb = np.array(colorsys.hsv_to_rgb(self.hue[party], saturation, 1))
         return "#%02x%02x%02x" % tuple((rgb * 255).astype(np.uint8))
 
     def county_max(self, party):
