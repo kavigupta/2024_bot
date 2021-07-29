@@ -29,14 +29,14 @@ COUNTY_COLORSCALE = [
 STATE_GOP_TILT = "#ffcfcf"
 STATE_DEM_TILT = "#cfcfff"
 
-STATE_GOP_LEAN = "#ff9d9c"
+STATE_GOP_LEAN = "#ff9d9d"
 STATE_DEM_LEAN = "#9d9dff"
 
-STATE_GOP_LIKELY = "#ff6a69"
-STATE_DEM_LIKELY = "#6a69ff"
+STATE_GOP_LIKELY = "#ff6a6a"
+STATE_DEM_LIKELY = "#6a6aff"
 
-STATE_GOP = "#ff3836"
-STATE_DEM = "#3836ff"
+STATE_GOP = "#ff3838"
+STATE_DEM = "#3838ff"
 
 TEXT_COLOR = "white"
 
