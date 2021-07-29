@@ -7,17 +7,8 @@ from .data import counties
 from .aggregation import get_state_results
 from .colors import (
     BACKGROUND,
-    COUNTY_COLORSCALE,
     COUNTY_SCALE_MARGIN_MIN,
     COUNTY_SCALE_MARGIN_MAX,
-    STATE_GOP,
-    STATE_DEM,
-    STATE_GOP_TILT,
-    STATE_DEM_TILT,
-    STATE_GOP_LEAN,
-    STATE_DEM_LEAN,
-    STATE_GOP_LIKELY,
-    STATE_DEM_LIKELY,
 )
 from .constants import TILT_MARGIN, LEAN_MARGIN, LIKELY_MARGIN
 
@@ -47,14 +38,14 @@ def county_map(data, *, variable_to_plot, zmid, zmin, zmax, colorscale):
     return fit(figure)
 
 
-def map_county_margins(data, *, dem_margin):
+def map_county_margins(data, *, dem_margin, profile):
     return county_map(
         data,
         variable_to_plot=dem_margin,
         zmid=0,
         zmin=COUNTY_SCALE_MARGIN_MIN,
         zmax=COUNTY_SCALE_MARGIN_MAX,
-        colorscale=COUNTY_COLORSCALE,
+        colorscale=profile.county_colorscale,
     )
 
 
@@ -90,7 +81,7 @@ def classify(margin):
         return 1
 
 
-def state_map(data, *, dem_margin, turnout):
+def state_map(data, *, dem_margin, turnout, profile):
     state_margins = get_state_results(data, dem_margin=dem_margin, turnout=turnout)
     classes = [classify(m) for m in np.array(state_margins)]
 
@@ -99,14 +90,14 @@ def state_map(data, *, dem_margin, turnout):
         z=np.array(classes),
         locations=[us.states.lookup(x).abbr for x in state_margins.index],
         colorscale=[
-            [0, STATE_GOP],
-            [0.15, STATE_GOP_LIKELY],
-            [0.30, STATE_GOP_LEAN],
-            [0.45, STATE_GOP_TILT],
-            [0.60, STATE_DEM_TILT],
-            [0.75, STATE_DEM_LEAN],
-            [0.90, STATE_DEM_LIKELY],
-            [1, STATE_DEM],
+            [0, profile.state_safe("gop")],
+            [0.15, profile.state_likely("gop")],
+            [0.30, profile.state_lean("gop")],
+            [0.45, profile.state_tilt("gop")],
+            [0.60, profile.state_tilt("dem")],
+            [0.75, profile.state_lean("dem")],
+            [0.90, profile.state_likely("dem")],
+            [1, profile.state_safe("dem")],
         ],
         zmin=0,
         zmax=1,
