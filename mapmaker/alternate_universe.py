@@ -121,6 +121,6 @@ def sample_colors(seed):
     rng = np.random.RandomState(seed)
     while True:
         a, b = rng.rand(2)
-        if distance(a, b) > 1 / 3:
+        if distance(a, b) > 1 / 4:
             break
     return dict(dem=a, gop=b)
