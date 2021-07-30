@@ -1,5 +1,10 @@
+import colorsys
+
 import numpy as np
 import matplotlib.colors
+from PIL import ImageColor
+
+import attr
 
 import plotly.colors
 
@@ -11,37 +16,48 @@ COUNTY_SCALE_MARGIN_MIN = -0.8
 
 MARGINAL = 0.001
 
-COUNTY_MAX_GOP = "#ff0000"
-COUNTY_MIN_GOP = "#ffaaaa"
-EVEN = "#ffffff"
-COUNTY_MAX_DEM = "#0000ff"
-COUNTY_MIN_DEM = "#aaaaff"
-
-COUNTY_COLORSCALE = [
-    [0, COUNTY_MAX_GOP],
-    [0.5 - MARGINAL, COUNTY_MIN_GOP],
-    [0.5, EVEN],
-    [0.5 + MARGINAL, COUNTY_MIN_DEM],
-    [1.0, COUNTY_MAX_DEM],
-]
-
-
-STATE_GOP_TILT = "#ffcfcf"
-STATE_DEM_TILT = "#cfcfff"
-
-STATE_GOP_LEAN = "#ff9d9d"
-STATE_DEM_LEAN = "#9d9dff"
-
-STATE_GOP_LIKELY = "#ff6a6a"
-STATE_DEM_LIKELY = "#6a6aff"
-
-STATE_GOP = "#ff3838"
-STATE_DEM = "#3838ff"
-
 TEXT_COLOR = "white"
 
-DEMOCRATIC_SYMBOL = "D"
-REPUBLICAN_SYMBOL = "R"
+
+@attr.s
+class Profile:
+    symbol = attr.ib()
+    hue = attr.ib()
+
+    def color(self, party, saturation):
+        rgb = np.array(colorsys.hsv_to_rgb(self.hue[party], saturation, 1))
+        return "#%02x%02x%02x" % tuple((rgb * 255).astype(np.uint8))
+
+    def county_max(self, party):
+        return self.color(party, 1)
+
+    def county_min(self, party):
+        return self.color(party, 1 / 3)
+
+    def state_tilt(self, party):
+        return self.color(party, 0.18823529411764706)
+
+    def state_lean(self, party):
+        return self.color(party, 0.38431372549019605)
+
+    def state_likely(self, party):
+        return self.color(party, 0.584313725490196)
+
+    def state_safe(self, party):
+        return self.color(party, 0.7803921568627451)
+
+    @property
+    def county_colorscale(self):
+        return [
+            [0, self.county_max("gop")],
+            [0.5 - MARGINAL, self.county_min("gop")],
+            [0.5, "#ffffff"],
+            [0.5 + MARGINAL, self.county_min("dem")],
+            [1.0, self.county_max("dem")],
+        ]
+
+
+STANDARD_PROFILE = Profile(symbol=dict(dem="D", gop="R"), hue=dict(dem=2 / 3, gop=1))
 
 
 def get_continuous_color(colorscale, intermed):

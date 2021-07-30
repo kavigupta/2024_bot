@@ -22,19 +22,9 @@ from .version import version
 from .colors import (
     BACKGROUND_RGB,
     TEXT_COLOR,
-    STATE_GOP,
-    STATE_DEM,
-    STATE_GOP_TILT,
-    STATE_DEM_TILT,
-    STATE_GOP_LEAN,
-    STATE_DEM_LEAN,
-    STATE_GOP_LIKELY,
-    STATE_DEM_LIKELY,
-    COUNTY_COLORSCALE,
     COUNTY_SCALE_MARGIN_MAX,
     COUNTY_SCALE_MARGIN_MIN,
-    DEMOCRATIC_SYMBOL,
-    REPUBLICAN_SYMBOL,
+    STANDARD_PROFILE,
     get_color,
 )
 from .senate import senate_2022
@@ -73,6 +63,7 @@ def produce_text(
     dem_senate,
     gop_senate,
     map_type,
+    profile,
 ):
     im = Image.new(mode="RGBA", size=(950 * scale, 450 * scale))
     draw = ImageDraw.Draw(im)
@@ -109,7 +100,11 @@ def produce_text(
         draw_text(
             draw,
             40 * scale,
-            [(str(dem_ec), STATE_DEM), (" - ", TEXT_COLOR), (str(gop_ec), STATE_GOP)],
+            [
+                (str(dem_ec), profile.state_safe("dem")),
+                (" - ", TEXT_COLOR),
+                (str(gop_ec), profile.state_safe("gop")),
+            ],
             TEXT_CENTER * scale,
             y * scale,
             align=("center", 1),
@@ -122,9 +117,9 @@ def produce_text(
             15 * scale,
             [
                 ("Close: ", TEXT_COLOR),
-                (str(dem_ec_close), STATE_DEM_TILT),
+                (str(dem_ec_close), profile.state_tilt("dem")),
                 (" - ", TEXT_COLOR),
-                (str(gop_ec_close), STATE_GOP_TILT),
+                (str(gop_ec_close), profile.state_tilt("gop")),
             ],
             TEXT_CENTER * scale,
             y * scale,
@@ -136,9 +131,9 @@ def produce_text(
             draw,
             40 * scale,
             [
-                (str(dem_senate), STATE_DEM),
+                (str(dem_senate), profile.state_safe("dem")),
                 (" - ", TEXT_COLOR),
-                (str(gop_senate), STATE_GOP),
+                (str(gop_senate), profile.state_safe("gop")),
             ],
             TEXT_CENTER * scale,
             y * scale,
@@ -151,9 +146,15 @@ def produce_text(
         draw,
         30 * scale,
         [
-            (f"{DEMOCRATIC_SYMBOL}+{pop_vote_margin:.2%}", STATE_DEM)
+            (
+                f"{profile.symbol['dem']}+{pop_vote_margin:.2%}",
+                profile.state_safe("dem"),
+            )
             if pop_vote_margin > 0
-            else (f"{REPUBLICAN_SYMBOL}+{-pop_vote_margin:.2%}", STATE_GOP)
+            else (
+                f"{profile.symbol['gop']}+{-pop_vote_margin:.2%}",
+                profile.state_safe("gop"),
+            )
         ],
         TEXT_CENTER * scale,
         y * scale,
@@ -177,11 +178,15 @@ def produce_text(
     tipping_point_color = None
 
     if tipping_point_margin > 0:
-        tipping_point_str = f"{tipping_point_state} {DEMOCRATIC_SYMBOL}+{tipping_point_margin:.2%}"
-        tipping_point_color = STATE_DEM_TILT
+        tipping_point_str = (
+            f"{tipping_point_state} {profile.symbol['dem']}+{tipping_point_margin:.2%}"
+        )
+        tipping_point_color = profile.state_tilt("dem")
     else:
-        tipping_point_str = f"{tipping_point_state} {REPUBLICAN_SYMBOL}+{-tipping_point_margin:.2%}"
-        tipping_point_color = STATE_GOP_TILT
+        tipping_point_str = (
+            f"{tipping_point_state} {profile.symbol['gop']}+{-tipping_point_margin:.2%}"
+        )
+        tipping_point_color = profile.state_tilt("gop")
 
     if map_type == "president":
         draw_text(
@@ -193,13 +198,13 @@ def produce_text(
             align=("center"),
         )
 
-    draw_legend(draw, scale, "county")
-    draw_legend(draw, scale, "state")
+    draw_legend(draw, scale, "county", profile=profile)
+    draw_legend(draw, scale, "state", profile=profile)
 
     return im
 
 
-def draw_legend(draw, scale, mode):
+def draw_legend(draw, scale, mode, *, profile):
     if mode == "state":
         legend_y = LEGEND_STARTY_STATE
         legend_x = LEGEND_STARTX_STATE
@@ -247,36 +252,36 @@ def draw_legend(draw, scale, mode):
         for margin in np.arange(-0.8, 0.8 + 1e-1, 0.2):
             add_square(
                 get_color(
-                    COUNTY_COLORSCALE,
+                    profile.county_colorscale,
                     (margin - COUNTY_SCALE_MARGIN_MIN)
                     / (COUNTY_SCALE_MARGIN_MAX - COUNTY_SCALE_MARGIN_MIN),
                 ),
-                f"{REPUBLICAN_SYMBOL}+{-margin * 100:.0f}"
+                f"{profile.symbol['gop']}+{-margin * 100:.0f}"
                 if margin < -0.001
-                else f"{DEMOCRATIC_SYMBOL}+{margin * 100:.0f}"
+                else f"{profile.symbol['dem']}+{margin * 100:.0f}"
                 if margin > 0.001
                 else "Even",
             )
     else:
         state_buckets = [
-            f"> {REPUBLICAN_SYMBOL}+7",
-            f"{REPUBLICAN_SYMBOL}+3 - {REPUBLICAN_SYMBOL}+7",
-            f"{REPUBLICAN_SYMBOL}+1 - {REPUBLICAN_SYMBOL}+3",
-            f"< {REPUBLICAN_SYMBOL}+1",
-            f"< {DEMOCRATIC_SYMBOL}+1",
-            f"{DEMOCRATIC_SYMBOL}+1 - {DEMOCRATIC_SYMBOL}+3",
-            f"{DEMOCRATIC_SYMBOL}+3 - {DEMOCRATIC_SYMBOL}+7",
-            f"> {DEMOCRATIC_SYMBOL}+7",
+            f"> {profile.symbol['gop']}+7",
+            f"{profile.symbol['gop']}+3 - {profile.symbol['gop']}+7",
+            f"{profile.symbol['gop']}+1 - {profile.symbol['gop']}+3",
+            f"< {profile.symbol['gop']}+1",
+            f"< {profile.symbol['dem']}+1",
+            f"{profile.symbol['dem']}+1 - {profile.symbol['dem']}+3",
+            f"{profile.symbol['dem']}+3 - {profile.symbol['dem']}+7",
+            f"> {profile.symbol['dem']}+7",
         ]
         state_colors = [
-            STATE_GOP,
-            STATE_GOP_LIKELY,
-            STATE_GOP_LEAN,
-            STATE_GOP_TILT,
-            STATE_DEM_TILT,
-            STATE_DEM_LEAN,
-            STATE_DEM_LIKELY,
-            STATE_DEM,
+            profile.state_safe("gop"),
+            profile.state_likely("gop"),
+            profile.state_lean("gop"),
+            profile.state_tilt("gop"),
+            profile.state_tilt("dem"),
+            profile.state_lean("dem"),
+            profile.state_likely("dem"),
+            profile.state_safe("dem"),
         ]
         for margin_text, color in zip(state_buckets, state_colors):
             add_square(color, margin_text)
@@ -292,7 +297,17 @@ def county_mask(data, map_type, year):
     return 1
 
 
-def generate_map(data, title, out_path, *, dem_margin, turnout, map_type, year):
+def generate_map(
+    data,
+    title,
+    out_path,
+    *,
+    dem_margin,
+    turnout,
+    map_type,
+    year,
+    profile=STANDARD_PROFILE,
+):
     dem_margin_to_map = dem_margin * county_mask(data, map_type, year)
 
     dem_ec, gop_ec = get_electoral_vote(data, dem_margin=dem_margin, turnout=turnout)
@@ -309,8 +324,8 @@ def generate_map(data, title, out_path, *, dem_margin, turnout, map_type, year):
 
     dem_ec_close, gop_ec_close = dem_ec - dem_ec_safe, gop_ec - gop_ec_safe
     assert dem_ec_close >= 0 and gop_ec_close >= 0
-    cm = map_county_margins(data, dem_margin=dem_margin_to_map)
-    sm = state_map(data, dem_margin=dem_margin_to_map, turnout=turnout)
+    cm = map_county_margins(data, dem_margin=dem_margin_to_map, profile=profile)
+    sm = state_map(data, dem_margin=dem_margin_to_map, turnout=turnout, profile=profile)
     pop_vote_margin = get_popular_vote(data, dem_margin=dem_margin, turnout=turnout)
 
     fig = sg.SVGFigure("160cm", "65cm")
@@ -345,6 +360,7 @@ def generate_map(data, title, out_path, *, dem_margin, turnout, map_type, year):
         dem_senate=dem_senate,
         gop_senate=gop_senate,
         map_type=map_type,
+        profile=profile,
     )
     im.save(text_mask)
     with open(text_mask, "rb") as f:
