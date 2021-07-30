@@ -6,3 +6,4 @@ images/*/*.pkl
 SECRET.py
 env
 Untitled.ipynb
+.vscode
