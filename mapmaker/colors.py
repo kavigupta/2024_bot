@@ -23,6 +23,7 @@ TEXT_COLOR = "white"
 class Profile:
     symbol = attr.ib()
     hue = attr.ib()
+    bot_name = attr.ib()
 
     def color(self, party, saturation):
         rgb = np.array(colorsys.hsv_to_rgb(self.hue[party], saturation, 1))
@@ -57,7 +58,9 @@ class Profile:
         ]
 
 
-STANDARD_PROFILE = Profile(symbol=dict(dem="D", gop="R"), hue=dict(dem=2 / 3, gop=1))
+STANDARD_PROFILE = Profile(
+    symbol=dict(dem="D", gop="R"), hue=dict(dem=2 / 3, gop=1), bot_name="bot_2024"
+)
 
 
 def get_continuous_color(colorscale, intermed):

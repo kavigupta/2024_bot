@@ -8,6 +8,7 @@ from .torch_model import DemographicCategoryModel
 from .version import version
 from .calibrator import calibrate
 from .stitch_demographic_map import generate_demographic_map
+from .alternate_universe import generate_alternate_universe_map
 
 IMAGE_FOLDER = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), "images", version
@@ -37,7 +38,7 @@ def get_image(seed, name, *, map_type):
     png_path = f"{IMAGE_FOLDER}/{filename}.png"
     pkl_path = f"{IMAGE_FOLDER}/{filename}.pkl"
     if os.path.exists(png_path):
-        return True, png_path, pkl_path
+        return png_path, pkl_path
     stateres = get_model(calibrated=True).sample_map(
         f"2024 scenario {name}",
         year=2024,
@@ -47,7 +48,13 @@ def get_image(seed, name, *, map_type):
     )
     with open(pkl_path, "wb") as f:
         pickle.dump(stateres, f)
-    return False, png_path, pkl_path
+    return png_path, pkl_path
+
+
+def get_althistory_image(seed):
+    path = f"alternate-universes/{seed}.svg"
+    generate_alternate_universe_map(seed, f"Alternate Universe {seed}", path)
+    return path.replace(".svg", ".png"), path.replace(".svg", ".pkl")
 
 
 def get_demographics_image(year, filepath):

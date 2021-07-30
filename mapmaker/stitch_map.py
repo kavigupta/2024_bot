@@ -75,7 +75,7 @@ def produce_text(
     draw_text(
         draw,
         15 * scale,
-        [("@bot_2024", TEXT_COLOR)],
+        [(f"@{profile.bot_name}", TEXT_COLOR)],
         (950 - RIGHT_MARGIN) * scale,
         TOP_MARGIN * scale,
         align="right",
@@ -85,7 +85,7 @@ def produce_text(
         10 * scale,
         [
             (
-                f"bot_2024 v{version} by @notkavi and @lxeagle17 with data from @mill226",
+                f"{profile.bot_name} v{version} by @notkavi and @lxeagle17 with data from @mill226",
                 TEXT_COLOR,
             )
         ],
