@@ -255,13 +255,25 @@ class AdjustedDemographicCategoryModel:
             residuals[y] = data[y].dem_margin - p, turnouts[y] - t
         return AdjustedDemographicCategoryModel(dcm, residuals, StableTrendModel(0))
 
-    def perturb(self, *, for_year, prediction_seed, alpha_partisanship, alpha_turnout):
+    def perturb(
+        self,
+        *,
+        for_year,
+        prediction_seed,
+        alpha_partisanship,
+        alpha_turnout,
+        dekurt_param,
+    ):
         if prediction_seed is None:
             return self
         rng = np.random.RandomState(prediction_seed)
         torch.manual_seed(rng.randint(2 ** 32))
-        partisanship_noise = (self.sample_perturbations() * alpha_partisanship).float()
-        turnout_noise = (self.sample_perturbations() * alpha_turnout).float()
+        partisanship_noise = (
+            self.sample_perturbations(dekurt_param) * alpha_partisanship
+        ).float()
+        turnout_noise = (
+            self.sample_perturbations(dekurt_param) * alpha_turnout
+        ).float()
         same_cycle_years = self.turnout_relevant_years(for_year)
         turnout_weights = torch.rand(len(same_cycle_years)).float()
         turnout_weights /= turnout_weights.sum()
@@ -277,9 +289,10 @@ class AdjustedDemographicCategoryModel:
             turnout_weights=turnout_weights,
         )
 
-    def sample_perturbations(self):
-        deltas = torch.rand(self.dcm.d, 1) - 0.5
-        return deltas
+    def sample_perturbations(self, dekurt_param):
+        deltas = torch.randn(self.dcm.d, 1)
+        deltas = deltas + deltas ** 3 * dekurt_param
+        return deltas / (3.88 * dekurt_param + 1)
 
     def turnout_relevant_years(self, output_year):
         return [
@@ -359,6 +372,7 @@ class DemographicCategoryModel(Model):
             prediction_seed=prediction_seed,
             alpha_partisanship=self.alpha,
             alpha_turnout=self.alpha * 10,
+            dekurt_param=self.dekurt_param,
         )
         model_year = 2020 if year > 2020 else year
         return adcm.predict(

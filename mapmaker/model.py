@@ -15,6 +15,7 @@ class Model(ABC):
         self.data = data_by_year
         self.features = Features.fit(data_by_year, train_key=2020, **feature_kwargs)
         self.alpha = 0
+        self.dekurt_param = 0
 
     @abstractmethod
     def fully_random_sample(
@@ -25,6 +26,11 @@ class Model(ABC):
     def with_alpha(self, alpha):
         self = copy.copy(self)
         self.alpha = alpha
+        return self
+
+    def with_dekurt(self, dekurt):
+        self = copy.copy(self)
+        self.dekurt_param = dekurt
         return self
 
     def family_of_predictions(self, *, year, correct=True, n_seeds=1000):
