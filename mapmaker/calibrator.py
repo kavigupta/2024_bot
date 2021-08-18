@@ -1,8 +1,11 @@
 import numpy as np
 import tqdm
 
+from permacache import permacache
+
 from .constants import TARGET_PV_SPREAD_50
 from .data import ec
+from .utils import hash_model
 
 
 def bias(preds):
@@ -13,20 +16,33 @@ def bias(preds):
 
 
 def calibrate(model, *, for_year):
-    low_alpha, high_alpha = 0, 2
-    while True:
-        mid_alpha = (low_alpha + high_alpha) / 2
-        model = model.with_alpha(mid_alpha)
-        _, state_preds, pv = model.family_of_predictions(year=for_year)
-        pv_spread_50 = np.percentile(pv, 75) - np.percentile(pv, 25)
-        print(f"Alpha: {mid_alpha:.4f}")
-        print(f"Spread: {pv_spread_50:.2%}")
-        if abs(pv_spread_50 - TARGET_PV_SPREAD_50) < 0.5e-2:
+    model = model.with_alpha(1)
+    model = model.with_dekurt(0.5)
+    for _ in range(10):
+        print("OPTIMIZING DEKURT")
+        model, state_preds, changed_1 = search(
+            model,
+            for_year,
+            low=0,
+            high=model.dekurt_param * 2,
+            set_attribute=model.with_dekurt,
+            prop=lambda pv: (((pv - np.mean(pv)) / np.std(pv)) ** 4).mean(),
+            target=3,
+            sensitivity=0.1,
+        )
+        print("OPTIMIZING ALPHA")
+        model, state_preds, changed_2 = search(
+            model,
+            for_year,
+            low=0,
+            high=model.alpha * 2,
+            set_attribute=model.with_alpha,
+            prop=lambda pv: np.percentile(pv, 75) - np.percentile(pv, 25),
+            target=TARGET_PV_SPREAD_50,
+            sensitivity=0.5e-2,
+        )
+        if not (changed_1 or changed_2):
             break
-        if pv_spread_50 > TARGET_PV_SPREAD_50:
-            high_alpha = mid_alpha
-        else:
-            low_alpha = mid_alpha
 
     print(
         f"Without correction, democrats win the EC {bias(state_preds):.2%} of the time"
@@ -42,3 +58,26 @@ def calibrate(model, *, for_year):
     )
     # model = model.with_predictor(model.predictor.with_bias(best_bias))
     return model
+
+
+@permacache(
+    "2024bot/calibrator/search",
+    key_function=dict(model=hash_model, set_attribute=lambda x: x.__name__),
+)
+def search(model, for_year, *, low, high, set_attribute, prop, target, sensitivity):
+    changed = False
+    while True:
+        mid = (low + high) / 2
+        model = set_attribute(mid)
+        _, state_preds, pv = model.family_of_predictions(year=for_year)
+        out = prop(pv)
+        print(f"Parameter: {mid:.4f}")
+        print(f"Property: {out:.2%}")
+        if abs(out - target) < sensitivity:
+            break
+        if out > target:
+            high = mid
+        else:
+            low = mid
+        changed = True
+    return model, state_preds, changed
