@@ -8,7 +8,7 @@ from electiondata.examples.plotly_geojson import PlotlyGeoJSON
 import numpy as np
 import pandas as pd
 
-CSVS = os.path.join(os.path.dirname(__file__), "../csvs")
+CSVS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../csvs")
 
 EDUCATION_COLUMNS = [
     "white_only_noncollege_pct",
@@ -104,10 +104,10 @@ def read_csv(path):
 def load_educational_data(year):
     if year % 4 == 2:
         year += 2
-    education_df = pd.read_csv(f"csvs/{year}_data_education_split.csv").set_index(
+    education_df = pd.read_csv(f"{CSVS}/{year}_data_education_split.csv").set_index(
         "FIPS"
     )
-    cvap_df = pd.read_csv(f"csvs/election_demographic_data - {year}.csv")[
+    cvap_df = pd.read_csv(f"{CSVS}/election_demographic_data - {year}.csv")[
         ["FIPS", "CVAP"]
     ].set_index("FIPS")
 
