@@ -209,31 +209,41 @@ def all_data(year):
         all_data = data_2024().copy()
 
     # Education nonlinearities
-    all_data["white_college_nonlinearity"] = (
+    all_data["nonlinearity.white_college"] = (
         all_data["white_and_white_hispanic_educated_pct"] ** 2
     )
-    all_data["white_noncollege_nonlinearity"] = (
+    all_data["nonlinearity.white_noncollege"] = (
         all_data["white_and_white_hispanic_noncollege_pct"] ** 2
     )
 
     ## Nonlinearity
-    all_data["county_diversity_black_white"] = all_data["black %"] * all_data["white %"]
-    all_data["county_diversity_hispanic_white"] = (
+    all_data["nonlinearity.county_diversity_black_white"] = (
+        all_data["black %"] * all_data["white %"]
+    )
+    all_data["nonlinearity.county_diversity_hispanic_white"] = (
         all_data["hispanic %"] * all_data["white %"]
     )
-    all_data["county_diversity_white_homogenity"] = all_data["white %"] ** 2
-    all_data["county_diversity_hispanic_homogenity"] = all_data["hispanic %"] ** 2
-    all_data["county_diversity_native_homogenity"] = all_data["native %"] ** 2
+    all_data["nonlinearity.county_diversity_white_homogenity"] = (
+        all_data["white %"] ** 2
+    )
+    all_data["nonlinearity.county_diversity_hispanic_homogenity"] = (
+        all_data["hispanic %"] ** 2
+    )
+    all_data["nonlinearity.county_diversity_native_homogenity"] = (
+        all_data["native %"] ** 2
+    )
 
-    all_data["hispanic_rural"] = all_data["hispanic %"] ** 2 * all_data["rural %"]
+    all_data["nonlinearity.hispanic_rural"] = (
+        all_data["hispanic %"] ** 2 * all_data["rural %"]
+    )
 
     all_data["turnout"] = all_data["total_votes"] / all_data["CVAP"]
 
     # Poverty Nonlinearities
-    all_data["poverty_black_nonlinearity"] = (
+    all_data["nonlinearity.poverty_black"] = (
         all_data["black %"] ** 2 * all_data["poverty"]
     )
-    all_data["poverty_white_nonlinearity"] = (
+    all_data["nonlinearity.poverty_white"] = (
         all_data["white %"] ** 2 * all_data["poverty"]
     )
 
@@ -242,8 +252,8 @@ def all_data(year):
 
     logify("median_age")
     logify("median_income")
-    all_data["population"] = all_data["CVAP"]
-    logify("population")
+    all_data["nonlinearity.log_population"] = all_data["CVAP"]
+    logify("nonlinearity.log_population")
 
     if year == 2020:
         all_data["biden_2020"] = all_data["dem_margin"]
