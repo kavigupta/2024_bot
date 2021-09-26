@@ -134,7 +134,7 @@ def party_names():
     parties = []
 
     def add(weight, *names):
-        parties.extend([(weight / len(names), name) for name in names])
+        parties.extend([(weight, name) for name in names])
 
     # Major Current American Parties
     add(
@@ -145,7 +145,7 @@ def party_names():
 
     # Minor Current American Parties
     add(
-        0.75,
+        1,
         "Libertarian",
         "Green",
         "American Independent",
@@ -178,7 +178,7 @@ def party_names():
 
     # Common Foreign Parties
     add(
-        1.5,
+        0.5,
         "Labor",
         "Tory",
         "Liberal Democratic",
@@ -193,7 +193,7 @@ def party_names():
 
     # Ideologies
     add(
-        3,
+        1,
         "Accelerationist",
         "Anarchist",
         "Bonapartist",
