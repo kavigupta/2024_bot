@@ -20,6 +20,9 @@ POP_VOTE_SIGMA = 5e-2
 POP_VOTE_PRECISION = 0.1
 MAX_EC_WIN = 538
 
+TURNOUT_NOISE = 20
+PARTISAN_NOISE = 5
+
 
 def generate_alternate_universe_map(seed, title, path):
     from mapmaker.generate_image import get_model
@@ -33,10 +36,14 @@ def generate_alternate_universe_map(seed, title, path):
     target_popular_vote = np.random.RandomState(pv_seed).randn() * POP_VOTE_SIGMA
     while True:
         copied_model.adcm.dcm.turnout_heads["2020"] = nn.Parameter(
-            torch.randn(copied_model.adcm.dcm.turnout_heads["2020"].shape)
+            TURNOUT_NOISE
+            * torch.randn(copied_model.adcm.dcm.turnout_heads["2020"].shape)
         )
         copied_model.adcm.dcm.partisanship_heads["(2020, False)"] = nn.Parameter(
-            torch.randn(copied_model.adcm.dcm.partisanship_heads["(2020, False)"].shape)
+            PARTISAN_NOISE
+            * torch.randn(
+                copied_model.adcm.dcm.partisanship_heads["(2020, False)"].shape
+            )
         )
         p, t = copied_model.adcm.dcm.predict(
             2020, copied_model.features.features(2020), use_past_partisanship=False
@@ -113,18 +120,25 @@ def distance(a, b):
 
 
 def project(x):
-    if x < 0.5:
+    if x < 1/3:
         # red to green gets compressed
-        x = 0.25 + x / 2
+        x = 1/6 + x / 2
     # stretch back to the whole circle
-    x = (x - 0.25) / 0.75
+    x = (x - 1/6) / (5/6)
     return x
 
+def sample_color(rng):
+    # red, orange, yellow, green, blue, purple, magenta, red
+    keypoints = np.array([0, 30, 60, 120, 240, 270, 360], dtype=np.float)
+    keypoints = keypoints / 360
+    segment = rng.choice(len(keypoints) - 1)
+    a, b = keypoints[segment], keypoints[segment + 1]
+    return rng.rand() * (b - a) + a
 
 def sample_colors(seed):
     rng = np.random.RandomState(seed)
     while True:
-        a, b = rng.rand(2)
+        a, b = [sample_color(rng) for _ in range(2)]
         if distance(a, b) > 1 / 4:
             break
     return dict(dem=a, gop=b)
@@ -138,21 +152,21 @@ def party_names():
 
     # Major Current American Parties
     add(
-        6,
+        2,
         "Democratic",
         "Republican",
     )
 
     # Minor Current American Parties
     add(
-        4,
+        1.5,
         "Libertarian",
         "Green",
     )
 
     # Major Historical American Parties
     add(
-        2,
+        1.5,
         "Federalist",
         "Democratic-Republican",
         "Free Soil",
