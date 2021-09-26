@@ -24,6 +24,7 @@ class Profile:
     symbol = attr.ib()
     hue = attr.ib()
     bot_name = attr.ib()
+    name = attr.ib(default=None)
 
     def color(self, party, saturation):
         rgb = np.array(colorsys.hsv_to_rgb(self.hue[party], saturation, 1))

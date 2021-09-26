@@ -69,9 +69,32 @@ def produce_text(
     draw = ImageDraw.Draw(im)
     draw.rectangle((0, 0, *im.size), (0, 0, 0, 0))
 
+    if profile.name == None:
+        title_start = TOP_MARGIN
+        title_scale = 45
+    else:
+        title_start = TOP_MARGIN - 20
+        title_scale = 35
+
     draw_text(
-        draw, 45 * scale, [(title, TEXT_COLOR)], LEFT_MARGIN * scale, TOP_MARGIN * scale
+        draw,
+        title_scale * scale,
+        [(title, TEXT_COLOR)],
+        LEFT_MARGIN * scale,
+        title_start * scale,
     )
+    if profile.name != None:
+        draw_text(
+            draw,
+            15 * scale,
+            [
+                (profile.name["dem"] + " Party", profile.state_safe("dem")),
+                (" vs. ", TEXT_COLOR),
+                (profile.name["gop"] + " Party", profile.state_safe("gop")),
+            ],
+            (LEFT_MARGIN) * scale,
+            (title_start + 25) * scale,
+        )
     draw_text(
         draw,
         15 * scale,
