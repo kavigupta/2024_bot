@@ -138,7 +138,7 @@ def party_names():
 
     # Major Current American Parties
     add(
-        2,
+        6,
         "Democratic",
         "Republican",
     )
