@@ -50,7 +50,6 @@ def generate_alternate_universe_map(seed, title, path):
         )
 
         popular_vote = get_popular_vote(data_by_year()[2020], dem_margin=p, turnout=t)
-        print(popular_vote, target_popular_vote)
         if abs(target_popular_vote - popular_vote) > POP_VOTE_PRECISION:
             continue
         if (
@@ -120,12 +119,13 @@ def distance(a, b):
 
 
 def project(x):
-    if x < 1/3:
+    if x < 1 / 3:
         # red to green gets compressed
-        x = 1/6 + x / 2
+        x = 1 / 6 + x / 2
     # stretch back to the whole circle
-    x = (x - 1/6) / (5/6)
+    x = (x - 1 / 6) / (5 / 6)
     return x
+
 
 def sample_color(rng):
     # red, orange, yellow, green, blue, purple, magenta, red
@@ -134,6 +134,7 @@ def sample_color(rng):
     segment = rng.choice(len(keypoints) - 1)
     a, b = keypoints[segment], keypoints[segment + 1]
     return rng.rand() * (b - a) + a
+
 
 def sample_colors(seed):
     rng = np.random.RandomState(seed)
@@ -162,6 +163,7 @@ def party_names():
         1.5,
         "Libertarian",
         "Green",
+        "Patriot",
     )
 
     # Major Historical American Parties
@@ -208,31 +210,49 @@ def party_names():
     add(
         1,
         "Accelerationist",
+        "Agrarianist",
         "Anarchist",
+        "Ba'athist",
         "Bonapartist",
         "Caeserist",
         "Capitalist",
         "Communist",
         "Conservative",
         "Corporatist",
-        "Cyberfeminist",
         "Decelerationist",
+        "Dengist",
+        "Distributist",
         "Environmentalist",
         "Fascist",
         "Feminist",
+        "Georgist",
+        "Globalist",
+        "Humanist",
+        "Integralist",
+        "Juche",
         "Leninist",
         "Liberal",
-        "Maoism",
+        "Longist",
+        "Luddite",
+        "Luxembergist",
+        "Maoist",
         "Marxist-Leninist",
         "Monarchist",
+        "Multiculturalist",
         "National Socialist",
         "Nationalist",
+        "Pacifist",
+        "Pluralist",
         "Posadist",
         "Primitivist",
         "Revanchist",
         "Socialist",
+        "Syndicalist",
         "Totalitarian",
+        "Technocratic",
+        "Titoist",
         "Transhumanist",
+        "Urbanist",
     )
 
     return parties
