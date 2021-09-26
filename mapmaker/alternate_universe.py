@@ -145,14 +145,14 @@ def party_names():
 
     # Minor Current American Parties
     add(
-        2,
+        4,
         "Libertarian",
         "Green",
     )
 
     # Major Historical American Parties
     add(
-        1,
+        2,
         "Federalist",
         "Democratic-Republican",
         "Free Soil",
@@ -165,7 +165,7 @@ def party_names():
 
     # Minor Historical American Parties
     add(
-        0.5,
+        1,
         "People's",
         "Farmer-Labor",
         "Workers",
@@ -177,7 +177,7 @@ def party_names():
 
     # Common Foreign Parties
     add(
-        0.5,
+        1,
         "Labor",
         "Tory",
         "Liberal Democratic",
