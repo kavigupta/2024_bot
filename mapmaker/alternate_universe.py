@@ -17,7 +17,7 @@ from mapmaker.data import data_by_year
 from mapmaker.stitch_map import generate_map
 
 POP_VOTE_SIGMA = 5e-2
-POP_VOTE_PRECISION = 0.1
+POP_VOTE_PRECISION = 0.1e-2
 MAX_EC_WIN = 538
 
 TURNOUT_NOISE = 20
