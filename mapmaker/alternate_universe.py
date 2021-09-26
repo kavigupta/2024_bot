@@ -145,10 +145,9 @@ def party_names():
 
     # Minor Current American Parties
     add(
-        1,
+        2,
         "Libertarian",
         "Green",
-        "American Independent",
     )
 
     # Major Historical American Parties
