@@ -3,7 +3,7 @@ import functools
 import pickle
 
 from .data import data_by_year
-from .constants import PCA_DIMENSIONS
+from .constants import NUM_DEMOGRAPHICS, PCA_DIMENSIONS
 from .torch_model import DemographicCategoryModel
 from .version import version
 from .calibrator import calibrate
@@ -16,9 +16,13 @@ IMAGE_FOLDER = os.path.join(
 
 
 @functools.lru_cache(None)
-def get_model(calibrated=False, *, dimensions=PCA_DIMENSIONS):
+def get_model(
+    calibrated=False, *, dimensions=PCA_DIMENSIONS, num_demographics=NUM_DEMOGRAPHICS
+):
     model = DemographicCategoryModel(
-        data_by_year(), feature_kwargs=dict(dimensions=dimensions)
+        data_by_year(),
+        feature_kwargs=dict(dimensions=dimensions),
+        num_demographics=num_demographics,
     )
     if calibrated:
         model = calibrate(model, for_year=2024)
@@ -51,8 +55,8 @@ def get_image(seed, name, *, map_type):
     return png_path, pkl_path
 
 
-def get_althistory_image(seed):
-    path = f"alternate-universes/{seed}.svg"
+def get_althistory_image(seed, prefix="alternate-universes"):
+    path = f"{prefix}/{seed}.svg"
     generate_alternate_universe_map(seed, f"Alternate Universe {seed}", path)
     return path.replace(".svg", ".png"), path.replace(".svg", ".pkl")
 

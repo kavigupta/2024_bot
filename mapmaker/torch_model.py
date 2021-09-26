@@ -14,9 +14,9 @@ from .model import Model
 from .trend_model import StableTrendModel, NoisedTrendModel
 from .utils import hash_model, intersect_all
 
-NUM_DEMOGRAPHICS = 15
 ITERS = 12000
 DEMOS_SIMILARITY_LOSS_WEIGHT = 1
+
 HIDDEN_SIZE = 100
 LEARNING_RATE = 1e-2
 
@@ -180,13 +180,14 @@ class DemographicCategoryPredictor(nn.Module):
         iters=1000,
         *,
         dimensions,
+        num_demographics,
     ):
         torch.manual_seed(0)
         if dimensions is None:
             dimensions = features[list(features)[0]].shape[1] - 1
         dcm = DemographicCategoryPredictor(
             dimensions + 1,
-            NUM_DEMOGRAPHICS,
+            num_demographics,
             list(target_turnouts),
             previous_partisanships,
             fipses,
@@ -235,7 +236,7 @@ class AdjustedDemographicCategoryModel:
     turnout_weights = attr.ib(default=None)
 
     @staticmethod
-    def train(*, years, features, data, feature_kwargs):
+    def train(*, years, features, data, feature_kwargs, num_demographics):
         turnouts = {y: data[y].total_votes / data[y].CVAP for y in years}
         dcm = DemographicCategoryPredictor.train(
             features={y: features.features(y) for y in years},
@@ -248,6 +249,7 @@ class AdjustedDemographicCategoryModel:
             cvaps={y: data[y].CVAP for y in years},
             iters=ITERS,
             **feature_kwargs,
+            num_demographics=num_demographics,
         )
         residuals = {}
         for y in years:
@@ -340,13 +342,14 @@ class AdjustedDemographicCategoryModel:
 
 
 class DemographicCategoryModel(Model):
-    def __init__(self, data_by_year, feature_kwargs={}):
+    def __init__(self, data_by_year, feature_kwargs={}, *, num_demographics):
         super().__init__(data_by_year, feature_kwargs)
         self.adcm = AdjustedDemographicCategoryModel.train(
             years=sorted(y for y in data_by_year if y <= 2020),
             features=self.features,
             data=self.data,
             feature_kwargs=feature_kwargs,
+            num_demographics=num_demographics,
         )
 
     def fully_random_sample(

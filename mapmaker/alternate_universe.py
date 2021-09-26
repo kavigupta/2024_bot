@@ -24,7 +24,7 @@ MAX_EC_WIN = 538
 def generate_alternate_universe_map(seed, title, path):
     from mapmaker.generate_image import get_model
 
-    model = get_model(calibrated=False)
+    model = get_model(calibrated=False, num_demographics=30)
     copied_model = copy.deepcopy(model)
     pv_seed, torch_seed, symbol_seed, color_seed = np.random.RandomState(seed).choice(
         2 ** 32, size=4
@@ -54,6 +54,8 @@ def generate_alternate_universe_map(seed, title, path):
         break
     with open(path.replace(".svg", ".pkl"), "wb") as f:
         pickle.dump(get_state_results(data_by_year()[2020], turnout=t, dem_margin=p), f)
+
+    names = sample_party_names(symbol_seed)
     generate_map(
         data_by_year()[2020],
         title=title,
@@ -63,7 +65,8 @@ def generate_alternate_universe_map(seed, title, path):
         map_type="president",
         year=2020,
         profile=Profile(
-            symbol=sample_symbols(symbol_seed),
+            symbol={k: v[0] for k, v in names.items()},
+            name=names,
             hue=sample_colors(color_seed),
             bot_name="bot_althistory",
         ),
@@ -88,17 +91,18 @@ def character_frequencies():
     return dict(results.items())
 
 
-def sample_symbols(seed):
-    frequencies = character_frequencies()
-    letters = sorted(frequencies)
-    weights = np.array([frequencies[c] for c in letters], dtype=np.double)
+def sample_party_names(seed):
+    weights, names = zip(*party_names())
+    weights = np.array(weights, dtype=np.float)
     weights /= weights.sum()
     rng = np.random.RandomState(seed)
     while True:
-        a, b = rng.choice(letters, size=2, p=weights)
-        if a != b:
+        a, b = rng.choice(len(names), size=2, p=weights)
+        a, b = names[a], names[b]
+        if a[0] != b[0]:
             break
-    return dict(dem=a.upper(), gop=b.upper())
+    print(a, b)
+    return dict(dem=a, gop=b)
 
 
 def distance(a, b):
@@ -124,3 +128,98 @@ def sample_colors(seed):
         if distance(a, b) > 1 / 4:
             break
     return dict(dem=a, gop=b)
+
+
+def party_names():
+    parties = []
+
+    def add(weight, *names):
+        parties.extend([(weight / len(names), name) for name in names])
+
+    # Major Current American Parties
+    add(
+        2,
+        "Democratic",
+        "Republican",
+    )
+
+    # Minor Current American Parties
+    add(
+        0.75,
+        "Libertarian",
+        "Green",
+        "American Independent",
+    )
+
+    # Major Historical American Parties
+    add(
+        1,
+        "Federalist",
+        "Democratic-Republican",
+        "Free Soil",
+        "Whig",
+        "Unionist",
+        "Populist",
+        "Socialist",
+        "Progressive",
+    )
+
+    # Minor Historical American Parties
+    add(
+        0.5,
+        "People's",
+        "Farmer-Labor",
+        "Workers",
+        "America First",
+        "Black Panther",
+        "Patriot",
+        "American",
+    )
+
+    # Common Foreign Parties
+    add(
+        1.5,
+        "Labor",
+        "Tory",
+        "Liberal Democratic",
+        "New Democratic",
+        "Conservative",
+        "Christian Democratic",
+        "Social Democratic",
+        "Alternative for America",
+        "American National Congress",
+        "Vox",
+    )
+
+    # Ideologies
+    add(
+        3,
+        "Accelerationist",
+        "Anarchist",
+        "Bonapartist",
+        "Caeserist",
+        "Capitalist",
+        "Communist",
+        "Conservative",
+        "Corporatist",
+        "Cyberfeminist",
+        "Decelerationist",
+        "Environmentalist",
+        "Fascist",
+        "Feminist",
+        "Leninist",
+        "Liberal",
+        "Maoism",
+        "Marxist-Leninist",
+        "Monarchist",
+        "National Socialist",
+        "Nationalist",
+        "Posadist",
+        "Primitivist",
+        "Revanchist",
+        "Socialist",
+        "Totalitarian",
+        "Transhumanist",
+    )
+
+    return parties
