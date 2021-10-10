@@ -77,6 +77,8 @@ def calculate_tipping_point(data, *, dem_margin, turnout):
                     ec_results.index == index
                 ].total_margin.reset_index()
                 break
+    if tipping_point is None:
+        return "None", 0
 
     tipping_point_state, tipping_point_margin = (
         tipping_point.values[0][0],
