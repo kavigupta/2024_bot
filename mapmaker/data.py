@@ -113,7 +113,7 @@ def load_educational_data(year):
 
     education_df = education_df.join(cvap_df, how="inner")
 
-    normalizer = e.usa_county_to_fips("state", alaska_handler=e.alaska.FOUR_REGIONS())
+    normalizer = e.usa_county_to_fips("state", alaska_handler=e.alaska.FIVE_REGIONS())
     normalizer.rewrite["juneau city and"] = "juneau city and borough"
     normalizer.rewrite["sitka city and"] = "sitka city and borough"
     normalizer.rewrite["wrangell city and"] = "wrangell city and borough"
