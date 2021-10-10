@@ -330,6 +330,7 @@ def generate_map(
     map_type,
     year,
     profile=STANDARD_PROFILE,
+    use_png=True,
 ):
     dem_margin_to_map = dem_margin * county_mask(data, map_type, year)
 
@@ -399,11 +400,14 @@ def generate_map(
         fig.append(sg.ImageElement(f, 950, 450))
     fig.save(out_path)
     add_background_back(out_path)
-    with open(out_path) as f:
-        svg2png(
-            bytestring=f.read(), write_to=out_path.replace(".svg", ".png"), scale=SCALE
-        )
-    os.remove(out_path)
+    if use_png:
+        with open(out_path) as f:
+            svg2png(
+                bytestring=f.read(),
+                write_to=out_path.replace(".svg", ".png"),
+                scale=SCALE,
+            )
+        os.remove(out_path)
     return get_state_results(data, dem_margin=dem_margin, turnout=turnout)
 
 
