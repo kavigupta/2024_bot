@@ -17,7 +17,7 @@ from .aggregation import (
     calculate_tipping_point,
     number_votes,
 )
-from .mapper import map_county_margins, state_map
+from .mapper import BaseMap
 from .version import version
 from .colors import (
     BACKGROUND_RGB,
@@ -332,6 +332,7 @@ def generate_map(
     profile=STANDARD_PROFILE,
     use_png=True,
 ):
+    basemap = BaseMap.usa_map()
     dem_margin_to_map = dem_margin * county_mask(data, map_type, year)
 
     dem_ec, gop_ec = get_electoral_vote(data, dem_margin=dem_margin, turnout=turnout)
@@ -348,8 +349,12 @@ def generate_map(
 
     dem_ec_close, gop_ec_close = dem_ec - dem_ec_safe, gop_ec - gop_ec_safe
     assert dem_ec_close >= 0 and gop_ec_close >= 0
-    cm = map_county_margins(data, dem_margin=dem_margin_to_map, profile=profile)
-    sm = state_map(data, dem_margin=dem_margin_to_map, turnout=turnout, profile=profile)
+    cm = basemap.map_county_margins(
+        data["FIPS"], dem_margin=dem_margin_to_map, profile=profile
+    )
+    sm = basemap.state_map(
+        data, dem_margin=dem_margin_to_map, turnout=turnout, profile=profile
+    )
     pop_vote_margin = get_popular_vote(data, dem_margin=dem_margin, turnout=turnout)
 
     fig = sg.SVGFigure("160cm", "65cm")

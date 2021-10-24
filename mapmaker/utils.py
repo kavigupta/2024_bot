@@ -1,6 +1,9 @@
+from collections import defaultdict
 from permacache import stable_hash
 
 import numpy as np
+from shapely.geometry import shape, mapping
+from shapely.ops import unary_union
 
 
 def hash_model(m):
@@ -18,3 +21,18 @@ def intersect_all(iterable):
     for x in iterable[1:]:
         result = np.intersect1d(result, x)
     return result
+
+
+def counties_to_states(data, counties_geojson):
+    shapes = {f["id"]: shape(f["geometry"]) for f in counties_geojson["features"]}
+    states = defaultdict(list)
+    for fips, state in zip(data["FIPS"], data["state"]):
+        states[state].append(shapes[fips])
+    states = {k: unary_union(v) for k, v in states.items()}
+    return dict(
+        type=counties_geojson["type"],
+        features=[
+            dict(type="Feature", geometry=mapping(sh), id=ident)
+            for ident, sh in states.items()
+        ],
+    )
