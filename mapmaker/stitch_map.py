@@ -320,7 +320,7 @@ def county_mask(data, map_type, year):
     return 1
 
 
-def generate_map(
+def produce_entire_map(
     data,
     title,
     out_path,

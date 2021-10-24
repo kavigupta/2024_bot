@@ -4,7 +4,7 @@ from electiondata.examples.nytimes_num_colleges import NYTimesNumColleges
 
 from .aggregation import get_popular_vote
 from .data import data_by_year
-from .stitch_map import generate_map
+from .stitch_map import produce_entire_map
 
 
 def directional_margin(data, statistic, reverse=False):
@@ -41,7 +41,7 @@ def generate_challenge_maps(i, title, extractor):
     turnout = data.total_votes / data.CVAP
     dem_margin = get_margin_auto(data, extractor(data))
     for is_solution in True, False:
-        generate_map(
+        produce_entire_map(
             data,
             f"Challenge {i}" + (": " + title) * is_solution,
             f"challenges/{i}" + "_solution" * is_solution + ".svg",

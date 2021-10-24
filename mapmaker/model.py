@@ -5,7 +5,7 @@ import copy
 import numpy as np
 
 from .aggregation import get_electoral_vote, get_state_results, get_popular_vote
-from .stitch_map import generate_map
+from .stitch_map import produce_entire_map
 
 from .features import Features
 
@@ -77,7 +77,7 @@ class Model(ABC):
     def sample_map(self, title, path, *, year, map_type, **kwargs):
         print(f"Generating {title}")
         predictions, turnout = self.sample(year=year, **kwargs, map_type=map_type)
-        return generate_map(
+        return produce_entire_map(
             self.data[year],
             title,
             path,

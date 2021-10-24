@@ -14,7 +14,7 @@ import torch.nn as nn
 
 from mapmaker.aggregation import get_popular_vote, get_electoral_vote, get_state_results
 from mapmaker.data import data_by_year
-from mapmaker.stitch_map import generate_map
+from mapmaker.stitch_map import produce_entire_map
 
 POP_VOTE_SIGMA = 5e-2
 POP_VOTE_PRECISION = 0.1e-2
@@ -62,7 +62,7 @@ def generate_alternate_universe_map(seed, title, path):
         pickle.dump(get_state_results(data_by_year()[2020], turnout=t, dem_margin=p), f)
 
     names = sample_party_names(symbol_seed)
-    generate_map(
+    produce_entire_map(
         data_by_year()[2020],
         title=title,
         out_path=path,
