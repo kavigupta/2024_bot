@@ -17,7 +17,7 @@ from .aggregation import (
     calculate_tipping_point,
     number_votes,
 )
-from .mapper import BaseMap
+from .mapper import USABaseMap
 from .version import version
 from .colors import (
     BACKGROUND_RGB,
@@ -332,7 +332,7 @@ def produce_entire_map(
     profile=STANDARD_PROFILE,
     use_png=True,
 ):
-    basemap = BaseMap.usa_map()
+    basemap = USABaseMap()
     dem_margin_to_map = dem_margin * county_mask(data, map_type, year)
 
     dem_ec, gop_ec = get_electoral_vote(data, dem_margin=dem_margin, turnout=turnout)

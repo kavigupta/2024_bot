@@ -1,12 +1,9 @@
-import plotly.graph_objects as go
-
-import json
-import numpy as np
-import geopandas
-import us
-import attr
+from abc import ABC, abstractmethod, abstractproperty
 
 from cached_property import cached_property
+
+import numpy as np
+import plotly.graph_objects as go
 
 from .data import counties, data_by_year
 from .aggregation import get_state_results
@@ -19,18 +16,18 @@ from .constants import TILT_MARGIN, LEAN_MARGIN, LIKELY_MARGIN
 from .utils import counties_to_states
 
 
-@attr.s
-class BaseMap:
-    counties = attr.ib()
-    data = attr.ib()
+class BaseMap(ABC):
+    @abstractproperty
+    def counties(self):
+        pass
+
+    @abstractproperty
+    def data(self):
+        pass
 
     @cached_property
     def states(self):
         return counties_to_states(self.data, self.counties)
-
-    @classmethod
-    def usa_map(cls):
-        return BaseMap(counties=counties(), data=data_by_year()[2020])
 
     def county_map(
         self, identifiers, *, variable_to_plot, zmid, zmin, zmax, colorscale
@@ -92,6 +89,16 @@ class BaseMap:
             showscale=False,
         )
         return fit(figure)
+
+
+class USABaseMap(BaseMap):
+    @property
+    def counties(self):
+        return counties()
+
+    @property
+    def data(self):
+        return data_by_year()[2020]
 
 
 def fit(*figure):
