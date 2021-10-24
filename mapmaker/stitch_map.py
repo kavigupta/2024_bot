@@ -21,7 +21,6 @@ from .mapper import USABaseMap
 from .version import version
 from .colors import (
     BACKGROUND_RGB,
-    TEXT_COLOR,
     COUNTY_SCALE_MARGIN_MAX,
     COUNTY_SCALE_MARGIN_MIN,
     STANDARD_PROFILE,
@@ -79,7 +78,7 @@ def produce_text(
     draw_text(
         draw,
         title_scale * scale,
-        [(title, TEXT_COLOR)],
+        [(title, profile.text_color)],
         LEFT_MARGIN * scale,
         title_start * scale,
     )
@@ -89,7 +88,7 @@ def produce_text(
             15 * scale,
             [
                 (profile.name["dem"] + " Party", profile.state_safe("dem")),
-                (" vs. ", TEXT_COLOR),
+                (" vs. ", profile.text_color),
                 (profile.name["gop"] + " Party", profile.state_safe("gop")),
             ],
             (LEFT_MARGIN) * scale,
@@ -98,7 +97,7 @@ def produce_text(
     draw_text(
         draw,
         15 * scale,
-        [(f"@{profile.bot_name}", TEXT_COLOR)],
+        [(f"@{profile.bot_name}", profile.text_color)],
         (950 - RIGHT_MARGIN) * scale,
         TOP_MARGIN * scale,
         align="right",
@@ -109,7 +108,7 @@ def produce_text(
         [
             (
                 f"{profile.bot_name} v{version} by @notkavi and @lxeagle17 with data from @mill226",
-                TEXT_COLOR,
+                profile.text_color,
             )
         ],
         (950 - RIGHT_MARGIN) * scale,
@@ -125,7 +124,7 @@ def produce_text(
             40 * scale,
             [
                 (str(dem_ec), profile.state_safe("dem")),
-                (" - ", TEXT_COLOR),
+                (" - ", profile.text_color),
                 (str(gop_ec), profile.state_safe("gop")),
             ],
             TEXT_CENTER * scale,
@@ -139,9 +138,9 @@ def produce_text(
             draw,
             15 * scale,
             [
-                ("Close: ", TEXT_COLOR),
+                ("Close: ", profile.text_color),
                 (str(dem_ec_close), profile.state_tilt("dem")),
-                (" - ", TEXT_COLOR),
+                (" - ", profile.text_color),
                 (str(gop_ec_close), profile.state_tilt("gop")),
             ],
             TEXT_CENTER * scale,
@@ -155,7 +154,7 @@ def produce_text(
             40 * scale,
             [
                 (str(dem_senate), profile.state_safe("dem")),
-                (" - ", TEXT_COLOR),
+                (" - ", profile.text_color),
                 (str(gop_senate), profile.state_safe("gop")),
             ],
             TEXT_CENTER * scale,
@@ -189,7 +188,7 @@ def produce_text(
     draw_text(
         draw,
         10 * scale,
-        [(f"Total Turnout: {total_turnout:.0%}", TEXT_COLOR)],
+        [(f"Total Turnout: {total_turnout:.0%}", profile.text_color)],
         TEXT_CENTER * scale,
         y * scale,
         align=("center"),
@@ -215,7 +214,10 @@ def produce_text(
         draw_text(
             draw,
             10 * scale,
-            [("Tipping Point: ", TEXT_COLOR), (tipping_point_str, tipping_point_color)],
+            [
+                ("Tipping Point: ", profile.text_color),
+                (tipping_point_str, tipping_point_color),
+            ],
             TEXT_CENTER * scale,
             y * scale,
             align=("center"),

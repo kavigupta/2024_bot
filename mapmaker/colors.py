@@ -16,8 +16,6 @@ COUNTY_SCALE_MARGIN_MIN = -0.8
 
 MARGINAL = 0.001
 
-TEXT_COLOR = "white"
-
 
 @attr.s
 class Profile:
@@ -25,6 +23,7 @@ class Profile:
     hue = attr.ib()
     bot_name = attr.ib()
     name = attr.ib(default=None)
+    text_color = attr.ib(default=None)
 
     def color(self, party, saturation):
         rgb = np.array(colorsys.hsv_to_rgb(self.hue[party], saturation, 1))
