@@ -1,24 +1,25 @@
 import tqdm
 
 from mapmaker.generate_image import get_model, get_image
+from mapmaker.mapper import USAPresidencyBaseMap, USASenateBaseMap
 
 YEARS = (2024, 2022, 2010, 2012, 2014, 2016, 2018, 2020)
 
-MAP_TYPES = ["senate", "president"]
+MAP_TYPES = [USAPresidencyBaseMap(), USASenateBaseMap()]
 
 model = get_model(calibrated=False)
 for y in YEARS:
-    for map_type in MAP_TYPES:
-        if map_type == "senate" and y != 2022:
+    for basemap in MAP_TYPES:
+        if isinstance(basemap, USASenateBaseMap) and y != 2022:
             continue
-        prefix = f"{y}" if map_type == "president" else f"{y}_sen"
+        prefix = f"{y}" if isinstance(basemap, USAPresidencyBaseMap) else f"{y}_sen"
         prefix_name = prefix.replace("_sen", " Senate")
         model.sample_map(
             f"{prefix_name} {'Actual' if y <= 2020 else 'Pred Corrected'}",
             seed=None,
             path=f"images/{prefix}_actual.svg",
             year=y,
-            map_type=map_type,
+            basemap=basemap,
         )
         model.sample_map(
             f"{prefix_name} Pred",
@@ -26,7 +27,7 @@ for y in YEARS:
             path=f"images/{prefix}_pred.svg",
             year=y,
             correct=False,
-            map_type=map_type,
+            basemap=basemap,
         )
         model.sample_map(
             f"{prefix_name} Residuals",
@@ -34,7 +35,7 @@ for y in YEARS:
             path=f"images/{prefix}_residuals.svg",
             year=y,
             correct="just_residuals",
-            map_type=map_type,
+            basemap=basemap,
         )
 for i in tqdm.trange(10, 20):
-    get_image(i, i, map_type="president")
+    get_image(i, i, basemap=USAPresidencyBaseMap())

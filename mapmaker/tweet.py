@@ -6,6 +6,8 @@ import attr
 import tweepy
 import gspread
 
+from .mapper import USAPresidencyBaseMap
+
 from .SECRET import KEY
 
 from .generate_image import get_althistory_image, get_image
@@ -62,7 +64,9 @@ BOTS = [
         start_symbol="2024 scenario",
         short_prefix="scenario",
         gdrive="State Margins",
-        get_image=lambda number: get_image(number, number, map_type="president"),
+        get_image=lambda number: get_image(
+            number, number, basemap=USAPresidencyBaseMap()
+        ),
     ),
     Tweeter(
         user_id="bot_althistory",

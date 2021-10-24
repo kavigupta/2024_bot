@@ -2,6 +2,8 @@ import numpy as np
 
 from electiondata.examples.nytimes_num_colleges import NYTimesNumColleges
 
+from mapmaker.mapper import USAPresidencyBaseMap
+
 from .aggregation import get_popular_vote
 from .data import data_by_year
 from .stitch_map import produce_entire_map
@@ -47,6 +49,6 @@ def generate_challenge_maps(i, title, extractor):
             f"challenges/{i}" + "_solution" * is_solution + ".svg",
             dem_margin=dem_margin,
             turnout=turnout,
-            map_type="president",
+            basemap=USAPresidencyBaseMap(),
             year=2020,
         )

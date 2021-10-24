@@ -4,6 +4,8 @@ import copy
 
 import numpy as np
 
+from mapmaker.mapper import USAPresidencyBaseMap
+
 from .aggregation import get_electoral_vote, get_state_results, get_popular_vote
 from .stitch_map import produce_entire_map
 
@@ -18,7 +20,7 @@ class Model(ABC):
 
     @abstractmethod
     def fully_random_sample(
-        self, *, year, prediction_seed, correct, turnout_year, map_type
+        self, *, year, prediction_seed, correct, turnout_year, basemap
     ):
         pass
 
@@ -35,7 +37,7 @@ class Model(ABC):
                 correct=correct,
                 prediction_seed=seed,
                 turnout_year=None,
-                map_type="president",
+                basemap=USAPresidencyBaseMap(),
             )
             county_results.append(predictions)
             state_results.append(
@@ -60,7 +62,7 @@ class Model(ABC):
         # even days, democrat. odd days, gop
         return dem_win == (seed % 2 == 0)
 
-    def sample(self, *, year, seed=None, correct=True, turnout_year=None, map_type):
+    def sample(self, *, year, seed=None, correct=True, turnout_year=None, basemap):
         rng = np.random.RandomState(seed)
         while True:
             predictions, turnout = self.fully_random_sample(
@@ -68,21 +70,21 @@ class Model(ABC):
                 prediction_seed=rng.randint(2 ** 32) if seed is not None else None,
                 correct=correct,
                 turnout_year=turnout_year,
-                map_type=map_type,
+                basemap=basemap,
             )
             if self.win_consistent_with(predictions, turnout, seed, year=year):
                 break
         return predictions, turnout
 
-    def sample_map(self, title, path, *, year, map_type, **kwargs):
+    def sample_map(self, title, path, *, year, basemap, **kwargs):
         print(f"Generating {title}")
-        predictions, turnout = self.sample(year=year, **kwargs, map_type=map_type)
+        predictions, turnout = self.sample(year=year, **kwargs, basemap=basemap)
         return produce_entire_map(
             self.data[year],
             title,
             path,
             dem_margin=predictions,
             turnout=turnout,
-            map_type=map_type,
+            basemap=basemap,
             year=year,
         )

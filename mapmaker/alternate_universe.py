@@ -14,6 +14,7 @@ import torch.nn as nn
 
 from mapmaker.aggregation import get_popular_vote, get_electoral_vote, get_state_results
 from mapmaker.data import data_by_year
+from mapmaker.mapper import USAPresidencyBaseMap
 from mapmaker.stitch_map import produce_entire_map
 
 POP_VOTE_SIGMA = 5e-2
@@ -68,7 +69,7 @@ def generate_alternate_universe_map(seed, title, path):
         out_path=path,
         dem_margin=p,
         turnout=t,
-        map_type="president",
+        basemap=USAPresidencyBaseMap(),
         year=2020,
         profile=Profile(
             symbol={k: v[0] for k, v in names.items()},

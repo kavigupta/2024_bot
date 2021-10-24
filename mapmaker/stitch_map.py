@@ -248,12 +248,11 @@ def produce_entire_map(
     *,
     dem_margin,
     turnout,
-    map_type,
+    basemap,
     year,
     profile=STANDARD_PROFILE,
     use_png=True,
 ):
-    basemap = USAPresidencyBaseMap() if map_type == "president" else USASenateBaseMap()
     dem_margin_to_map = dem_margin * basemap.county_mask(year)
 
     populated_map = basemap.populate(data, dem_margin_to_map, turnout)

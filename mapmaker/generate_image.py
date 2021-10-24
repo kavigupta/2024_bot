@@ -29,7 +29,7 @@ def get_model(
     return model
 
 
-def get_image(seed, name, *, map_type):
+def get_image(seed, name, *, basemap):
     name = str(name)
     try:
         os.makedirs(IMAGE_FOLDER)
@@ -48,7 +48,7 @@ def get_image(seed, name, *, map_type):
         year=2024,
         seed=seed,
         path=svg_path,
-        map_type=map_type,
+        basemap=basemap,
     )
     with open(pkl_path, "wb") as f:
         pickle.dump(stateres, f)

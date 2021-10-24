@@ -1,6 +1,7 @@
 import tqdm
 
-from mapmaker.generate_image import get_model, get_image
+from mapmaker.generate_image import get_model
+from mapmaker.mapper import USAPresidencyBaseMap
 
 model = get_model(calibrated=False)
 for y in (
@@ -17,5 +18,5 @@ for y in (
         path=f"turnout_modeling/{y}_actual.svg",
         year=2020,
         turnout_year=y,
-        map_type="president",
+        basemap=USAPresidencyBaseMap(),
     )
