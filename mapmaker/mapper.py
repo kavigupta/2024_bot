@@ -1,12 +1,20 @@
 from abc import ABC, abstractmethod, abstractproperty
+import attr
+import us
 
 from cached_property import cached_property
 
 import numpy as np
 import plotly.graph_objects as go
 
+
 from .data import counties, data_by_year
-from .aggregation import get_state_results
+from .aggregation import (
+    calculate_tipping_point,
+    get_electoral_vote,
+    get_senate_vote,
+    get_state_results,
+)
 from .colors import (
     BACKGROUND,
     COUNTY_SCALE_MARGIN_MIN,
@@ -14,6 +22,8 @@ from .colors import (
 )
 from .constants import TILT_MARGIN, LEAN_MARGIN, LIKELY_MARGIN
 from .utils import counties_to_states
+from .text import draw_text
+from .senate import senate_2022
 
 
 class BaseMap(ABC):
@@ -22,12 +32,28 @@ class BaseMap(ABC):
         pass
 
     @abstractproperty
-    def data(self):
+    def metadata(self):
+        pass
+
+    @abstractmethod
+    def draw_topline(
+        self, dem_margin, turnout, *, draw, scale, profile, text_center, y
+    ):
+        pass
+
+    @abstractmethod
+    def draw_tipping_point(
+        self, data, dem_margin, turnout, *, draw, scale, profile, text_center, y
+    ):
+        pass
+
+    @abstractmethod
+    def county_mask(self, year):
         pass
 
     @cached_property
     def states(self):
-        return counties_to_states(self.data, self.counties)
+        return counties_to_states(self.metadata, self.counties)
 
     def county_map(
         self, identifiers, *, variable_to_plot, zmid, zmin, zmax, colorscale
@@ -90,6 +116,27 @@ class BaseMap(ABC):
         )
         return fit(figure)
 
+    def populate(self, data, dem_margin, turnout):
+        return PopulatedMap(self, data, dem_margin, turnout)
+
+
+@attr.s
+class PopulatedMap:
+    basemap = attr.ib()
+    data = attr.ib()
+    dem_margin = attr.ib()
+    turnout = attr.ib()
+
+    def draw_topline(self, **kwargs):
+        return self.basemap.draw_topline(
+            self.data, self.dem_margin, self.turnout, **kwargs
+        )
+
+    def draw_tipping_point(self, **kwargs):
+        return self.basemap.draw_tipping_point(
+            self.data, self.dem_margin, self.turnout, **kwargs
+        )
+
 
 class USABaseMap(BaseMap):
     @property
@@ -97,8 +144,117 @@ class USABaseMap(BaseMap):
         return counties()
 
     @property
-    def data(self):
-        return data_by_year()[2020]
+    def metadata(self):
+        data = data_by_year()[2020]
+        return data[["FIPS", "state"]]
+
+    def county_mask(self, year):
+        return 1
+
+
+class USAPresidencyBaseMap(USABaseMap):
+    def draw_topline(
+        self, data, dem_margin, turnout, *, draw, scale, profile, text_center, y
+    ):
+        dem_ec, gop_ec = get_electoral_vote(
+            data, dem_margin=dem_margin, turnout=turnout
+        )
+        dem_ec_safe, gop_ec_safe = get_electoral_vote(
+            data, dem_margin=dem_margin, turnout=turnout, only_nonclose=True
+        )
+        dem_ec_close, gop_ec_close = dem_ec - dem_ec_safe, gop_ec - gop_ec_safe
+        assert dem_ec_close >= 0 and gop_ec_close >= 0
+        draw_text(
+            draw,
+            40 * scale,
+            [
+                (str(dem_ec), profile.state_safe("dem")),
+                (" - ", profile.text_color),
+                (str(gop_ec), profile.state_safe("gop")),
+            ],
+            text_center * scale,
+            y * scale,
+            align=("center", 1),
+        )
+
+        y += 15 // 2 + 20
+
+        draw_text(
+            draw,
+            15 * scale,
+            [
+                ("Close: ", profile.text_color),
+                (str(dem_ec_close), profile.state_tilt("dem")),
+                (" - ", profile.text_color),
+                (str(gop_ec_close), profile.state_tilt("gop")),
+            ],
+            text_center * scale,
+            y * scale,
+            align=("center"),
+        )
+        return y
+
+    def draw_tipping_point(
+        self, data, dem_margin, turnout, *, draw, scale, profile, text_center, y
+    ):
+        tipping_point_state, tipping_point_margin = calculate_tipping_point(
+            data, dem_margin=dem_margin, turnout=turnout
+        )
+        tipping_point_str = None
+        tipping_point_color = None
+
+        if tipping_point_margin > 0:
+            tipping_point_str = f"{tipping_point_state} {profile.symbol['dem']}+{tipping_point_margin:.2%}"
+            tipping_point_color = profile.state_tilt("dem")
+        else:
+            tipping_point_str = f"{tipping_point_state} {profile.symbol['gop']}+{-tipping_point_margin:.2%}"
+            tipping_point_color = profile.state_tilt("gop")
+
+        draw_text(
+            draw,
+            10 * scale,
+            [
+                ("Tipping Point: ", profile.text_color),
+                (tipping_point_str, tipping_point_color),
+            ],
+            text_center * scale,
+            y * scale,
+            align=("center"),
+        )
+
+
+class USASenateBaseMap(USABaseMap):
+    def county_mask(self, year):
+        assert year == 2022
+        return self.metadata.state.apply(
+            lambda x: 1 if us.states.lookup(x).abbr in senate_2022 else np.nan
+        )
+
+    def draw_topline(
+        self, data, dem_margin, turnout, *, draw, scale, profile, text_center, y
+    ):
+        dem_senate, gop_senate = get_senate_vote(
+            data, dem_margin=dem_margin, turnout=turnout
+        )
+        y += 15 // 2 + 20
+        draw_text(
+            draw,
+            40 * scale,
+            [
+                (str(dem_senate), profile.state_safe("dem")),
+                (" - ", profile.text_color),
+                (str(gop_senate), profile.state_safe("gop")),
+            ],
+            text_center * scale,
+            y * scale,
+            align=("center", 1),
+        )
+        return y
+
+    def draw_tipping_point(
+        self, data, dem_margin, turnout, *, draw, scale, profile, text_center, y
+    ):
+        pass
 
 
 def fit(*figure):

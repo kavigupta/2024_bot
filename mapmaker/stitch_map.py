@@ -17,7 +17,7 @@ from .aggregation import (
     calculate_tipping_point,
     number_votes,
 )
-from .mapper import USABaseMap
+from .mapper import USABaseMap, USAPresidencyBaseMap, USASenateBaseMap
 from .version import version
 from .colors import (
     BACKGROUND_RGB,
@@ -49,19 +49,11 @@ SCALE = 4
 
 def produce_text(
     title,
-    dem_ec,
-    dem_ec_close,
-    gop_ec,
-    gop_ec_close,
+    populated_map,
     pop_vote_margin,
-    tipping_point_state,
-    tipping_point_margin,
     total_turnout,
     scale=SCALE,
     *,
-    dem_senate,
-    gop_senate,
-    map_type,
     profile,
 ):
     im = Image.new(mode="RGBA", size=(950 * scale, 450 * scale))
@@ -118,49 +110,9 @@ def produce_text(
 
     y = FIRST_LINE
 
-    if map_type == "president":
-        draw_text(
-            draw,
-            40 * scale,
-            [
-                (str(dem_ec), profile.state_safe("dem")),
-                (" - ", profile.text_color),
-                (str(gop_ec), profile.state_safe("gop")),
-            ],
-            TEXT_CENTER * scale,
-            y * scale,
-            align=("center", 1),
-        )
-
-        y += 15 // 2 + 20
-
-        draw_text(
-            draw,
-            15 * scale,
-            [
-                ("Close: ", profile.text_color),
-                (str(dem_ec_close), profile.state_tilt("dem")),
-                (" - ", profile.text_color),
-                (str(gop_ec_close), profile.state_tilt("gop")),
-            ],
-            TEXT_CENTER * scale,
-            y * scale,
-            align=("center"),
-        )
-    if map_type == "senate":
-        y += 15 // 2 + 20
-        draw_text(
-            draw,
-            40 * scale,
-            [
-                (str(dem_senate), profile.state_safe("dem")),
-                (" - ", profile.text_color),
-                (str(gop_senate), profile.state_safe("gop")),
-            ],
-            TEXT_CENTER * scale,
-            y * scale,
-            align=("center", 1),
-        )
+    y = populated_map.draw_topline(
+        draw=draw, scale=scale, profile=profile, text_center=TEXT_CENTER, y=y
+    )
 
     y += 40 // 2 + 20
 
@@ -196,32 +148,9 @@ def produce_text(
 
     y += 20
 
-    tipping_point_str = None
-    tipping_point_color = None
-
-    if tipping_point_margin > 0:
-        tipping_point_str = (
-            f"{tipping_point_state} {profile.symbol['dem']}+{tipping_point_margin:.2%}"
-        )
-        tipping_point_color = profile.state_tilt("dem")
-    else:
-        tipping_point_str = (
-            f"{tipping_point_state} {profile.symbol['gop']}+{-tipping_point_margin:.2%}"
-        )
-        tipping_point_color = profile.state_tilt("gop")
-
-    if map_type == "president":
-        draw_text(
-            draw,
-            10 * scale,
-            [
-                ("Tipping Point: ", profile.text_color),
-                (tipping_point_str, tipping_point_color),
-            ],
-            TEXT_CENTER * scale,
-            y * scale,
-            align=("center"),
-        )
+    populated_map.draw_tipping_point(
+        draw=draw, scale=scale, profile=profile, text_center=TEXT_CENTER, y=y
+    )
 
     draw_legend(draw, scale, "county", profile=profile)
     draw_legend(draw, scale, "state", profile=profile)
@@ -312,16 +241,6 @@ def draw_legend(draw, scale, mode, *, profile):
             add_square(color, margin_text)
 
 
-def county_mask(data, map_type, year):
-    if map_type == "senate":
-        assert year == 2022
-        return data.state.apply(
-            lambda x: 1 if us.states.lookup(x).abbr in senate_2022 else np.nan
-        )
-    assert map_type == "president"
-    return 1
-
-
 def produce_entire_map(
     data,
     title,
@@ -334,23 +253,11 @@ def produce_entire_map(
     profile=STANDARD_PROFILE,
     use_png=True,
 ):
-    basemap = USABaseMap()
-    dem_margin_to_map = dem_margin * county_mask(data, map_type, year)
+    basemap = USAPresidencyBaseMap() if map_type == "president" else USASenateBaseMap()
+    dem_margin_to_map = dem_margin * basemap.county_mask(year)
 
-    dem_ec, gop_ec = get_electoral_vote(data, dem_margin=dem_margin, turnout=turnout)
-    dem_ec_safe, gop_ec_safe = get_electoral_vote(
-        data, dem_margin=dem_margin, turnout=turnout, only_nonclose=True
-    )
-    dem_senate, gop_senate = get_senate_vote(
-        data, dem_margin=dem_margin_to_map, turnout=turnout
-    )
+    populated_map = basemap.populate(data, dem_margin_to_map, turnout)
 
-    tipping_point_state, tipping_point_margin = calculate_tipping_point(
-        data, dem_margin=dem_margin, turnout=turnout
-    )
-
-    dem_ec_close, gop_ec_close = dem_ec - dem_ec_safe, gop_ec - gop_ec_safe
-    assert dem_ec_close >= 0 and gop_ec_close >= 0
     cm = basemap.map_county_margins(
         data["FIPS"], dem_margin=dem_margin_to_map, profile=profile
     )
@@ -388,18 +295,10 @@ def produce_entire_map(
 
     im = produce_text(
         title,
-        dem_ec,
-        dem_ec_close,
-        gop_ec,
-        gop_ec_close,
+        populated_map,
         pop_vote_margin,
-        tipping_point_state,
-        tipping_point_margin,
         total_turnout=number_votes(data, turnout=turnout)
         / number_votes(data, turnout=1),
-        dem_senate=dem_senate,
-        gop_senate=gop_senate,
-        map_type=map_type,
         profile=profile,
     )
     im.save(text_mask)
