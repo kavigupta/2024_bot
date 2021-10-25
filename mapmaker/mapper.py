@@ -183,74 +183,11 @@ class USABaseMap(BaseMap):
 
 
 class USAPresidencyBaseMap(USABaseMap):
-    def draw_topline(
-        self, data, dem_margin, turnout, *, draw, scale, profile, text_center, y
-    ):
-        dem_ec, gop_ec = get_electoral_vote(
-            data, dem_margin=dem_margin, turnout=turnout
-        )
-        dem_ec_safe, gop_ec_safe = get_electoral_vote(
-            data, dem_margin=dem_margin, turnout=turnout, only_nonclose=True
-        )
-        dem_ec_close, gop_ec_close = dem_ec - dem_ec_safe, gop_ec - gop_ec_safe
-        assert dem_ec_close >= 0 and gop_ec_close >= 0
-        draw_text(
-            draw,
-            40 * scale,
-            [
-                (str(dem_ec), profile.state_safe("dem")),
-                (" - ", profile.text_color),
-                (str(gop_ec), profile.state_safe("gop")),
-            ],
-            text_center * scale,
-            y * scale,
-            align=("center", 1),
-        )
+    def draw_topline(self, *args, **kwargs):
+        return draw_ec(*args, **kwargs)
 
-        y += 15 // 2 + 20
-
-        draw_text(
-            draw,
-            15 * scale,
-            [
-                ("Close: ", profile.text_color),
-                (str(dem_ec_close), profile.state_tilt("dem")),
-                (" - ", profile.text_color),
-                (str(gop_ec_close), profile.state_tilt("gop")),
-            ],
-            text_center * scale,
-            y * scale,
-            align=("center"),
-        )
-        return y
-
-    def draw_tipping_point(
-        self, data, dem_margin, turnout, *, draw, scale, profile, text_center, y
-    ):
-        tipping_point_state, tipping_point_margin = calculate_tipping_point(
-            data, dem_margin=dem_margin, turnout=turnout
-        )
-        tipping_point_str = None
-        tipping_point_color = None
-
-        if tipping_point_margin > 0:
-            tipping_point_str = f"{tipping_point_state} {profile.symbol['dem']}+{tipping_point_margin:.2%}"
-            tipping_point_color = profile.state_tilt("dem")
-        else:
-            tipping_point_str = f"{tipping_point_state} {profile.symbol['gop']}+{-tipping_point_margin:.2%}"
-            tipping_point_color = profile.state_tilt("gop")
-
-        draw_text(
-            draw,
-            10 * scale,
-            [
-                ("Tipping Point: ", profile.text_color),
-                (tipping_point_str, tipping_point_color),
-            ],
-            text_center * scale,
-            y * scale,
-            align=("center"),
-        )
+    def draw_tipping_point(self, *args, **kwargs):
+        return draw_tipping_point(*args, **kwargs)
 
 
 class USASenateBaseMap(USABaseMap):
@@ -315,3 +252,78 @@ def classify(margin):
         return 0.90
     else:
         return 1
+
+
+def draw_ec(
+    data, dem_margin, turnout, *, draw, scale, profile, text_center, y, **kwargs
+):
+    dem_ec, gop_ec = get_electoral_vote(
+        data, dem_margin=dem_margin, turnout=turnout, **kwargs
+    )
+    dem_ec_safe, gop_ec_safe = get_electoral_vote(
+        data, dem_margin=dem_margin, turnout=turnout, only_nonclose=True, **kwargs
+    )
+    dem_ec_close, gop_ec_close = dem_ec - dem_ec_safe, gop_ec - gop_ec_safe
+    assert dem_ec_close >= 0 and gop_ec_close >= 0
+    draw_text(
+        draw,
+        40 * scale,
+        [
+            (str(dem_ec), profile.state_safe("dem")),
+            (" - ", profile.text_color),
+            (str(gop_ec), profile.state_safe("gop")),
+        ],
+        text_center * scale,
+        y * scale,
+        align=("center", 1),
+    )
+
+    y += 15 // 2 + 20
+
+    draw_text(
+        draw,
+        15 * scale,
+        [
+            ("Close: ", profile.text_color),
+            (str(dem_ec_close), profile.state_tilt("dem")),
+            (" - ", profile.text_color),
+            (str(gop_ec_close), profile.state_tilt("gop")),
+        ],
+        text_center * scale,
+        y * scale,
+        align=("center"),
+    )
+    return y
+
+
+def draw_tipping_point(
+    data, dem_margin, turnout, *, draw, scale, profile, text_center, y, **kwargs
+):
+    tipping_point_state, tipping_point_margin = calculate_tipping_point(
+        data, dem_margin=dem_margin, turnout=turnout, **kwargs
+    )
+    tipping_point_str = None
+    tipping_point_color = None
+
+    if tipping_point_margin > 0:
+        tipping_point_str = (
+            f"{tipping_point_state} {profile.symbol['dem']}+{tipping_point_margin:.2%}"
+        )
+        tipping_point_color = profile.state_tilt("dem")
+    else:
+        tipping_point_str = (
+            f"{tipping_point_state} {profile.symbol['gop']}+{-tipping_point_margin:.2%}"
+        )
+        tipping_point_color = profile.state_tilt("gop")
+
+    draw_text(
+        draw,
+        10 * scale,
+        [
+            ("Tipping Point: ", profile.text_color),
+            (tipping_point_str, tipping_point_color),
+        ],
+        text_center * scale,
+        y * scale,
+        align=("center"),
+    )
