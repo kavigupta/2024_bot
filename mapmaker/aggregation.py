@@ -72,7 +72,7 @@ def calculate_tipping_point(data, *, dem_margin, turnout, basemap, **kwargs):
             .iterrows()
         ):
             ec_total += row["electoral_college"]
-            if ec_total >= 270:
+            if ec_total >= dem_needs:
                 tipping_point = ec_results[
                     ec_results.index == index
                 ].total_margin.reset_index()
