@@ -62,6 +62,14 @@ class BaseMap(ABC):
     def extra_county_maps(self):
         return []
 
+    @property
+    def map_scale(self):
+        return 1
+
+    @property
+    def map_dy(self):
+        return 0
+
     @cached_property
     def states(self):
         return counties_to_states(self.metadata, self.counties)

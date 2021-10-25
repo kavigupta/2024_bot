@@ -281,11 +281,20 @@ def produce_entire_map(
     if sm is not None:
         remove_backgrounds(states_svg)
 
-    fig.append([sg.fromfile(counties_svg).getroot()])
-    fig.append(basemap.extra_county_maps)
+    maps = [sg.fromfile(counties_svg).getroot(), *basemap.extra_county_maps]
+    for map in maps:
+        s = basemap.map_scale
+        map.moveto(0, basemap.map_dy, scale_x=s, scale_y=s)
+
+    fig.append(maps)
     if sm is not None:
         states = sg.fromfile(states_svg).getroot()
-        states.moveto(575, 200, scale_x=0.5, scale_y=0.5)
+        states.moveto(
+            575,
+            200 + 0.5 * basemap.map_dy,
+            scale_x=0.5 * basemap.map_scale,
+            scale_y=0.5 * basemap.map_scale,
+        )
         fig.append([states])
 
     im = produce_text(
