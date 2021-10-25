@@ -2,6 +2,8 @@ import os
 import functools
 import pickle
 
+from mapmaker.mapper import USAPresidencyBaseMap
+
 from .data import data_by_year
 from .constants import NUM_DEMOGRAPHICS, PCA_DIMENSIONS
 from .torch_model import DemographicCategoryModel
@@ -25,7 +27,7 @@ def get_model(
         num_demographics=num_demographics,
     )
     if calibrated:
-        model = calibrate(model, for_year=2024)
+        model = calibrate(USAPresidencyBaseMap(), model, for_year=2024)
     return model
 
 

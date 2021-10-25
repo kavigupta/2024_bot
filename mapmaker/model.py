@@ -29,7 +29,7 @@ class Model(ABC):
         self.alpha = alpha
         return self
 
-    def family_of_predictions(self, *, year, correct=True, n_seeds=1000):
+    def family_of_predictions(self, *, year, correct=True, n_seeds=1000, **kwargs):
         county_results, state_results, pop_votes = [], [], []
         for seed in range(n_seeds):
             predictions, turnout = self.fully_random_sample(
@@ -42,7 +42,7 @@ class Model(ABC):
             county_results.append(predictions)
             state_results.append(
                 get_state_results(
-                    self.data[year], dem_margin=predictions, turnout=turnout
+                    self.data[year], dem_margin=predictions, turnout=turnout, **kwargs
                 )
             )
             pop_votes.append(
