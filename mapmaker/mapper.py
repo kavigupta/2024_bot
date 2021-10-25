@@ -1,7 +1,10 @@
 from abc import ABC, abstractmethod, abstractproperty
+import os
+
 import attr
 import us
 
+import svgutils.transform as sg
 from cached_property import cached_property
 
 import numpy as np
@@ -36,6 +39,10 @@ class BaseMap(ABC):
         pass
 
     @abstractmethod
+    def county_plotly_kwargs(self, figure):
+        pass
+
+    @abstractmethod
     def draw_topline(
         self, dem_margin, turnout, *, draw, scale, profile, text_center, y
     ):
@@ -50,6 +57,10 @@ class BaseMap(ABC):
     @abstractmethod
     def county_mask(self, year):
         pass
+
+    @property
+    def extra_county_maps(self):
+        return []
 
     @cached_property
     def states(self):
@@ -66,10 +77,10 @@ class BaseMap(ABC):
             zmin=zmin,
             zmax=zmax,
             colorscale=colorscale,
-            marker_line_width=0,
+            **self.county_plotly_kwargs,
             showscale=False,
         )
-        return fit(figure)
+        return fit(figure, modify_figure_layout=self.modify_figure_layout)
 
     def map_county_margins(self, identifiers, *, dem_margin, profile):
         return self.county_map(
@@ -114,7 +125,7 @@ class BaseMap(ABC):
             marker_line_width=2,
             showscale=False,
         )
-        return fit(figure)
+        return fit(figure, modify_figure_layout=self.modify_figure_layout)
 
     def populate(self, data, dem_margin, turnout):
         return PopulatedMap(self, data, dem_margin, turnout)
@@ -148,8 +159,27 @@ class USABaseMap(BaseMap):
         data = data_by_year()[2020]
         return data[["FIPS", "state"]]
 
+    @property
+    def county_plotly_kwargs(self):
+        return dict(marker_line_width=0)
+
     def county_mask(self, year):
         return 1
+
+    def modify_figure_layout(self, figure):
+        figure.update_geos(scope="usa")
+        figure.update_layout(geo=dict(bgcolor=BACKGROUND, lakecolor=BACKGROUND))
+
+    @property
+    def extra_county_maps(self):
+        return [
+            sg.fromfile(
+                os.path.join(
+                    os.path.dirname(os.path.abspath(__file__)),
+                    "../stateboundariesinternal.svg",
+                )
+            ).getroot()
+        ]
 
 
 class USAPresidencyBaseMap(USABaseMap):
@@ -257,12 +287,11 @@ class USASenateBaseMap(USABaseMap):
         pass
 
 
-def fit(*figure):
+def fit(*figure, modify_figure_layout):
     figure = go.Figure(
         figure,
     )
-    figure.update_geos(scope="usa")
-    figure.update_layout(geo=dict(bgcolor=BACKGROUND, lakecolor=BACKGROUND))
+    modify_figure_layout(figure)
     figure.update_layout(margin={"r": 0, "t": 0, "l": 0, "b": 0})
     return figure
 
