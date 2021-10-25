@@ -55,6 +55,7 @@ def produce_text(
     scale=SCALE,
     *,
     profile,
+    state,
 ):
     im = Image.new(mode="RGBA", size=(950 * scale, 450 * scale))
     draw = ImageDraw.Draw(im)
@@ -153,7 +154,8 @@ def produce_text(
     )
 
     draw_legend(draw, scale, "county", profile=profile)
-    draw_legend(draw, scale, "state", profile=profile)
+    if state:
+        draw_legend(draw, scale, "state", profile=profile)
 
     return im
 
@@ -271,26 +273,20 @@ def produce_entire_map(
     text_mask = tempfile.mktemp(suffix=".png")
 
     cm.write_image(counties_svg)
-    sm.write_image(states_svg)
+    if sm is not None:
+        sm.write_image(states_svg)
 
     # load matpotlib-generated figures
     remove_backgrounds(counties_svg)
-    remove_backgrounds(states_svg)
+    if sm is not None:
+        remove_backgrounds(states_svg)
 
     fig.append([sg.fromfile(counties_svg).getroot()])
-    fig.append(
-        [
-            sg.fromfile(
-                os.path.join(
-                    os.path.dirname(os.path.abspath(__file__)),
-                    "../stateboundariesinternal.svg",
-                )
-            ).getroot()
-        ]
-    )
-    states = sg.fromfile(states_svg).getroot()
-    states.moveto(575, 200, scale_x=0.5, scale_y=0.5)
-    fig.append([states])
+    fig.append(basemap.extra_county_maps)
+    if sm is not None:
+        states = sg.fromfile(states_svg).getroot()
+        states.moveto(575, 200, scale_x=0.5, scale_y=0.5)
+        fig.append([states])
 
     im = produce_text(
         title,
@@ -299,6 +295,7 @@ def produce_entire_map(
         total_turnout=number_votes(data, turnout=turnout)
         / number_votes(data, turnout=1),
         profile=profile,
+        state=sm is not None,
     )
     im.save(text_mask)
     with open(text_mask, "rb") as f:
