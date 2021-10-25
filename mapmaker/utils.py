@@ -27,7 +27,7 @@ def counties_to_states(data, counties_geojson):
     shapes = {f["id"]: shape(f["geometry"]) for f in counties_geojson["features"]}
     states = defaultdict(list)
     for fips, state in zip(data["FIPS"], data["state"]):
-        states[state].append(shapes[fips])
+        states[state].append(shapes[str(fips)])
     states = {k: unary_union(v) for k, v in states.items()}
     return dict(
         type=counties_geojson["type"],
