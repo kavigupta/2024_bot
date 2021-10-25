@@ -27,6 +27,7 @@ from .constants import TILT_MARGIN, LEAN_MARGIN, LIKELY_MARGIN
 from .utils import counties_to_states
 from .text import draw_text
 from .senate import senate_2022
+from .data import ec
 
 
 class BaseMap(ABC):
@@ -56,6 +57,10 @@ class BaseMap(ABC):
 
     @abstractmethod
     def county_mask(self, year):
+        pass
+
+    @abstractproperty
+    def electoral_votes(self):
         pass
 
     @property
@@ -174,6 +179,10 @@ class USABaseMap(BaseMap):
     def county_mask(self, year):
         return 1
 
+    @property
+    def electoral_votes(self):
+        return ec()
+
     def modify_figure_layout(self, figure):
         figure.update_geos(scope="usa")
         figure.update_layout(geo=dict(bgcolor=BACKGROUND, lakecolor=BACKGROUND))
@@ -192,10 +201,10 @@ class USABaseMap(BaseMap):
 
 class USAPresidencyBaseMap(USABaseMap):
     def draw_topline(self, *args, **kwargs):
-        return draw_ec(*args, **kwargs)
+        return draw_ec(self, *args, **kwargs)
 
     def draw_tipping_point(self, *args, **kwargs):
-        return draw_tipping_point(*args, **kwargs)
+        return draw_tipping_point(self, *args, **kwargs)
 
 
 class USASenateBaseMap(USABaseMap):
@@ -263,13 +272,28 @@ def classify(margin):
 
 
 def draw_ec(
-    data, dem_margin, turnout, *, draw, scale, profile, text_center, y, **kwargs
+    basemap,
+    data,
+    dem_margin,
+    turnout,
+    *,
+    draw,
+    scale,
+    profile,
+    text_center,
+    y,
+    **kwargs,
 ):
     dem_ec, gop_ec = get_electoral_vote(
-        data, dem_margin=dem_margin, turnout=turnout, **kwargs
+        data, dem_margin=dem_margin, turnout=turnout, basemap=basemap, **kwargs
     )
     dem_ec_safe, gop_ec_safe = get_electoral_vote(
-        data, dem_margin=dem_margin, turnout=turnout, only_nonclose=True, **kwargs
+        data,
+        dem_margin=dem_margin,
+        turnout=turnout,
+        basemap=basemap,
+        only_nonclose=True,
+        **kwargs,
     )
     dem_ec_close, gop_ec_close = dem_ec - dem_ec_safe, gop_ec - gop_ec_safe
     assert dem_ec_close >= 0 and gop_ec_close >= 0
@@ -305,10 +329,20 @@ def draw_ec(
 
 
 def draw_tipping_point(
-    data, dem_margin, turnout, *, draw, scale, profile, text_center, y, **kwargs
+    basemap,
+    data,
+    dem_margin,
+    turnout,
+    *,
+    draw,
+    scale,
+    profile,
+    text_center,
+    y,
+    **kwargs,
 ):
     tipping_point_state, tipping_point_margin = calculate_tipping_point(
-        data, dem_margin=dem_margin, turnout=turnout, **kwargs
+        data, dem_margin=dem_margin, turnout=turnout, basemap=basemap, **kwargs
     )
     tipping_point_str = None
     tipping_point_color = None

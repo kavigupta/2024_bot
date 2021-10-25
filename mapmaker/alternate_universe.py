@@ -28,6 +28,8 @@ PARTISAN_NOISE = 5
 def generate_alternate_universe_map(seed, title, path):
     from mapmaker.generate_image import get_model
 
+    basemap = USAPresidencyBaseMap()
+
     model = get_model(calibrated=False, num_demographics=30)
     copied_model = copy.deepcopy(model)
     pv_seed, torch_seed, symbol_seed, color_seed = np.random.RandomState(seed).choice(
@@ -54,7 +56,11 @@ def generate_alternate_universe_map(seed, title, path):
         if abs(target_popular_vote - popular_vote) > POP_VOTE_PRECISION:
             continue
         if (
-            max(get_electoral_vote(data_by_year()[2020], dem_margin=p, turnout=t))
+            max(
+                get_electoral_vote(
+                    data_by_year()[2020], dem_margin=p, turnout=t, basemap=basemap
+                )
+            )
             > MAX_EC_WIN
         ):
             continue
@@ -69,7 +75,7 @@ def generate_alternate_universe_map(seed, title, path):
         out_path=path,
         dem_margin=p,
         turnout=t,
-        basemap=USAPresidencyBaseMap(),
+        basemap=basemap,
         year=2020,
         profile=Profile(
             symbol={k: v[0] for k, v in names.items()},

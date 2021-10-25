@@ -52,11 +52,14 @@ class Model(ABC):
             )
         return np.array(county_results), np.array(state_results), np.array(pop_votes)
 
-    def win_consistent_with(self, predictions, turnout, seed, *, year):
+    def win_consistent_with(self, predictions, turnout, seed, *, year, basemap):
         if seed is None:
             return True
         dem, gop = get_electoral_vote(
-            self.data[year], dem_margin=predictions, turnout=turnout
+            self.data[year],
+            dem_margin=predictions,
+            turnout=turnout,
+            basemap=basemap,
         )
         dem_win = dem > gop  # ties go to gop
         # even days, democrat. odd days, gop
@@ -72,7 +75,9 @@ class Model(ABC):
                 turnout_year=turnout_year,
                 basemap=basemap,
             )
-            if self.win_consistent_with(predictions, turnout, seed, year=year):
+            if self.win_consistent_with(
+                predictions, turnout, seed, year=year, basemap=basemap
+            ):
                 break
         return predictions, turnout
 
