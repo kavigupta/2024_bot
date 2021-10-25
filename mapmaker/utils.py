@@ -2,7 +2,7 @@ from collections import defaultdict
 from permacache import stable_hash
 
 import numpy as np
-from shapely.geometry import shape, mapping
+from shapely.geometry import shape, mapping, Polygon, MultiPolygon
 from shapely.ops import unary_union
 
 
@@ -28,7 +28,7 @@ def counties_to_states(data, counties_geojson):
     states = defaultdict(list)
     for fips, state in zip(data["FIPS"], data["state"]):
         states[state].append(shapes[str(fips)])
-    states = {k: unary_union(v) for k, v in states.items()}
+    states = {k: fix_polygon(unary_union(v)) for k, v in states.items()}
     return dict(
         type=counties_geojson["type"],
         features=[
@@ -36,3 +36,10 @@ def counties_to_states(data, counties_geojson):
             for ident, sh in states.items()
         ],
     )
+
+
+def fix_polygon(poly):
+    if isinstance(poly, Polygon):
+        return Polygon(poly.exterior)
+    assert isinstance(poly, MultiPolygon)
+    return MultiPolygon([fix_polygon(p) for p in poly])
