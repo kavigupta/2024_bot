@@ -100,7 +100,7 @@ def produce_text(
         10 * scale,
         [
             (
-                f"{profile.bot_name} v{version} by @notkavi and @lxeagle17 with data from @mill226",
+                f"{profile.bot_name} v{version} {profile.credit}",
                 profile.text_color,
             )
         ],

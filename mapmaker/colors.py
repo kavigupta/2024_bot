@@ -16,12 +16,15 @@ COUNTY_SCALE_MARGIN_MIN = -0.8
 
 MARGINAL = 0.001
 
+DEFAULT_CREDIT = "by @notkavi and @lxeagle17 with data from @mill226"
+
 
 @attr.s
 class Profile:
     symbol = attr.ib()
     hue = attr.ib()
     bot_name = attr.ib()
+    credit = attr.ib()
     name = attr.ib(default=None)
     text_color = attr.ib(default=None)
 
@@ -59,7 +62,10 @@ class Profile:
 
 
 STANDARD_PROFILE = Profile(
-    symbol=dict(dem="D", gop="R"), hue=dict(dem=2 / 3, gop=1), bot_name="bot_2024"
+    symbol=dict(dem="D", gop="R"),
+    hue=dict(dem=2 / 3, gop=1),
+    bot_name="bot_2024",
+    credit=DEFAULT_CREDIT,
 )
 
 

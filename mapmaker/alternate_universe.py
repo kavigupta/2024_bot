@@ -13,6 +13,7 @@ import torch.nn as nn
 
 
 from mapmaker.aggregation import get_popular_vote, get_electoral_vote, get_state_results
+from mapmaker.colors import DEFAULT_CREDIT
 from mapmaker.data import data_by_year
 from mapmaker.mapper import USAPresidencyBaseMap
 from mapmaker.stitch_map import produce_entire_map
@@ -82,6 +83,7 @@ def generate_alternate_universe_map(seed, title, path):
             name=names,
             hue=sample_colors(color_seed),
             bot_name="bot_althistory",
+            credit=DEFAULT_CREDIT,
         ),
     )
 

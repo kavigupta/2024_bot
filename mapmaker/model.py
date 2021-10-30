@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import copy
 
 import numpy as np
+from mapmaker.colors import STANDARD_PROFILE
 
 from mapmaker.mapper import USAPresidencyBaseMap
 
@@ -84,7 +85,9 @@ class Model(ABC):
                 break
         return predictions, turnout
 
-    def sample_map(self, title, path, *, year, basemap, **kwargs):
+    def sample_map(
+        self, title, path, *, year, basemap, profile=STANDARD_PROFILE, **kwargs
+    ):
         print(f"Generating {title}")
         predictions, turnout = self.sample(year=year, basemap=basemap, **kwargs)
         return produce_entire_map(
@@ -95,4 +98,5 @@ class Model(ABC):
             turnout=turnout,
             basemap=basemap,
             year=year,
+            profile=profile,
         )
