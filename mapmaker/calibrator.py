@@ -11,12 +11,12 @@ def bias(basemap, preds):
     return ((ecs * dems).sum(1) > (ecs * gop).sum(1)).mean()
 
 
-def calibrate(basemap, model, *, for_year, pv_spread=TARGET_PV_SPREAD_50, **kwargs):
+def calibrate(basemap, model, *, for_year, pv_spread=TARGET_PV_SPREAD_50):
     low_alpha, high_alpha = 0, 2
     while True:
         mid_alpha = (low_alpha + high_alpha) / 2
         model = model.with_alpha(mid_alpha)
-        _, state_preds, pv = model.family_of_predictions(year=for_year, **kwargs)
+        _, state_preds, pv = model.family_of_predictions(year=for_year, basemap=basemap)
         pv_spread_50 = np.percentile(pv, 75) - np.percentile(pv, 25)
         print(f"Alpha: {mid_alpha:.4f}")
         print(f"Spread: {pv_spread_50:.2%}")

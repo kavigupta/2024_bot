@@ -285,7 +285,7 @@ def draw_ec(
     **kwargs,
 ):
     dem_ec, gop_ec = get_electoral_vote(
-        data, dem_margin=dem_margin, turnout=turnout, basemap=basemap, **kwargs
+        data, dem_margin=dem_margin, turnout=turnout, basemap=basemap
     )
     dem_ec_safe, gop_ec_safe = get_electoral_vote(
         data,
@@ -293,7 +293,6 @@ def draw_ec(
         turnout=turnout,
         basemap=basemap,
         only_nonclose=True,
-        **kwargs,
     )
     dem_ec_close, gop_ec_close = dem_ec - dem_ec_safe, gop_ec - gop_ec_safe
     assert dem_ec_close >= 0 and gop_ec_close >= 0
@@ -339,10 +338,9 @@ def draw_tipping_point(
     profile,
     text_center,
     y,
-    **kwargs,
 ):
     tipping_point_state, tipping_point_margin = calculate_tipping_point(
-        data, dem_margin=dem_margin, turnout=turnout, basemap=basemap, **kwargs
+        data, dem_margin=dem_margin, turnout=turnout, basemap=basemap
     )
     tipping_point_str = None
     tipping_point_color = None

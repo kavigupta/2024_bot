@@ -29,7 +29,7 @@ class Model(ABC):
         self.alpha = alpha
         return self
 
-    def family_of_predictions(self, *, year, correct=True, n_seeds=1000, **kwargs):
+    def family_of_predictions(self, *, year, correct=True, n_seeds=1000, basemap):
         county_results, state_results, pop_votes = [], [], []
         for seed in range(n_seeds):
             predictions, turnout = self.fully_random_sample(
@@ -42,7 +42,10 @@ class Model(ABC):
             county_results.append(predictions)
             state_results.append(
                 get_state_results(
-                    self.data[year], dem_margin=predictions, turnout=turnout, **kwargs
+                    self.data[year],
+                    dem_margin=predictions,
+                    turnout=turnout,
+                    group_by=basemap.electoral_votes.index.name,
                 )
             )
             pop_votes.append(
@@ -83,7 +86,7 @@ class Model(ABC):
 
     def sample_map(self, title, path, *, year, basemap, **kwargs):
         print(f"Generating {title}")
-        predictions, turnout = self.sample(year=year, **kwargs, basemap=basemap)
+        predictions, turnout = self.sample(year=year, basemap=basemap, **kwargs)
         return produce_entire_map(
             self.data[year],
             title,

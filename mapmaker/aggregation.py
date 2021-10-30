@@ -20,15 +20,18 @@ def number_votes(data, *, turnout):
     return (turnout * data.CVAP).sum()
 
 
-def get_electoral_vote(
-    data, *, dem_margin, turnout, basemap, only_nonclose=False, **kwargs
-):
+def get_electoral_vote(data, *, dem_margin, turnout, basemap, only_nonclose=False):
     if only_nonclose:
         m = TILT_MARGIN
     else:
         m = 0
     ec_results = basemap.electoral_votes.join(
-        get_state_results(data, turnout=turnout, dem_margin=dem_margin, **kwargs),
+        get_state_results(
+            data,
+            turnout=turnout,
+            dem_margin=dem_margin,
+            group_by=basemap.electoral_votes.index.name,
+        ),
         how="inner",
     )
 
@@ -47,7 +50,10 @@ def get_senate_vote(data, *, dem_margin, turnout):
 
 def calculate_tipping_point(data, *, dem_margin, turnout, basemap, **kwargs):
     state_results = get_state_results(
-        data, dem_margin=dem_margin, turnout=turnout, **kwargs
+        data,
+        dem_margin=dem_margin,
+        turnout=turnout,
+        group_by=basemap.electoral_votes.index.name,
     )
     ec_results = basemap.electoral_votes.join(state_results, how="inner")
     dem_ec = ec_results["electoral_college"][ec_results.total_margin > 0].sum()
