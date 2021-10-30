@@ -39,8 +39,12 @@ class BaseMap(ABC):
     def metadata(self):
         pass
 
-    @abstractmethod
-    def county_plotly_kwargs(self, figure):
+    @abstractproperty
+    def county_plotly_kwargs(self):
+        pass
+
+    @abstractproperty
+    def state_plotly_kwargs(self):
         pass
 
     @abstractmethod
@@ -135,8 +139,8 @@ class BaseMap(ABC):
             ],
             zmin=0,
             zmax=1,
-            marker_line_width=2,
             showscale=False,
+            **self.state_plotly_kwargs,
         )
         return fit(figure, modify_figure_layout=self.modify_figure_layout)
 
@@ -175,6 +179,10 @@ class USABaseMap(BaseMap):
     @property
     def county_plotly_kwargs(self):
         return dict(marker_line_width=0)
+
+    @property
+    def state_plotly_kwargs(self):
+        return dict(marker_line_width=2)
 
     def county_mask(self, year):
         return 1
