@@ -57,7 +57,7 @@ def get_image(seed, name, *, basemap):
     return png_path, pkl_path
 
 
-def get_althistory_image(seed, prefix="alternate-universes"):
+def get_althistory_image(seed, prefix="images/alternate-universes"):
     path = f"{prefix}/{seed}.svg"
     generate_alternate_universe_map(seed, f"Alternate Universe {seed}", path)
     return path.replace(".svg", ".png"), path.replace(".svg", ".pkl")
