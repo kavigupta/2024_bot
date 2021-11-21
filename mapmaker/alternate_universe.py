@@ -107,7 +107,7 @@ def generate_alternate_universe_map(seed, title, path):
                 profile,
                 get_state_results_by_voteshare(
                     data, turnout=t, voteshare_by_party=popular_vote
-                ),
+                )[1],
                 always_whole=True,
             ),
             f,
