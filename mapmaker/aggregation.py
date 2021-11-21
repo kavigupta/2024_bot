@@ -112,7 +112,7 @@ def get_senate_vote(data, *, voteshare_by_party, turnout):
     _, state_results = get_state_results_by_voteshare(
         data, turnout=turnout, voteshare_by_party=voteshare_by_party
     )
-    # TODO work with more than 2 parties
+    assert voteshare_by_party.keys() == {"dem", "gop"}
     argmaxes = [dict_argmax(x) for x in state_results]
     dem_states = sum(x == "dem" for x in argmaxes)
     gop_states = sum(x == "gop" for x in argmaxes)
@@ -176,8 +176,15 @@ def to_winning_margin(voteshare_by_party):
     parties = sorted(voteshare_by_party)
     out = []
     for results in zip(*[voteshare_by_party[k] for k in parties]):
+        assert len(results) == len(parties)
         idx = np.argmax(results)
         out.append(
             (parties[idx], results[idx] - np.max([*results[:idx], *results[idx + 1 :]]))
         )
     return out
+
+def to_winning_margin_single(voteshare_by_party):
+    [result] = to_winning_margin(
+            {k: [v] for k, v in voteshare_by_party.items()}
+        )
+    return result

@@ -77,11 +77,7 @@ def produce_text(
         draw_text(
             draw,
             15 * scale,
-            [
-                (profile.name["dem"] + " Party", profile.state_safe("dem")),
-                (" vs. ", profile.text_color),
-                (profile.name["gop"] + " Party", profile.state_safe("gop")),
-            ],
+            profile.vs,
             (LEFT_MARGIN) * scale,
             (title_start + 25) * scale,
         )
@@ -113,25 +109,14 @@ def produce_text(
         draw=draw, scale=scale, profile=profile, text_center=TEXT_CENTER, y=y
     )
 
-    y += 40 // 2 + 20
+    amount = (30 if len(profile.name) == 2 else 15)
 
-    # TODO support multiple parties
-    pop_vote_margin = pop_vote["dem"] - pop_vote["gop"]
+    y += amount // 2 + 20
 
     draw_text(
         draw,
-        30 * scale,
-        [
-            (
-                f"{profile.symbol['dem']}+{pop_vote_margin:.2%}",
-                profile.state_safe("dem"),
-            )
-            if pop_vote_margin > 0
-            else (
-                f"{profile.symbol['gop']}+{-pop_vote_margin:.2%}",
-                profile.state_safe("gop"),
-            )
-        ],
+        amount * scale,
+        profile.display_popular_vote(pop_vote),
         TEXT_CENTER * scale,
         y * scale,
         align=("center"),
@@ -206,43 +191,11 @@ def draw_legend(draw, scale, mode, *, profile):
             )
 
     if mode == "county":
-        for margin in np.arange(-0.8, 0.8 + 1e-1, 0.2):
-            add_square(
-                get_color(
-                    profile.county_colorscale,
-                    profile.place_on_county_colorscale(
-                        {"dem": [margin / 2 + 0.5], "gop": [-margin / 2 + 0.5]}
-                    )[0],
-                ),
-                f"{profile.symbol['gop']}+{-margin * 100:.0f}"
-                if margin < -0.001
-                else f"{profile.symbol['dem']}+{margin * 100:.0f}"
-                if margin > 0.001
-                else "Even",
-            )
+        for color, text in profile.county_legend:
+            add_square(color, text)
     else:
-        state_buckets = [
-            f"> {profile.symbol['gop']}+7",
-            f"{profile.symbol['gop']}+3 - {profile.symbol['gop']}+7",
-            f"{profile.symbol['gop']}+1 - {profile.symbol['gop']}+3",
-            f"< {profile.symbol['gop']}+1",
-            f"< {profile.symbol['dem']}+1",
-            f"{profile.symbol['dem']}+1 - {profile.symbol['dem']}+3",
-            f"{profile.symbol['dem']}+3 - {profile.symbol['dem']}+7",
-            f"> {profile.symbol['dem']}+7",
-        ]
-        state_colors = [
-            profile.state_safe("gop"),
-            profile.state_likely("gop"),
-            profile.state_lean("gop"),
-            profile.state_tilt("gop"),
-            profile.state_tilt("dem"),
-            profile.state_lean("dem"),
-            profile.state_likely("dem"),
-            profile.state_safe("dem"),
-        ]
-        for margin_text, color in zip(state_buckets, state_colors):
-            add_square(color, margin_text)
+        for color, text in profile.state_legend:
+            add_square(color, text)
 
 
 def produce_entire_map(
