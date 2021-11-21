@@ -357,7 +357,17 @@ def produce_entire_map_generic(
     _, values = get_state_results_by_voteshare(
         data, voteshare_by_party=voteshare_by_party, turnout=turnout
     )
-    return values
+    result = []
+    for value in values:
+        parties = sorted(value)
+        if len(parties) == 2:
+            result.append(value[parties[0]] - value[parties[1]])
+        else:
+            whole = " ".join(
+                f"{profile.symbol[party]}={value[party]:.2%}" for party in parties
+            )
+            result.append(whole)
+    return result
 
 
 def remove_backgrounds(path):
