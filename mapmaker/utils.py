@@ -43,3 +43,12 @@ def fix_polygon(poly):
         return Polygon(poly.exterior)
     assert isinstance(poly, MultiPolygon)
     return MultiPolygon([fix_polygon(p) for p in poly])
+
+
+def dict_argmax(d):
+    keys = sorted(d)
+    values = [d[k] for k in keys]
+    if np.isnan(values).any():
+        assert np.isnan(values).all()
+        return None
+    return keys[np.argmax(values)]

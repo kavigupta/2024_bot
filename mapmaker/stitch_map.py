@@ -12,17 +12,15 @@ from cairosvg import svg2png
 from .aggregation import (
     get_electoral_vote,
     get_senate_vote,
-    get_popular_vote,
+    get_popular_vote_by_voteshare,
     get_state_results,
-    calculate_tipping_point,
+    get_state_results_by_voteshare,
     number_votes,
 )
 from .mapper import USABaseMap, USAPresidencyBaseMap, USASenateBaseMap
 from .version import version
 from .colors import (
     BACKGROUND_RGB,
-    COUNTY_SCALE_MARGIN_MAX,
-    COUNTY_SCALE_MARGIN_MIN,
     STANDARD_PROFILE,
     get_color,
 )
@@ -50,7 +48,7 @@ SCALE = 4
 def produce_text(
     title,
     populated_map,
-    pop_vote_margin,
+    pop_vote,
     total_turnout,
     scale=SCALE,
     *,
@@ -116,6 +114,9 @@ def produce_text(
     )
 
     y += 40 // 2 + 20
+
+    # TODO support multiple parties
+    pop_vote_margin = pop_vote["dem"] - pop_vote["gop"]
 
     draw_text(
         draw,
@@ -209,8 +210,9 @@ def draw_legend(draw, scale, mode, *, profile):
             add_square(
                 get_color(
                     profile.county_colorscale,
-                    (margin - COUNTY_SCALE_MARGIN_MIN)
-                    / (COUNTY_SCALE_MARGIN_MAX - COUNTY_SCALE_MARGIN_MIN),
+                    profile.place_on_county_colorscale(
+                        {"dem": [margin / 2 + 0.5], "gop": [-margin / 2 + 0.5]}
+                    )[0],
                 ),
                 f"{profile.symbol['gop']}+{-margin * 100:.0f}"
                 if margin < -0.001
@@ -255,17 +257,50 @@ def produce_entire_map(
     profile=STANDARD_PROFILE,
     use_png=True,
 ):
-    dem_margin_to_map = dem_margin * basemap.county_mask(year)
+    voteshare_by_party = dict(dem=dem_margin / 2 + 0.5, gop=-dem_margin / 2 + 0.5)
+    return produce_entire_map_generic(
+        data,
+        title,
+        out_path,
+        voteshare_by_party=voteshare_by_party,
+        turnout=turnout,
+        basemap=basemap,
+        year=year,
+        profile=profile,
+        use_png=use_png,
+    )
 
-    populated_map = basemap.populate(data, dem_margin_to_map, turnout)
+
+def produce_entire_map_generic(
+    data,
+    title,
+    out_path,
+    *,
+    voteshare_by_party,
+    turnout,
+    basemap,
+    year,
+    profile=STANDARD_PROFILE,
+    use_png=True,
+):
+    voteshare_by_party_to_map = {
+        k: voteshare_by_party[k] * basemap.county_mask(year) for k in voteshare_by_party
+    }
+
+    populated_map = basemap.populate(data, voteshare_by_party_to_map, turnout)
 
     cm = basemap.map_county_margins(
-        data["FIPS"], dem_margin=dem_margin_to_map, profile=profile
+        data["FIPS"], voteshare_by_party=voteshare_by_party_to_map, profile=profile
     )
     sm = basemap.state_map(
-        data, dem_margin=dem_margin_to_map, turnout=turnout, profile=profile
+        data,
+        voteshare_by_party=voteshare_by_party_to_map,
+        turnout=turnout,
+        profile=profile,
     )
-    pop_vote_margin = get_popular_vote(data, dem_margin=dem_margin, turnout=turnout)
+    pop_vote = get_popular_vote_by_voteshare(
+        data, voteshare_by_party=voteshare_by_party, turnout=turnout
+    )
 
     fig = sg.SVGFigure("160cm", "65cm")
 
@@ -300,7 +335,7 @@ def produce_entire_map(
     im = produce_text(
         title,
         populated_map,
-        pop_vote_margin,
+        pop_vote,
         total_turnout=number_votes(data, turnout=turnout)
         / number_votes(data, turnout=1),
         profile=profile,
@@ -319,7 +354,10 @@ def produce_entire_map(
                 scale=SCALE,
             )
         os.remove(out_path)
-    return get_state_results(data, dem_margin=dem_margin, turnout=turnout)
+    _, values = get_state_results_by_voteshare(
+        data, voteshare_by_party=voteshare_by_party, turnout=turnout
+    )
+    return values
 
 
 def remove_backgrounds(path):

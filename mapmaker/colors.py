@@ -12,9 +12,10 @@ BACKGROUND = "#222"
 BACKGROUND_RGB = "rgb(34, 34, 34)"
 
 COUNTY_SCALE_MARGIN_MAX = 0.8
-COUNTY_SCALE_MARGIN_MIN = -0.8
 
 MARGINAL = 0.001
+INTERVAL = 0.1
+
 
 DEFAULT_CREDIT = "by @notkavi and @lxeagle17 with data from @mill226"
 
@@ -27,6 +28,7 @@ class Profile:
     credit = attr.ib()
     name = attr.ib(default=None)
     text_color = attr.ib(default=None)
+    extra_ec = attr.ib(default={})
 
     def color(self, party, saturation):
         rgb = np.array(colorsys.hsv_to_rgb(self.hue[party], saturation, 1))
@@ -50,15 +52,65 @@ class Profile:
     def state_safe(self, party):
         return self.color(party, 0.7803921568627451)
 
+    def place_on_county_colorscale(self, voteshare_by_party):
+        from .aggregation import to_winning_margin
+
+        winning_margin = to_winning_margin(voteshare_by_party)
+        parties = sorted(self.symbol)
+        out = []
+        for party, margin in winning_margin:
+            out.append(
+                (
+                    2 * parties.index(party)
+                    + 1
+                    - min(margin / COUNTY_SCALE_MARGIN_MAX, 1)
+                )
+                * INTERVAL
+            )
+        return np.array(out)
+
+    def place_on_state_colorscale(self, voteshare_by_party):
+        from .aggregation import to_winning_margin
+        from mapmaker.mapper import classify
+
+        parties = sorted(self.symbol)
+        out = []
+        for party, margin in to_winning_margin(voteshare_by_party):
+            out.append(INTERVAL * (parties.index(party) + classify(margin)))
+
+        return np.array(out)
+
     @property
     def county_colorscale(self):
-        return [
-            [0, self.county_max("gop")],
-            [0.5 - MARGINAL, self.county_min("gop")],
-            [0.5, "#ffffff"],
-            [0.5 + MARGINAL, self.county_min("dem")],
-            [1.0, self.county_max("dem")],
-        ]
+        parties = sorted(self.symbol)
+        assert (2 * len(parties) + 1) * INTERVAL < 1
+        result = []
+        for idx, party in enumerate(parties):
+            result += [
+                [2 * idx * INTERVAL, self.county_max(party)],
+                [
+                    (2 * idx + 1) * INTERVAL - MARGINAL * INTERVAL * 2,
+                    self.county_min(party),
+                ],
+                [(2 * idx + 1) * INTERVAL, "#ffffff"],
+            ]
+
+        result = result + [[1.0, "#ffffff"]]
+        return result
+
+    @property
+    def state_colorscale(self):
+        parties = sorted(self.symbol)
+        out = [(0, "#000000")]
+        for idx, party in enumerate(parties):
+            out += [
+                [INTERVAL * (idx + 0.1), self.state_tilt(party)],
+                [INTERVAL * (idx + 0.2), self.state_lean(party)],
+                [INTERVAL * (idx + 0.3), self.state_likely(party)],
+                [INTERVAL * (idx + 0.4), self.state_safe(party)],
+            ]
+        out += [[1, "#ffffff"]]
+        return out
 
 
 STANDARD_PROFILE = Profile(
@@ -66,6 +118,7 @@ STANDARD_PROFILE = Profile(
     hue=dict(dem=2 / 3, gop=1),
     bot_name="bot_2024",
     credit=DEFAULT_CREDIT,
+    extra_ec=dict(gop=1),
 )
 
 
