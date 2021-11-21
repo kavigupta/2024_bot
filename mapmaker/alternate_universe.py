@@ -26,7 +26,11 @@ from mapmaker.aggregation import (
 from mapmaker.colors import DEFAULT_CREDIT
 from mapmaker.data import data_by_year
 from mapmaker.mapper import USAPresidencyBaseMap
-from mapmaker.stitch_map import produce_entire_map, produce_entire_map_generic
+from mapmaker.stitch_map import (
+    produce_entire_map,
+    produce_entire_map_generic,
+    serialize_output,
+)
 
 POP_VOTE_SIGMA = 5e-2
 POP_VOTE_PRECISION = 0.1e-2
@@ -99,8 +103,12 @@ def generate_alternate_universe_map(seed, title, path):
         break
     with open(path.replace(".svg", ".pkl"), "wb") as f:
         pickle.dump(
-            get_state_results_by_voteshare(
-                data, turnout=t, voteshare_by_party=popular_vote
+            serialize_output(
+                profile,
+                get_state_results_by_voteshare(
+                    data, turnout=t, voteshare_by_party=popular_vote
+                ),
+                always_whole=True,
             ),
             f,
         )

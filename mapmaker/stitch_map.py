@@ -350,10 +350,15 @@ def produce_entire_map_generic(
     _, values = get_state_results_by_voteshare(
         data, voteshare_by_party=voteshare_by_party, turnout=turnout
     )
+    result = serialize_output(profile, values)
+    return result
+
+
+def serialize_output(profile, values, always_whole=False):
     result = []
     for value in values:
         parties = sorted(value)
-        if len(parties) == 2:
+        if len(parties) == 2 and not always_whole:
             result.append(value[parties[0]] - value[parties[1]])
         else:
             whole = " ".join(
