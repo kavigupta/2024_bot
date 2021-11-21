@@ -169,57 +169,30 @@ class Profile:
     @property
     def state_legend(self):
         squares_per_party = {}
-        full = len(self.name) == 2
         for party in self.name:
             squares_per_party[party] = [
-                (
-                    self.state_safe(party),
-                    f"> {self.symbol[party]}+7" if full else "> 7",
-                ),
+                (self.state_safe(party), f"> {self.symbol[party]}+7"),
                 (
                     self.state_likely(party),
-                    f"{self.symbol[party]}+3 - {self.symbol[party]}+7"
-                    if full
-                    else "3 - 7",
+                    f"{self.symbol[party]}+3 - {self.symbol[party]}+7",
                 ),
                 (
                     self.state_lean(party),
-                    f"{self.symbol[party]}+1 - {self.symbol[party]}+3"
-                    if full
-                    else "1 - 3",
+                    f"{self.symbol[party]}+1 - {self.symbol[party]}+3",
                 ),
-                (
-                    self.state_tilt(party),
-                    f"< {self.symbol[party]}+1" if full else "< 1",
-                ),
+                (self.state_tilt(party), f"< {self.symbol[party]}+1"),
             ]
-        return self.combine_squares_per_party(squares_per_party, full=full)
+        return self.combine_squares_per_party(squares_per_party)
 
-    def combine_squares_per_party(self, squares_per_party, even=False, full=True):
+    def combine_squares_per_party(self, squares_per_party, even=False):
         even = [(np.array([255, 255, 255], dtype=np.uint8), "Even")] * even
         if len(squares_per_party) == 2:
-            assert full
             a, b = sorted(self.name)
             res = squares_per_party[a] + even + squares_per_party[b][::-1]
             return res
-        if full:
-            all_squares = []
-            for party in sorted(self.name):
-                all_squares.extend(squares_per_party[party])
-            return all_squares + even
-        assert not even
         all_squares = []
-        for col, party in enumerate(self.name):
-            eles = [
-                [
-                    color,
-                    text if col == len(self.name) - 1 else None,
-                    -(len(self.name) - 1 - col) + len(self.name) // 2,
-                ]
-                for color, text in squares_per_party[party]
-            ]
-            eles[0].append(True)
-            all_squares += eles
+        for party in sorted(self.name):
+            all_squares.extend(squares_per_party[party])
         return all_squares + even
 
 
