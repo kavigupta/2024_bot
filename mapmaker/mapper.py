@@ -292,18 +292,13 @@ def draw_ec(
     for k in close_ec_by_party:
         assert close_ec_by_party[k] >= 0
 
-    # TODO support more than 2 parties
     draw_text(
         draw,
-        40 * scale,
-        [
-            (str(ec_by_party["dem"]), profile.state_safe("dem")),
-            (" - ", profile.text_color),
-            (str(ec_by_party["gop"]), profile.state_safe("gop")),
-        ],
+        (40 if len(profile.symbol) == 2 else 30) * scale,
+        profile.display_electoral_college(ec_by_party),
         text_center * scale,
         y * scale,
-        align=("center", 1),
+        align=("center", 1) if len(profile.symbol) == 2 else "center",
     )
 
     y += 15 // 2 + 20
@@ -313,9 +308,7 @@ def draw_ec(
         15 * scale,
         [
             ("Close: ", profile.text_color),
-            (str(close_ec_by_party["dem"]), profile.state_tilt("dem")),
-            (" - ", profile.text_color),
-            (str(close_ec_by_party["gop"]), profile.state_tilt("gop")),
+            *profile.display_electoral_college(close_ec_by_party, attr="state_tilt"),
         ],
         text_center * scale,
         y * scale,
