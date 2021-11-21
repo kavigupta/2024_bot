@@ -3,6 +3,7 @@ import functools
 import pickle
 
 from mapmaker.mapper import USAPresidencyBaseMap
+from .specials.gondor import generate_gondor_map
 
 from .data import data_by_year
 from .constants import NUM_DEMOGRAPHICS, PCA_DIMENSIONS
@@ -60,6 +61,16 @@ def get_image(seed, name, *, basemap):
 def get_althistory_image(seed, prefix="images/alternate-universes"):
     path = f"{prefix}/{seed}.svg"
     generate_alternate_universe_map(seed, f"Alternate Universe {seed}", path)
+    return path.replace(".svg", ".png"), path.replace(".svg", ".pkl")
+
+
+def get_gondor_image(seed, prefix="images/gondor"):
+    path = f"{prefix}/{seed}.svg"
+    generate_gondor_map(
+        seed,
+        f"Gondor Scenario {seed}" if seed is not None else "Gondor 2020 Actual",
+        path,
+    )
     return path.replace(".svg", ".png"), path.replace(".svg", ".pkl")
 
 
