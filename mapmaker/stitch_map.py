@@ -109,9 +109,9 @@ def produce_text(
         draw=draw, scale=scale, profile=profile, text_center=TEXT_CENTER, y=y
     )
 
-    amount = (30 if len(profile.name) == 2 else 15)
+    amount = 30 if len(profile.symbol) == 2 else 15
 
-    y += amount // 2 + 20
+    y += (amount + 10) // 2 + 20
 
     draw_text(
         draw,

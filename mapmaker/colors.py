@@ -117,7 +117,7 @@ class Profile:
     @property
     def vs(self):
         overall = []
-        for party in sorted(self.name):
+        for party in sorted(self.symbol):
             overall.append((self.name[party] + " Party", self.state_safe(party)))
             overall.append((" vs. ", self.text_color))
         overall.pop()
@@ -152,10 +152,10 @@ class Profile:
     def county_legend(self):
         margins = [0.8, 0.6, 0.4, 0.2]
         squares_per_party = {}
-        for party in self.name:
+        for party in self.symbol:
             squares_per_party[party] = []
             for margin in margins:
-                each_margin = {party: [0] for party in self.name}
+                each_margin = {party: [0] for party in self.symbol}
                 each_margin[party] = [margin]
                 color = get_color(
                     self.county_colorscale,
@@ -169,7 +169,7 @@ class Profile:
     @property
     def state_legend(self):
         squares_per_party = {}
-        for party in self.name:
+        for party in self.symbol:
             squares_per_party[party] = [
                 (self.state_safe(party), f"> {self.symbol[party]}+7"),
                 (
@@ -187,11 +187,11 @@ class Profile:
     def combine_squares_per_party(self, squares_per_party, even=False):
         even = [(np.array([255, 255, 255], dtype=np.uint8), "Even")] * even
         if len(squares_per_party) == 2:
-            a, b = sorted(self.name)
+            b, a = sorted(self.symbol)
             res = squares_per_party[a] + even + squares_per_party[b][::-1]
             return res
         all_squares = []
-        for party in sorted(self.name):
+        for party in sorted(self.symbol):
             all_squares.extend(squares_per_party[party])
         return all_squares + even
 

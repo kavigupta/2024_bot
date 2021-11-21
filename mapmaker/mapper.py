@@ -294,11 +294,11 @@ def draw_ec(
 
     draw_text(
         draw,
-        (40 if len(profile.name) == 2 else 30) * scale,
+        (40 if len(profile.symbol) == 2 else 30) * scale,
         profile.display_electoral_college(ec_by_party),
         text_center * scale,
         y * scale,
-        align=("center", 1) if len(profile.name) == 2 else "center",
+        align=("center", 1) if len(profile.symbol) == 2 else "center",
     )
 
     y += 15 // 2 + 20

@@ -183,8 +183,7 @@ def to_winning_margin(voteshare_by_party):
         )
     return out
 
+
 def to_winning_margin_single(voteshare_by_party):
-    [result] = to_winning_margin(
-            {k: [v] for k, v in voteshare_by_party.items()}
-        )
+    [result] = to_winning_margin({k: [v] for k, v in voteshare_by_party.items()})
     return result
