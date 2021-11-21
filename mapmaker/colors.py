@@ -170,18 +170,9 @@ class Profile:
     def state_legend(self):
         squares_per_party = {}
         for party in self.symbol:
-            squares_per_party[party] = [
-                (self.state_safe(party), f"> {self.symbol[party]}+7"),
-                (
-                    self.state_likely(party),
-                    f"{self.symbol[party]}+3 - {self.symbol[party]}+7",
-                ),
-                (
-                    self.state_lean(party),
-                    f"{self.symbol[party]}+1 - {self.symbol[party]}+3",
-                ),
-                (self.state_tilt(party), f"< {self.symbol[party]}+1"),
-            ]
+            squares_per_party[party] = list(
+                zip(self.state_colors(party), self.state_symbols_full(party))
+            )
         return self.combine_squares_per_party(squares_per_party)
 
     def combine_squares_per_party(self, squares_per_party, even=False):
@@ -194,6 +185,25 @@ class Profile:
         for party in sorted(self.symbol):
             all_squares.extend(squares_per_party[party])
         return all_squares + even
+
+    def state_colors(self, party):
+        return [
+            self.state_safe(party),
+            self.state_likely(party),
+            self.state_lean(party),
+            self.state_tilt(party),
+        ]
+
+    def state_symbols_full(self, party):
+        return [
+            f"> {self.symbol[party]}+7",
+            f"{self.symbol[party]}+3 - {self.symbol[party]}+7",
+            f"{self.symbol[party]}+1 - {self.symbol[party]}+3",
+            f"< {self.symbol[party]}+1",
+        ]
+
+    def state_symbols_short(self, party):
+        return ["> 7", "3 - 7", "1 - 3", "< 1"]
 
 
 STANDARD_PROFILE = Profile(

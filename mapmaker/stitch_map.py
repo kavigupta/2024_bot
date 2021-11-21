@@ -154,12 +154,16 @@ def draw_legend(draw, scale, mode, *, profile):
         legend_y = LEGEND_STARTY_COUNTY
         legend_x = LEGEND_STARTX_COUNTY
 
-    def add_square(color, text):
+    def process(color):
         if mode == "state":
             color = color.lstrip("#")
             color = tuple(int(color[i : i + 2], 16) for i in (0, 2, 4))
         else:
             color = color.astype(np.int)
+        return color
+
+    def add_square(color, text):
+        color = process(color)
         nonlocal legend_y
         draw.rectangle(
             (
@@ -194,8 +198,44 @@ def draw_legend(draw, scale, mode, *, profile):
         for color, text in profile.county_legend:
             add_square(color, text)
     else:
-        for color, text in profile.state_legend:
-            add_square(color, text)
+        if len(profile.symbol) == 2:
+            for color, text in profile.state_legend:
+                add_square(color, text)
+        else:
+            legend_x -= LEGEND_SIZE
+            for column, party in enumerate(sorted(profile.symbol)):
+                for row, (color, short) in enumerate(
+                    zip(profile.state_colors(party), profile.state_symbols_short(party))
+                ):
+                    color = process(color)
+                    if row == 0:
+                        draw_text(
+                            draw,
+                            int(LEGEND_SIZE * 0.8) * scale,
+                            [(profile.symbol[party], "rgb" + str(tuple(color)))],
+                            (legend_x + column * LEGEND_SIZE + LEGEND_SIZE // 2)
+                            * scale,
+                            int((legend_y - 0.2 * LEGEND_SIZE) * scale),
+                            align="center",
+                        )
+                    if column == len(profile.symbol) - 1:
+                        draw_text(
+                            draw,
+                            int(LEGEND_SIZE * 0.8) * scale,
+                            [(short, profile.text_color)],
+                            (legend_x + (column + 1.25) * LEGEND_SIZE) * scale,
+                            int((legend_y + (row + 0.9) * LEGEND_SIZE) * scale),
+                            align="left",
+                        )
+                    draw.rectangle(
+                        (
+                            (legend_x + column * LEGEND_SIZE) * scale,
+                            (legend_y + row * LEGEND_SIZE) * scale,
+                            (legend_x + (column + 1) * LEGEND_SIZE) * scale,
+                            (legend_y + (row + 1) * LEGEND_SIZE) * scale,
+                        ),
+                        (*color, 255),
+                    )
 
 
 def produce_entire_map(

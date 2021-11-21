@@ -1,6 +1,8 @@
 import copy
 from collections import Counter
 import pickle
+
+from pandas.core.frame import DataFrame
 from mapmaker.colors import Profile
 
 import numpy as np
@@ -39,12 +41,14 @@ def generate_alternate_universe_map(seed, title, path):
 
     basemap = USAPresidencyBaseMap()
 
+    data = data_by_year()[2020]
+
     model = get_model(calibrated=False, num_demographics=30)
     copied_model = copy.deepcopy(model)
     pv_seed, torch_seed, profile_seed = np.random.RandomState(seed).choice(
         2 ** 32, size=3
     )
-    profile = sample_profile(profile_seed)
+    profile = sample_profile(seed, profile_seed)
     torch.manual_seed(torch_seed)
     target_popular_vote = abs(np.random.RandomState(pv_seed).randn() * POP_VOTE_SIGMA)
     while True:
@@ -68,21 +72,27 @@ def generate_alternate_universe_map(seed, title, path):
         voteshare_by_party = dict(zip(sorted(profile.name), p.T))
 
         popular_vote = get_popular_vote_by_voteshare(
-            data_by_year()[2020], voteshare_by_party=voteshare_by_party, turnout=t
+            data, voteshare_by_party=voteshare_by_party, turnout=t
         )
 
         _, popular_vote_margin = to_winning_margin_single(popular_vote)
 
-        print(target_popular_vote, popular_vote_margin)
-
         if abs(target_popular_vote - popular_vote_margin) > POP_VOTE_PRECISION:
             continue
+
+        winner_by_county = to_winning_margin(voteshare_by_party=voteshare_by_party)
+        states_by_party = {
+            party: {s for (p, _), s in zip(winner_by_county, data.state) if p == party}
+            for party in voteshare_by_party
+        }
         ec = get_electoral_vote_by_voteshare(
-            data_by_year()[2020],
+            data,
             voteshare_by_party=voteshare_by_party,
             turnout=t,
             basemap=basemap,
         )
+        if min(len(v) for v in states_by_party.values()) < 8 and min(ec.values()) == 0:
+            continue
         print(ec)
         if max(ec.values()) > MAX_EC_WIN:
             continue
@@ -90,7 +100,7 @@ def generate_alternate_universe_map(seed, title, path):
     with open(path.replace(".svg", ".pkl"), "wb") as f:
         pickle.dump(
             get_state_results_by_voteshare(
-                data_by_year()[2020], turnout=t, voteshare_by_party=popular_vote
+                data, turnout=t, voteshare_by_party=popular_vote
             ),
             f,
         )
@@ -107,11 +117,11 @@ def generate_alternate_universe_map(seed, title, path):
     )
 
 
-def sample_profile(profile_seed):
+def sample_profile(seed, profile_seed):
     symbol_seed, color_seed = np.random.RandomState(profile_seed).choice(
         2 ** 32, size=2
     )
-    names = sample_party_names(symbol_seed)
+    names = sample_party_names(seed, symbol_seed)
     return Profile(
         symbol={k: v[0] for k, v in names.items()},
         name=names,
@@ -139,12 +149,12 @@ def character_frequencies():
     return dict(results.items())
 
 
-def sample_party_names(seed):
+def sample_party_names(which, seed):
     weights, names = zip(*party_names())
     weights = np.array(weights, dtype=np.float)
     weights /= weights.sum()
     rng = np.random.RandomState(seed)
-    count = rng.choice([2, 3])
+    count = 2 if which % 2 == 0 else 3
     while True:
         name_idxs = rng.choice(len(names), size=count, p=weights)
         chosen_names = [names[i] for i in name_idxs]
