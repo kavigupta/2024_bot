@@ -10,7 +10,7 @@ from .mapper import USAPresidencyBaseMap
 
 from .SECRET import KEY
 
-from .generate_image import get_althistory_image, get_image
+from .generate_image import get_althistory_image, get_image, get_gondor_image
 
 
 @attr.s
@@ -75,4 +75,11 @@ BOTS = [
         gdrive="State Margins (Alternate History)",
         get_image=lambda number: get_althistory_image(number),
     ),
+    Tweeter(
+        user_id="ElectionsGondor",
+        start_symbol="Gondor scenario",
+        short_prefix="gondor_scenario",
+        gdrive="State Margins (Gondor)",
+        get_image=get_gondor_image,
+    )
 ]
