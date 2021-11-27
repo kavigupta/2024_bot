@@ -237,7 +237,7 @@ def generate_gondor_map(seed, title, path):
         credit="by @Thorongil16 and @notkavi, based on @bot_2024 engine",
     )
 
-    model.sample_map(
+    return model.sample_map(
         title=title,
         path=path,
         year=2020,

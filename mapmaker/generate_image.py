@@ -66,11 +66,15 @@ def get_althistory_image(seed, prefix="images/alternate-universes"):
 
 def get_gondor_image(seed, prefix="images/gondor"):
     path = f"{prefix}/{seed}.svg"
-    generate_gondor_map(
+    out = generate_gondor_map(
         seed,
         f"Gondor Scenario {seed}" if seed is not None else "Gondor 2020 Actual",
         path,
     )
+
+    with open(path.replace(".svg", ".pkl"), "wb") as f:
+        pickle.dump(out, f)
+
     return path.replace(".svg", ".png"), path.replace(".svg", ".pkl")
 
 
