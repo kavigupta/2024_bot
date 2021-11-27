@@ -67,9 +67,9 @@ class DemographicCategoryPredictor(nn.Module):
     ):
 
         turnout = {
-            year: torch.sigmoid(self.turnout_heads[str(year)] + turnout_noise)
-            * (self.max_turn - self.min_turn)
-            + self.min_turn
+            year: self.create_turnout_head(
+                self.turnout_heads[str(year)] + turnout_noise
+            )
             for year in self.years
         }
 
@@ -88,6 +88,9 @@ class DemographicCategoryPredictor(nn.Module):
             turnout = turnout[turnout_year]
 
         return turnout, turnout * partisanship
+
+    def create_turnout_head(self, head):
+        return torch.sigmoid(head) * (self.max_turn - self.min_turn) + self.min_turn
 
     def forward(
         self, features, full_output=False, use_past_partisanship=True, **kwargs

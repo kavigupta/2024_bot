@@ -14,15 +14,11 @@ import plotly.graph_objects as go
 from .data import counties, data_by_year
 from .aggregation import (
     calculate_tipping_point,
-    get_electoral_vote,
+    get_electoral_vote_by_voteshare,
     get_senate_vote,
-    get_state_results,
+    get_state_results_by_voteshare,
 )
-from .colors import (
-    BACKGROUND,
-    COUNTY_SCALE_MARGIN_MIN,
-    COUNTY_SCALE_MARGIN_MAX,
-)
+from .colors import BACKGROUND
 from .constants import TILT_MARGIN, LEAN_MARGIN, LIKELY_MARGIN
 from .utils import counties_to_states
 from .text import draw_text
@@ -49,13 +45,13 @@ class BaseMap(ABC):
 
     @abstractmethod
     def draw_topline(
-        self, dem_margin, turnout, *, draw, scale, profile, text_center, y
+        self, voteshare_by_party, turnout, *, draw, scale, profile, text_center, y
     ):
         pass
 
     @abstractmethod
     def draw_tipping_point(
-        self, data, dem_margin, turnout, *, draw, scale, profile, text_center, y
+        self, data, voteshare_by_party, turnout, *, draw, scale, profile, text_center, y
     ):
         pass
 
@@ -99,13 +95,13 @@ class BaseMap(ABC):
         )
         return fit(figure, modify_figure_layout=self.modify_figure_layout)
 
-    def map_county_margins(self, identifiers, *, dem_margin, profile):
+    def map_county_margins(self, identifiers, *, voteshare_by_party, profile):
         return self.county_map(
             identifiers,
-            variable_to_plot=dem_margin,
-            zmid=0,
-            zmin=COUNTY_SCALE_MARGIN_MIN,
-            zmax=COUNTY_SCALE_MARGIN_MAX,
+            variable_to_plot=profile.place_on_county_colorscale(voteshare_by_party),
+            zmin=0,
+            zmid=0.5,
+            zmax=1,
             colorscale=profile.county_colorscale,
         )
 
@@ -119,24 +115,20 @@ class BaseMap(ABC):
             colorscale="jet",
         )
 
-    def state_map(self, data, *, dem_margin, turnout, profile):
-        state_margins = get_state_results(data, dem_margin=dem_margin, turnout=turnout)
-        classes = [classify(m) for m in np.array(state_margins)]
+    def state_map(self, data, *, voteshare_by_party, turnout, profile):
+        index, state_voteshares = get_state_results_by_voteshare(
+            data, voteshare_by_party=voteshare_by_party, turnout=turnout
+        )
+        classes = [
+            profile.place_on_state_colorscale({k: [v[k]] for k in v})[0]
+            for v in state_voteshares
+        ]
 
         figure = go.Choropleth(
             geojson=self.states,
             z=np.array(classes),
-            locations=state_margins.index,
-            colorscale=[
-                [0, profile.state_safe("gop")],
-                [0.15, profile.state_likely("gop")],
-                [0.30, profile.state_lean("gop")],
-                [0.45, profile.state_tilt("gop")],
-                [0.60, profile.state_tilt("dem")],
-                [0.75, profile.state_lean("dem")],
-                [0.90, profile.state_likely("dem")],
-                [1, profile.state_safe("dem")],
-            ],
+            locations=index,
+            colorscale=profile.state_colorscale,
             zmin=0,
             zmax=1,
             showscale=False,
@@ -144,25 +136,25 @@ class BaseMap(ABC):
         )
         return fit(figure, modify_figure_layout=self.modify_figure_layout)
 
-    def populate(self, data, dem_margin, turnout):
-        return PopulatedMap(self, data, dem_margin, turnout)
+    def populate(self, data, voteshare_by_party, turnout):
+        return PopulatedMap(self, data, voteshare_by_party, turnout)
 
 
 @attr.s
 class PopulatedMap:
     basemap = attr.ib()
     data = attr.ib()
-    dem_margin = attr.ib()
+    voteshare_by_party = attr.ib()
     turnout = attr.ib()
 
     def draw_topline(self, **kwargs):
         return self.basemap.draw_topline(
-            self.data, self.dem_margin, self.turnout, **kwargs
+            self.data, self.voteshare_by_party, self.turnout, **kwargs
         )
 
     def draw_tipping_point(self, **kwargs):
         return self.basemap.draw_tipping_point(
-            self.data, self.dem_margin, self.turnout, **kwargs
+            self.data, self.voteshare_by_party, self.turnout, **kwargs
         )
 
 
@@ -223,10 +215,10 @@ class USASenateBaseMap(USABaseMap):
         )
 
     def draw_topline(
-        self, data, dem_margin, turnout, *, draw, scale, profile, text_center, y
+        self, data, voteshare_by_party, turnout, *, draw, scale, profile, text_center, y
     ):
         dem_senate, gop_senate = get_senate_vote(
-            data, dem_margin=dem_margin, turnout=turnout
+            data, voteshare_by_party=voteshare_by_party, turnout=turnout
         )
         y += 15 // 2 + 20
         draw_text(
@@ -244,7 +236,7 @@ class USASenateBaseMap(USABaseMap):
         return y
 
     def draw_tipping_point(
-        self, data, dem_margin, turnout, *, draw, scale, profile, text_center, y
+        self, data, voteshare_by_party, turnout, *, draw, scale, profile, text_center, y
     ):
         pass
 
@@ -261,28 +253,20 @@ def fit(*figure, modify_figure_layout):
 def classify(margin):
     if margin != margin:
         return np.nan
-    if margin < -LIKELY_MARGIN:
-        return 0
-    if margin < -LEAN_MARGIN:
-        return 0.15
-    elif margin < -TILT_MARGIN:
-        return 0.30
-    elif margin < 0:
-        return 0.45
     if margin < TILT_MARGIN:
-        return 0.60
+        return 0.1
     elif margin < LEAN_MARGIN:
-        return 0.75
+        return 0.2
     elif margin < LIKELY_MARGIN:
-        return 0.90
+        return 0.3
     else:
-        return 1
+        return 0.4
 
 
 def draw_ec(
     basemap,
     data,
-    dem_margin,
+    voteshare_by_party,
     turnout,
     *,
     draw,
@@ -292,29 +276,29 @@ def draw_ec(
     y,
     **kwargs,
 ):
-    dem_ec, gop_ec = get_electoral_vote(
-        data, dem_margin=dem_margin, turnout=turnout, basemap=basemap
+    ec_by_party = get_electoral_vote_by_voteshare(
+        data, voteshare_by_party=voteshare_by_party, turnout=turnout, basemap=basemap
     )
-    dem_ec_safe, gop_ec_safe = get_electoral_vote(
+    safe_ec_by_party = get_electoral_vote_by_voteshare(
         data,
-        dem_margin=dem_margin,
+        voteshare_by_party=voteshare_by_party,
         turnout=turnout,
         basemap=basemap,
         only_nonclose=True,
     )
-    dem_ec_close, gop_ec_close = dem_ec - dem_ec_safe, gop_ec - gop_ec_safe
-    assert dem_ec_close >= 0 and gop_ec_close >= 0
+    close_ec_by_party = {
+        party: ec_by_party[party] - safe_ec_by_party[party] for party in ec_by_party
+    }
+    for k in close_ec_by_party:
+        assert close_ec_by_party[k] >= 0
+
     draw_text(
         draw,
-        40 * scale,
-        [
-            (str(dem_ec), profile.state_safe("dem")),
-            (" - ", profile.text_color),
-            (str(gop_ec), profile.state_safe("gop")),
-        ],
+        (40 if len(profile.symbol) == 2 else 30) * scale,
+        profile.display_electoral_college(ec_by_party),
         text_center * scale,
         y * scale,
-        align=("center", 1),
+        align=("center", 1) if len(profile.symbol) == 2 else "center",
     )
 
     y += 15 // 2 + 20
@@ -324,9 +308,7 @@ def draw_ec(
         15 * scale,
         [
             ("Close: ", profile.text_color),
-            (str(dem_ec_close), profile.state_tilt("dem")),
-            (" - ", profile.text_color),
-            (str(gop_ec_close), profile.state_tilt("gop")),
+            *profile.display_electoral_college(close_ec_by_party, attr="state_tilt"),
         ],
         text_center * scale,
         y * scale,
@@ -338,7 +320,7 @@ def draw_ec(
 def draw_tipping_point(
     basemap,
     data,
-    dem_margin,
+    voteshare_by_party,
     turnout,
     *,
     draw,
@@ -347,22 +329,24 @@ def draw_tipping_point(
     text_center,
     y,
 ):
-    tipping_point_state, tipping_point_margin = calculate_tipping_point(
-        data, dem_margin=dem_margin, turnout=turnout, basemap=basemap
+    (
+        tipping_point_state,
+        tipping_point_party,
+        tipping_point_margin,
+    ) = calculate_tipping_point(
+        data,
+        voteshare_by_party=voteshare_by_party,
+        turnout=turnout,
+        basemap=basemap,
+        extras=profile.extra_ec,
     )
-    tipping_point_str = None
-    tipping_point_color = None
 
-    if tipping_point_margin > 0:
-        tipping_point_str = (
-            f"{tipping_point_state} {profile.symbol['dem']}+{tipping_point_margin:.2%}"
-        )
-        tipping_point_color = profile.state_tilt("dem")
+    if tipping_point_party is None:
+        tipping_point_str = "None"
+        tipping_point_color = profile.text_color
     else:
-        tipping_point_str = (
-            f"{tipping_point_state} {profile.symbol['gop']}+{-tipping_point_margin:.2%}"
-        )
-        tipping_point_color = profile.state_tilt("gop")
+        tipping_point_str = f"{tipping_point_state} {profile.symbol[tipping_point_party]}+{tipping_point_margin:.2%}"
+        tipping_point_color = profile.state_tilt(tipping_point_party)
 
     draw_text(
         draw,

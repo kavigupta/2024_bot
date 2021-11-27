@@ -1,6 +1,8 @@
 import copy
 from collections import Counter
 import pickle
+
+from pandas.core.frame import DataFrame
 from mapmaker.colors import Profile
 
 import numpy as np
@@ -12,11 +14,23 @@ import torch
 import torch.nn as nn
 
 
-from mapmaker.aggregation import get_popular_vote, get_electoral_vote, get_state_results
+from mapmaker.aggregation import (
+    get_electoral_vote,
+    get_electoral_vote_by_voteshare,
+    get_popular_vote_by_voteshare,
+    get_state_results,
+    get_state_results_by_voteshare,
+    to_winning_margin,
+    to_winning_margin_single,
+)
 from mapmaker.colors import DEFAULT_CREDIT
 from mapmaker.data import data_by_year
 from mapmaker.mapper import USAPresidencyBaseMap
-from mapmaker.stitch_map import produce_entire_map
+from mapmaker.stitch_map import (
+    produce_entire_map,
+    produce_entire_map_generic,
+    serialize_output,
+)
 
 POP_VOTE_SIGMA = 5e-2
 POP_VOTE_PRECISION = 0.1e-2
@@ -31,60 +45,97 @@ def generate_alternate_universe_map(seed, title, path):
 
     basemap = USAPresidencyBaseMap()
 
+    data = data_by_year()[2020]
+
     model = get_model(calibrated=False, num_demographics=30)
     copied_model = copy.deepcopy(model)
-    pv_seed, torch_seed, symbol_seed, color_seed = np.random.RandomState(seed).choice(
-        2 ** 32, size=4
+    pv_seed, torch_seed, profile_seed = np.random.RandomState(seed).choice(
+        2 ** 32, size=3
     )
+    profile = sample_profile(seed, profile_seed)
     torch.manual_seed(torch_seed)
-    target_popular_vote = np.random.RandomState(pv_seed).randn() * POP_VOTE_SIGMA
+    target_popular_vote = abs(np.random.RandomState(pv_seed).randn() * POP_VOTE_SIGMA)
     while True:
-        copied_model.adcm.dcm.turnout_heads["2020"] = nn.Parameter(
+        turnout = copied_model.adcm.dcm.create_turnout_head(
             TURNOUT_NOISE
             * torch.randn(copied_model.adcm.dcm.turnout_heads["2020"].shape)
         )
-        copied_model.adcm.dcm.partisanship_heads["(2020, False)"] = nn.Parameter(
-            PARTISAN_NOISE
-            * torch.randn(
-                copied_model.adcm.dcm.partisanship_heads["(2020, False)"].shape
-            )
+
+        partisanship = (
+            PARTISAN_NOISE * torch.randn(turnout.shape[0], len(profile.name))
+        ).softmax(-1)
+        demos = copied_model.adcm.dcm.latent_demographic_model(
+            torch.tensor(copied_model.features.features(2020)).float()
         )
-        p, t = copied_model.adcm.dcm.predict(
-            2020, copied_model.features.features(2020), use_past_partisanship=False
+        t = demos @ turnout
+        tp = demos @ (turnout * partisanship)
+        p = tp / t
+        p = p.detach().numpy()
+        t = t.detach().numpy()[:, 0]
+
+        voteshare_by_party = dict(zip(sorted(profile.name), p.T))
+
+        popular_vote = get_popular_vote_by_voteshare(
+            data, voteshare_by_party=voteshare_by_party, turnout=t
         )
 
-        popular_vote = get_popular_vote(data_by_year()[2020], dem_margin=p, turnout=t)
-        if abs(target_popular_vote - popular_vote) > POP_VOTE_PRECISION:
+        _, popular_vote_margin = to_winning_margin_single(popular_vote)
+
+        if abs(target_popular_vote - popular_vote_margin) > POP_VOTE_PRECISION:
             continue
-        if (
-            max(
-                get_electoral_vote(
-                    data_by_year()[2020], dem_margin=p, turnout=t, basemap=basemap
-                )
-            )
-            > MAX_EC_WIN
-        ):
+
+        winner_by_county = to_winning_margin(voteshare_by_party=voteshare_by_party)
+        states_by_party = {
+            party: {s for (p, _), s in zip(winner_by_county, data.state) if p == party}
+            for party in voteshare_by_party
+        }
+        ec = get_electoral_vote_by_voteshare(
+            data,
+            voteshare_by_party=voteshare_by_party,
+            turnout=t,
+            basemap=basemap,
+        )
+        if min(len(v) for v in states_by_party.values()) < 8 and min(ec.values()) == 0:
+            continue
+        print(ec)
+        if max(ec.values()) > MAX_EC_WIN:
             continue
         break
     with open(path.replace(".svg", ".pkl"), "wb") as f:
-        pickle.dump(get_state_results(data_by_year()[2020], turnout=t, dem_margin=p), f)
+        pickle.dump(
+            serialize_output(
+                profile,
+                get_state_results_by_voteshare(
+                    data, turnout=t, voteshare_by_party=popular_vote
+                )[1],
+                always_whole=True,
+            ),
+            f,
+        )
 
-    names = sample_party_names(symbol_seed)
-    produce_entire_map(
+    produce_entire_map_generic(
         data_by_year()[2020],
         title=title,
         out_path=path,
-        dem_margin=p,
+        voteshare_by_party=voteshare_by_party,
         turnout=t,
         basemap=basemap,
         year=2020,
-        profile=Profile(
-            symbol={k: v[0] for k, v in names.items()},
-            name=names,
-            hue=sample_colors(color_seed),
-            bot_name="bot_althistory",
-            credit=DEFAULT_CREDIT,
-        ),
+        profile=profile,
+    )
+
+
+def sample_profile(seed, profile_seed):
+    symbol_seed, color_seed = np.random.RandomState(profile_seed).choice(
+        2 ** 32, size=2
+    )
+    names = sample_party_names(seed, symbol_seed)
+    return Profile(
+        symbol={k: v[0] for k, v in names.items()},
+        name=names,
+        hue=sample_colors(names, color_seed),
+        bot_name="bot_althistory",
+        credit=DEFAULT_CREDIT,
     )
 
 
@@ -106,18 +157,18 @@ def character_frequencies():
     return dict(results.items())
 
 
-def sample_party_names(seed):
+def sample_party_names(which, seed):
     weights, names = zip(*party_names())
     weights = np.array(weights, dtype=np.float)
     weights /= weights.sum()
     rng = np.random.RandomState(seed)
+    count = 2 if which % 2 == 0 else 3
     while True:
-        a, b = rng.choice(len(names), size=2, p=weights)
-        a, b = names[a], names[b]
-        if a[0] != b[0]:
+        name_idxs = rng.choice(len(names), size=count, p=weights)
+        chosen_names = [names[i] for i in name_idxs]
+        if len(set(n[0] for n in chosen_names)) == count:
             break
-    print(a, b)
-    return dict(dem=a, gop=b)
+    return {name: name for name in chosen_names}
 
 
 def distance(a, b):
@@ -145,13 +196,18 @@ def sample_color(rng):
     return rng.rand() * (b - a) + a
 
 
-def sample_colors(seed):
+def sample_colors(names, seed):
     rng = np.random.RandomState(seed)
     while True:
-        a, b = [sample_color(rng) for _ in range(2)]
-        if distance(a, b) > 1 / 4:
+        colors = [sample_color(rng) for _ in range(len(names))]
+        if all(
+            distance(colors[a], colors[b]) > 1 / 4
+            for a in range(len(colors))
+            for b in range(len(colors))
+            if a < b
+        ):
             break
-    return dict(dem=a, gop=b)
+    return {name: color for name, color in zip(sorted(names), colors)}
 
 
 def party_names():

@@ -12,17 +12,15 @@ from cairosvg import svg2png
 from .aggregation import (
     get_electoral_vote,
     get_senate_vote,
-    get_popular_vote,
+    get_popular_vote_by_voteshare,
     get_state_results,
-    calculate_tipping_point,
+    get_state_results_by_voteshare,
     number_votes,
 )
 from .mapper import USABaseMap, USAPresidencyBaseMap, USASenateBaseMap
 from .version import version
 from .colors import (
     BACKGROUND_RGB,
-    COUNTY_SCALE_MARGIN_MAX,
-    COUNTY_SCALE_MARGIN_MIN,
     STANDARD_PROFILE,
     get_color,
 )
@@ -50,7 +48,7 @@ SCALE = 4
 def produce_text(
     title,
     populated_map,
-    pop_vote_margin,
+    pop_vote,
     total_turnout,
     scale=SCALE,
     *,
@@ -79,11 +77,7 @@ def produce_text(
         draw_text(
             draw,
             15 * scale,
-            [
-                (profile.name["dem"] + " Party", profile.state_safe("dem")),
-                (" vs. ", profile.text_color),
-                (profile.name["gop"] + " Party", profile.state_safe("gop")),
-            ],
+            profile.vs,
             (LEFT_MARGIN) * scale,
             (title_start + 25) * scale,
         )
@@ -115,22 +109,14 @@ def produce_text(
         draw=draw, scale=scale, profile=profile, text_center=TEXT_CENTER, y=y
     )
 
-    y += 40 // 2 + 20
+    amount = 30 if len(profile.symbol) == 2 else 15
+
+    y += (amount + 10) // 2 + 20
 
     draw_text(
         draw,
-        30 * scale,
-        [
-            (
-                f"{profile.symbol['dem']}+{pop_vote_margin:.2%}",
-                profile.state_safe("dem"),
-            )
-            if pop_vote_margin > 0
-            else (
-                f"{profile.symbol['gop']}+{-pop_vote_margin:.2%}",
-                profile.state_safe("gop"),
-            )
-        ],
+        amount * scale,
+        profile.display_popular_vote(pop_vote),
         TEXT_CENTER * scale,
         y * scale,
         align=("center"),
@@ -168,12 +154,16 @@ def draw_legend(draw, scale, mode, *, profile):
         legend_y = LEGEND_STARTY_COUNTY
         legend_x = LEGEND_STARTX_COUNTY
 
-    def add_square(color, text):
+    def process(color):
         if mode == "state":
             color = color.lstrip("#")
             color = tuple(int(color[i : i + 2], 16) for i in (0, 2, 4))
         else:
             color = color.astype(np.int)
+        return color
+
+    def add_square(color, text):
+        color = process(color)
         nonlocal legend_y
         draw.rectangle(
             (
@@ -205,42 +195,47 @@ def draw_legend(draw, scale, mode, *, profile):
             )
 
     if mode == "county":
-        for margin in np.arange(-0.8, 0.8 + 1e-1, 0.2):
-            add_square(
-                get_color(
-                    profile.county_colorscale,
-                    (margin - COUNTY_SCALE_MARGIN_MIN)
-                    / (COUNTY_SCALE_MARGIN_MAX - COUNTY_SCALE_MARGIN_MIN),
-                ),
-                f"{profile.symbol['gop']}+{-margin * 100:.0f}"
-                if margin < -0.001
-                else f"{profile.symbol['dem']}+{margin * 100:.0f}"
-                if margin > 0.001
-                else "Even",
-            )
+        for color, text in profile.county_legend:
+            add_square(color, text)
     else:
-        state_buckets = [
-            f"> {profile.symbol['gop']}+7",
-            f"{profile.symbol['gop']}+3 - {profile.symbol['gop']}+7",
-            f"{profile.symbol['gop']}+1 - {profile.symbol['gop']}+3",
-            f"< {profile.symbol['gop']}+1",
-            f"< {profile.symbol['dem']}+1",
-            f"{profile.symbol['dem']}+1 - {profile.symbol['dem']}+3",
-            f"{profile.symbol['dem']}+3 - {profile.symbol['dem']}+7",
-            f"> {profile.symbol['dem']}+7",
-        ]
-        state_colors = [
-            profile.state_safe("gop"),
-            profile.state_likely("gop"),
-            profile.state_lean("gop"),
-            profile.state_tilt("gop"),
-            profile.state_tilt("dem"),
-            profile.state_lean("dem"),
-            profile.state_likely("dem"),
-            profile.state_safe("dem"),
-        ]
-        for margin_text, color in zip(state_buckets, state_colors):
-            add_square(color, margin_text)
+        if len(profile.symbol) == 2:
+            for color, text in profile.state_legend:
+                add_square(color, text)
+        else:
+            legend_x -= LEGEND_SIZE
+            for column, party in enumerate(sorted(profile.symbol)):
+                for row, (color, short) in enumerate(
+                    zip(profile.state_colors(party), profile.state_symbols_short(party))
+                ):
+                    color = process(color)
+                    if row == 0:
+                        draw_text(
+                            draw,
+                            int(LEGEND_SIZE * 0.8) * scale,
+                            [(profile.symbol[party], "rgb" + str(tuple(color)))],
+                            (legend_x + column * LEGEND_SIZE + LEGEND_SIZE // 2)
+                            * scale,
+                            int((legend_y - 0.2 * LEGEND_SIZE) * scale),
+                            align="center",
+                        )
+                    if column == len(profile.symbol) - 1:
+                        draw_text(
+                            draw,
+                            int(LEGEND_SIZE * 0.8) * scale,
+                            [(short, profile.text_color)],
+                            (legend_x + (column + 1.25) * LEGEND_SIZE) * scale,
+                            int((legend_y + (row + 0.9) * LEGEND_SIZE) * scale),
+                            align="left",
+                        )
+                    draw.rectangle(
+                        (
+                            (legend_x + column * LEGEND_SIZE) * scale,
+                            (legend_y + row * LEGEND_SIZE) * scale,
+                            (legend_x + (column + 1) * LEGEND_SIZE) * scale,
+                            (legend_y + (row + 1) * LEGEND_SIZE) * scale,
+                        ),
+                        (*color, 255),
+                    )
 
 
 def produce_entire_map(
@@ -255,17 +250,50 @@ def produce_entire_map(
     profile=STANDARD_PROFILE,
     use_png=True,
 ):
-    dem_margin_to_map = dem_margin * basemap.county_mask(year)
+    voteshare_by_party = dict(dem=dem_margin / 2 + 0.5, gop=-dem_margin / 2 + 0.5)
+    return produce_entire_map_generic(
+        data,
+        title,
+        out_path,
+        voteshare_by_party=voteshare_by_party,
+        turnout=turnout,
+        basemap=basemap,
+        year=year,
+        profile=profile,
+        use_png=use_png,
+    )
 
-    populated_map = basemap.populate(data, dem_margin_to_map, turnout)
+
+def produce_entire_map_generic(
+    data,
+    title,
+    out_path,
+    *,
+    voteshare_by_party,
+    turnout,
+    basemap,
+    year,
+    profile=STANDARD_PROFILE,
+    use_png=True,
+):
+    voteshare_by_party_to_map = {
+        k: voteshare_by_party[k] * basemap.county_mask(year) for k in voteshare_by_party
+    }
+
+    populated_map = basemap.populate(data, voteshare_by_party_to_map, turnout)
 
     cm = basemap.map_county_margins(
-        data["FIPS"], dem_margin=dem_margin_to_map, profile=profile
+        data["FIPS"], voteshare_by_party=voteshare_by_party_to_map, profile=profile
     )
     sm = basemap.state_map(
-        data, dem_margin=dem_margin_to_map, turnout=turnout, profile=profile
+        data,
+        voteshare_by_party=voteshare_by_party_to_map,
+        turnout=turnout,
+        profile=profile,
     )
-    pop_vote_margin = get_popular_vote(data, dem_margin=dem_margin, turnout=turnout)
+    pop_vote = get_popular_vote_by_voteshare(
+        data, voteshare_by_party=voteshare_by_party, turnout=turnout
+    )
 
     fig = sg.SVGFigure("160cm", "65cm")
 
@@ -300,7 +328,7 @@ def produce_entire_map(
     im = produce_text(
         title,
         populated_map,
-        pop_vote_margin,
+        pop_vote,
         total_turnout=number_votes(data, turnout=turnout)
         / number_votes(data, turnout=1),
         profile=profile,
@@ -319,7 +347,25 @@ def produce_entire_map(
                 scale=SCALE,
             )
         os.remove(out_path)
-    return get_state_results(data, dem_margin=dem_margin, turnout=turnout)
+    _, values = get_state_results_by_voteshare(
+        data, voteshare_by_party=voteshare_by_party, turnout=turnout
+    )
+    result = serialize_output(profile, values)
+    return result
+
+
+def serialize_output(profile, values, always_whole=False):
+    result = []
+    for value in values:
+        parties = sorted(value)
+        if len(parties) == 2 and not always_whole:
+            result.append(value[parties[0]] - value[parties[1]])
+        else:
+            whole = " ".join(
+                f"{profile.symbol[party]}={value[party]:.2%}" for party in parties
+            )
+            result.append(whole)
+    return result
 
 
 def remove_backgrounds(path):
