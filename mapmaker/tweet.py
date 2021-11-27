@@ -81,5 +81,5 @@ BOTS = [
         short_prefix="gondor_scenario",
         gdrive="State Margins (Gondor)",
         get_image=get_gondor_image,
-    )
+    ),
 ]
