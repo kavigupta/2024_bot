@@ -19,7 +19,12 @@ First, install orca,
 conda install -c plotly plotly-orca
 ```
 
-if the above does not work, try following the instructions [here](https://plotly.com/python/orca-management/).
+if the above does not work, try following the instructions [here](https://plotly.com/python/orca-management/).  Then install virtualenv
+
+```
+conda install virtualenv
+```
+
 Then, create a virtualenv and install the requirements
 
 ```

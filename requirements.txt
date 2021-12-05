@@ -1,19 +1,28 @@
-# main package
-tqdm==4.60.0
-numpy==1.19.5
-attrs==20.3.0
-scikit-learn==0.24.1
-pillow==8.2.0
+# basic utilities
+tqdm==4.62.3
+attrs==21.2.0
+cached-property==1.5.2
+
+# scientific computing and machine learning
+numpy==1.21.4
+torch==1.10.0
+geopandas==0.10.2
+scikit-learn==1.0.1
+matplotlib # just for colors module, any version should do
+
+# geographic data
+us==2.0.2
+
+# election data
+electiondata==1.5.8
+apportionpy==0.3.1
+
+# export
+shapely==1.8.0
+plotly==5.4.0
 svgutils==0.3.4
 cairosvg==2.5.2
-pandas==1.3.0
-torch==1.9.0
-plotly==5.1.0
-us==2.0.2
-requests==2.25.1
-psutil==5.8.0
-electiondata==1.5.8
-matplotlib==3.4.2
+kaleido==0.2.1
 
 # launch package
 tweepy==3.10.0
