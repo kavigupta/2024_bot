@@ -28,7 +28,9 @@ def counties_to_states(data, counties_geojson):
     states = defaultdict(list)
     for fips, state in zip(data["FIPS"], data["state"]):
         states[state].append(shapes[str(fips)])
-    states = {k: fix_polygon(unary_union(v)) for k, v in states.items()}
+    states = {
+        k: fix_polygon(unary_union([x.buffer(0) for x in v])) for k, v in states.items()
+    }
     return dict(
         type=counties_geojson["type"],
         features=[

@@ -194,7 +194,7 @@ class GondorModel(Model):
 
 
 def fix_bounds(d):
-    u = unary_union(d.geometry)
+    u = unary_union([x.buffer(0) for x in d.geometry])
     mi_x, mi_y, ma_x, ma_y = u.bounds
 
     t_mi_x, t_mi_y, t_ma_x, t_ma_y = -170, -90, 170, 90
