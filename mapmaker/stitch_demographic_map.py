@@ -6,7 +6,7 @@ import tqdm
 import svgutils.transform as sg
 from cairosvg import svg2png
 
-from .mapper import BaseMap
+from .mapper import USAPresidencyBaseMap
 from .stitch_map import remove_backgrounds, add_background_back
 
 LEFT_MARGIN = 50
@@ -31,7 +31,7 @@ def generate_demographic_map(data, demographic_values, title, out_path):
     num_demos = demographic_values.shape[1]
     # import IPython; IPython.embed()
     cms = [
-        BaseMap().map_county_demographics(
+        USAPresidencyBaseMap().map_county_demographics(
             data["FIPS"], demographic_values=demographic_values[:, i]
         )
         for i in tqdm.trange(num_demos)
