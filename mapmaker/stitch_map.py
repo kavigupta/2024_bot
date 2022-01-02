@@ -54,6 +54,7 @@ def produce_text(
     *,
     profile,
     state,
+    insets,
 ):
     im = Image.new(mode="RGBA", size=(950 * scale, 450 * scale))
     draw = ImageDraw.Draw(im)
@@ -134,6 +135,16 @@ def produce_text(
     )
 
     y += 20
+
+    for inset in insets:
+        draw_text(
+            draw,
+            4 * scale,
+            [(inset["text"], profile.text_color)],
+            inset["x"] * scale,
+            (inset["y"] - 2) * scale,
+            align="left",
+        )
 
     populated_map.draw_tipping_point(
         draw=draw, scale=scale, profile=profile, text_center=TEXT_CENTER, y=y
@@ -282,7 +293,7 @@ def produce_entire_map_generic(
 
     populated_map = basemap.populate(data, voteshare_by_party_to_map, turnout)
 
-    cm = basemap.map_county_margins(
+    cm, cm_insets = basemap.map_county_margins(
         data["FIPS"], voteshare_by_party=voteshare_by_party_to_map, profile=profile
     )
     sm = basemap.state_map(
@@ -298,14 +309,21 @@ def produce_entire_map_generic(
     fig = sg.SVGFigure("160cm", "65cm")
 
     counties_svg, states_svg = [tempfile.mktemp(suffix=".svg") for _ in range(2)]
+    county_insets_svg = {
+        inset: tempfile.mktemp(suffix=".svg") for inset in basemap.insets
+    }
     text_mask = tempfile.mktemp(suffix=".png")
 
     cm.write_image(counties_svg)
+    for inset in basemap.insets:
+        cm_insets[inset].write_image(county_insets_svg[inset])
     if sm is not None:
         sm.write_image(states_svg)
 
     # load matpotlib-generated figures
     remove_backgrounds(counties_svg)
+    for inset in basemap.insets:
+        remove_backgrounds(county_insets_svg[inset])
     if sm is not None:
         remove_backgrounds(states_svg)
 
@@ -315,6 +333,18 @@ def produce_entire_map_generic(
         map.moveto(0, basemap.map_dy, scale_x=s, scale_y=s)
 
     fig.append(maps)
+
+    inset_text = []
+
+    for inset in basemap.insets:
+        s = basemap.map_scale * basemap.insets[inset].scale
+        map = sg.fromfile(county_insets_svg[inset]).getroot()
+        x = basemap.insets[inset].x_out
+        y = basemap.map_dy + basemap.insets[inset].y_out
+        map.moveto(x, y, scale_x=s, scale_y=s)
+        fig.append([map])
+        inset_text.append(dict(x=x+basemap.insets[inset].text_dx, y=y, text=basemap.insets[inset].name))
+
     if sm is not None:
         states = sg.fromfile(states_svg).getroot()
         states.moveto(
@@ -333,6 +363,7 @@ def produce_entire_map_generic(
         / number_votes(data, turnout=1),
         profile=profile,
         state=sm is not None,
+        insets=inset_text,
     )
     im.save(text_mask)
     with open(text_mask, "rb") as f:

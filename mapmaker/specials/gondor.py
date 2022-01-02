@@ -85,7 +85,7 @@ class GondorMap(BaseMap):
 
     @property
     def map_dy(self):
-        return 50
+        return 0
 
     def county_mask(self, year):
         return 1
@@ -105,6 +105,43 @@ class GondorMap(BaseMap):
             bgcolor=BACKGROUND,
             framewidth=0,
         )
+
+    @property
+    def insets(self):
+        from types import SimpleNamespace
+
+        y_top = 330
+        x_left = 25
+        scale = 0.23
+        return {
+            "west": SimpleNamespace(
+                name="Dol Amroth",
+                scale=scale,
+                x_out=x_left,
+                y_out=y_top,
+                x_in=[12, 25],
+                y_in=[-25, -10],
+                text_dx=40,
+            ),
+            "east-nested-inset": SimpleNamespace(
+                name="Minas Tirith",
+                scale=scale,
+                x_out=x_left + 90,
+                y_out=y_top,
+                x_in=[135.5, 136.8],
+                y_in=[22.8, 24.3],
+                text_dx=28,
+            ),
+            "east": SimpleNamespace(
+                name="Osgiliath-Pelennor",
+                scale=scale,
+                x_out=x_left + 200,
+                y_out=y_top,
+                x_in=[137, 146],
+                y_in=[23, 30],
+                text_dx=8,
+            ),
+        }
 
 
 class GondorDemographicModel:
