@@ -23,20 +23,24 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
 class GondorMap(BaseMap):
     @cached_property
-    def load_file(self):
+    def load_ec(self):
         df = geopandas.read_file(os.path.join(ROOT, "shapefiles/gondor/Gondor.shp"))
-        df2 = pd.read_csv(os.path.join(ROOT, "csvs/gondor_features.csv"))[
-            ["County", "Region"]
-        ]
-        df = df.merge(df2, on="County")
-        df["FIPS"] = df.id
-        df["CVAP"] = df.Population
-        df["state"] = df.Region
         senate = 2
         _, sh, *_ = apportionpy.methods.huntington_hill.calculate_huntington_hill(
             800 - len(df.Population) * senate, list(df.Population * df.IncomeLog)
         )
         df["electoral_college"] = [x + senate for x in sh]
+        return df
+
+    @cached_property
+    def load_file(self):
+        df = geopandas.read_file(
+            os.path.join(ROOT, "shapefiles/gondor/gondorshapefinal.shp")
+        )
+        df["id"] = df.PrecName
+        df["FIPS"] = df.id
+        df["CVAP"] = df.Totalpop
+        df["state"] = df.County
         df["DunedainNoEd_Noelv_Norelig"] = (
             df["DunedainNo"] * (1 - df["DunElvish"]) * (1 - df["DunNoRelig"])
         )
@@ -65,7 +69,7 @@ class GondorMap(BaseMap):
 
     @property
     def electoral_votes(self):
-        return self.load_file[["County", "electoral_college"]].set_index("County")
+        return self.load_ec[["County", "electoral_college"]].set_index("County")
 
     @property
     def county_plotly_kwargs(self):
@@ -114,7 +118,6 @@ class GondorDemographicModel:
             "Druedain": 0.8,
             "Eotheod": -0.25,
             "Southron": -0.1,
-            "Orc": 0,
         }
         self.turnout_2020 = {
             "DunedainEd": 0.8,
@@ -125,7 +128,6 @@ class GondorDemographicModel:
             "Druedain": 0.55,
             "Eotheod": 0.75,
             "Southron": 0.35,
-            "Orc": 0,
         }
 
     @property
@@ -154,6 +156,7 @@ class GondorDemographicModel:
 
     def predict(self, data, correct):
         demo_values = np.array(data[self.demos])
+        demo_values = demo_values / np.maximum(demo_values.sum(1)[:, None])
         pt = np.array(
             [
                 self.partisanship_2020[demo] * self.turnout_2020[demo]
