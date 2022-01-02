@@ -177,23 +177,38 @@ class GondorDemographicModel:
         perturbed = copy.deepcopy(self)
         pseed, tseed = np.random.RandomState(prediction_seed).choice(2 ** 32, size=2)
         perturbed.partisanship_2020 = self._perturb_dict(
-            self.partisanship_2020, alpha_partisanship, pseed
+            self.partisanship_2020, alpha_partisanship, pseed, -1, 1
         )
         perturbed.turnout_2020 = self._perturb_dict(
-            self.turnout_2020, alpha_turnout, tseed
+            self.turnout_2020, alpha_turnout, tseed, 0, 1
         )
         return perturbed
 
-    def _perturb_dict(self, d, alpha, seed):
+    def _perturb_dict(self, d, alpha, seed, min_val, max_val):
         values = np.array([d[demo] for demo in self.demos])
+        # scale (min_val, max_val) to (-1, 1)
+        values = values - min_val
+        # now in range (0, max_val - min_val)
+        values = values / (max_val - min_val) * 2
+        # now in range (0, 2)
+        values = values - 1
+        # now in range (-1, 1)
         values = np.arctanh(values)
+        # now in range (-inf, inf)
         values += np.random.RandomState(seed).randn(*values.shape) * alpha
+        # now in range (-inf, inf)
         values = np.tanh(values)
+        # now in range (-1, 1)
+        values += 1
+        # now in range (0, 2)
+        values = values / 2 * (max_val - min_val)
+        # now in range (0, max_val - min_val)
+        values += min_val
         return {demo: val for demo, val in zip(self.demos, values)}
 
     def predict(self, data, correct):
         demo_values = np.array(data[self.demos])
-        demo_values = demo_values / np.maximum(demo_values.sum(1)[:, None])
+        demo_values = demo_values / np.maximum(demo_values.sum(1)[:, None], 1)
         pt = np.array(
             [
                 self.partisanship_2020[demo] * self.turnout_2020[demo]
@@ -203,7 +218,14 @@ class GondorDemographicModel:
         t = np.array([self.turnout_2020[demo] for demo in self.demos])
         pt = demo_values @ pt
         t = demo_values @ t
-        return pt / t, t
+
+        p = np.divide(pt, t, out=np.zeros_like(pt), where=np.abs(t) > 1e-5)
+
+        assert t.max() <= 1
+        assert t.min() >= 0
+        assert p.max() <= 1
+        assert p.min() >= -1
+        return p, t
 
 
 class GondorModel(Model):
