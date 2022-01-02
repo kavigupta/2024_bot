@@ -189,7 +189,7 @@ class GondorDemographicModel:
         values = np.arctanh(values)
         values += np.random.RandomState(seed).randn(*values.shape) * alpha
         values = np.tanh(values)
-        return {demo: d[demo] + val for demo, val in zip(self.demos, values)}
+        return {demo: val for demo, val in zip(self.demos, values)}
 
     def predict(self, data, correct):
         demo_values = np.array(data[self.demos])
