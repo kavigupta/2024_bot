@@ -166,6 +166,7 @@ class GondorDemographicModel:
             "Eotheod": 0.75,
             "Southron": 0.35,
         }
+        self.noise_seed = 0
 
     @property
     def demos(self):
@@ -175,13 +176,16 @@ class GondorDemographicModel:
         if prediction_seed is None:
             return self
         perturbed = copy.deepcopy(self)
-        pseed, tseed = np.random.RandomState(prediction_seed).choice(2 ** 32, size=2)
+        pseed, tseed, nseed = np.random.RandomState(prediction_seed).choice(
+            2 ** 32, size=3
+        )
         perturbed.partisanship_2020 = self._perturb_dict(
             self.partisanship_2020, alpha_partisanship, pseed, -1, 1
         )
         perturbed.turnout_2020 = self._perturb_dict(
             self.turnout_2020, alpha_turnout, tseed, 0, 1
         )
+        perturbed.noise_seed = nseed
         return perturbed
 
     def _perturb_dict(self, d, alpha, seed, min_val, max_val):
@@ -208,6 +212,10 @@ class GondorDemographicModel:
 
     def predict(self, data, correct):
         demo_values = np.array(data[self.demos])
+        nonzero = demo_values.sum(1) != 0
+        demo_values[nonzero] += np.random.RandomState(self.noise_seed).choice(
+            10, replace=False
+        )
         demo_values = demo_values / np.maximum(demo_values.sum(1)[:, None], 1)
         pt = np.array(
             [

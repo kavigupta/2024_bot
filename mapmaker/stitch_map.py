@@ -343,7 +343,13 @@ def produce_entire_map_generic(
         y = basemap.map_dy + basemap.insets[inset].y_out
         map.moveto(x, y, scale_x=s, scale_y=s)
         fig.append([map])
-        inset_text.append(dict(x=x+basemap.insets[inset].text_dx, y=y, text=basemap.insets[inset].name))
+        inset_text.append(
+            dict(
+                x=x + basemap.insets[inset].text_dx,
+                y=y,
+                text=basemap.insets[inset].name,
+            )
+        )
 
     if sm is not None:
         states = sg.fromfile(states_svg).getroot()
