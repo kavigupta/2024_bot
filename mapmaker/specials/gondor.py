@@ -244,4 +244,5 @@ def generate_gondor_map(seed, title, path):
         basemap=GondorMap(),
         seed=seed,
         profile=gondor_profile,
+        full_output=True,
     )
