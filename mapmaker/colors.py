@@ -39,7 +39,7 @@ class Profile:
 
     def min_value(self, party):
         if self.value == "normalize":
-            return 1/np.array(colorsys.hsv_to_rgb(self.hue[party], 1, 1)).sum()
+            return 1 / np.array(colorsys.hsv_to_rgb(self.hue[party], 1, 1)).sum()
         return self.value.get(party, 1)
 
     def color(self, party, saturation):
@@ -107,16 +107,19 @@ class Profile:
         result = []
         for idx, party in enumerate(parties):
             result += [
-                [2 * idx * INTERVAL, self.county_max(party)],
-                [
-                    (2 * idx + 1) * INTERVAL - MARGINAL * INTERVAL * 2,
-                    self.county_min(party),
-                ],
-                [(2 * idx + 1) * INTERVAL, "#ffffff"],
+                [(2 * idx + x) * INTERVAL, c]
+                for x, c in self.county_colorscale_for_party(party)
             ]
 
         result = result + [[1.0, "#ffffff"]]
         return result
+
+    def county_colorscale_for_party(self, party):
+        return [
+            [0, self.county_max(party)],
+            [1 - MARGINAL * 2, self.county_min(party)],
+            [1, "#ffffff"],
+        ]
 
     @property
     def state_colorscale(self):
