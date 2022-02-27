@@ -321,11 +321,28 @@ def generate_gondor_map(seed, title, path):
 
     model = get_gondor_model(seed is not None)
 
+    dem = [
+        [0, "#151553"],
+        [0.125, "#17176c"],
+        [0.25, "#1c1c8c"],
+        [0.375, "#2828ac"],
+        [0.5, "#3333cc"],
+        [0.625, "#4747eb"],
+        [0.75, "#6666fb"],
+        [0.875, "#aaaeff"],
+        [0.9375, "#d5d9ff"],
+        [0.9875, "#c0c0c0"],
+    ]
+    gop = [[k, v[0] + v[5:7] + v[3:5] + v[1:3]] for k, v in dem]
+
     gondor_profile = Profile(
         symbol=dict(dem="D", gop="R"),
         hue=dict(dem=2 / 3, gop=1),
         bot_name="ElectionsGondor",
         credit="by @Thorongil16 and @notkavi, based on @bot_2024 engine",
+        county_colorscales=dict(dem=dem, gop=gop),
+        compute_state_via_county=dict(safe=0.4, likely=0.3, lean=0.2, tilt=0.1),
+        background_color=(60, 60, 60),
     )
 
     return model.sample_map(
