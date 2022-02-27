@@ -86,11 +86,19 @@ class Model(ABC):
         return predictions, turnout
 
     def sample_map(
-        self, title, path, *, year, basemap, profile=STANDARD_PROFILE, **kwargs
+        self,
+        title,
+        path,
+        *,
+        year,
+        basemap,
+        profile=STANDARD_PROFILE,
+        full_output=False,
+        **kwargs,
     ):
         print(f"Generating {title}")
         predictions, turnout = self.sample(year=year, basemap=basemap, **kwargs)
-        return produce_entire_map(
+        out = produce_entire_map(
             self.data[year],
             title,
             path,
@@ -100,3 +108,6 @@ class Model(ABC):
             year=year,
             profile=profile,
         )
+        if full_output:
+            return dict(predictions=predictions, turnout=turnout, out=out)
+        return out

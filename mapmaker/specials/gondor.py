@@ -23,20 +23,24 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 
 class GondorMap(BaseMap):
     @cached_property
-    def load_file(self):
+    def load_ec(self):
         df = geopandas.read_file(os.path.join(ROOT, "shapefiles/gondor/Gondor.shp"))
-        df2 = pd.read_csv(os.path.join(ROOT, "csvs/gondor_features.csv"))[
-            ["County", "Region"]
-        ]
-        df = df.merge(df2, on="County")
-        df["FIPS"] = df.id
-        df["CVAP"] = df.Population
-        df["state"] = df.Region
         senate = 2
         _, sh, *_ = apportionpy.methods.huntington_hill.calculate_huntington_hill(
             800 - len(df.Population) * senate, list(df.Population * df.IncomeLog)
         )
         df["electoral_college"] = [x + senate for x in sh]
+        return df
+
+    @cached_property
+    def load_file(self):
+        df = geopandas.read_file(
+            os.path.join(ROOT, "shapefiles/gondor/Gondorincome revised.shp")
+        )
+        df["id"] = df.PrecName
+        df["FIPS"] = df.id
+        df["CVAP"] = df.Totalpop
+        df["state"] = df.County
         df["DunedainNoEd_Noelv_Norelig"] = (
             df["DunedainNo"] * (1 - df["DunElvish"]) * (1 - df["DunNoRelig"])
         )
@@ -65,7 +69,7 @@ class GondorMap(BaseMap):
 
     @property
     def electoral_votes(self):
-        return self.load_file[["County", "electoral_college"]].set_index("County")
+        return self.load_ec[["County", "electoral_college"]].set_index("County")
 
     @property
     def county_plotly_kwargs(self):
@@ -81,7 +85,7 @@ class GondorMap(BaseMap):
 
     @property
     def map_dy(self):
-        return 50
+        return 0
 
     def county_mask(self, year):
         return 1
@@ -102,6 +106,43 @@ class GondorMap(BaseMap):
             framewidth=0,
         )
 
+    @property
+    def insets(self):
+        from types import SimpleNamespace
+
+        y_top = 330
+        x_left = 25
+        scale = 0.23
+        return {
+            "west": SimpleNamespace(
+                name="Dol Amroth",
+                scale=scale,
+                x_out=x_left,
+                y_out=y_top,
+                x_in=[12, 25],
+                y_in=[-25, -10],
+                text_dx=40,
+            ),
+            "east-nested-inset": SimpleNamespace(
+                name="Minas Tirith",
+                scale=scale,
+                x_out=x_left + 90,
+                y_out=y_top,
+                x_in=[135.5, 136.8],
+                y_in=[22.8, 24.3],
+                text_dx=28,
+            ),
+            "east": SimpleNamespace(
+                name="Osgiliath-Pelennor",
+                scale=scale,
+                x_out=x_left + 200,
+                y_out=y_top,
+                x_in=[137, 146],
+                y_in=[23, 30],
+                text_dx=8,
+            ),
+        }
+
 
 class GondorDemographicModel:
     def __init__(self):
@@ -114,7 +155,6 @@ class GondorDemographicModel:
             "Druedain": 0.8,
             "Eotheod": -0.25,
             "Southron": -0.1,
-            "Orc": 0,
         }
         self.turnout_2020 = {
             "DunedainEd": 0.8,
@@ -125,8 +165,10 @@ class GondorDemographicModel:
             "Druedain": 0.55,
             "Eotheod": 0.75,
             "Southron": 0.35,
-            "Orc": 0,
         }
+        self.partisan_income_coefficient = -0.3
+        self.turnout_income_coefficient = 0
+        self.noise_seed = 0
 
     @property
     def demos(self):
@@ -136,34 +178,83 @@ class GondorDemographicModel:
         if prediction_seed is None:
             return self
         perturbed = copy.deepcopy(self)
-        pseed, tseed = np.random.RandomState(prediction_seed).choice(2 ** 32, size=2)
+        pseed, tseed, incomeseed, nseed = np.random.RandomState(prediction_seed).choice(
+            2 ** 32, size=4
+        )
         perturbed.partisanship_2020 = self._perturb_dict(
-            self.partisanship_2020, alpha_partisanship, pseed
+            self.partisanship_2020, alpha_partisanship, pseed, -1, 1
         )
         perturbed.turnout_2020 = self._perturb_dict(
-            self.turnout_2020, alpha_turnout, tseed
+            self.turnout_2020, alpha_turnout, tseed, 0, 1
         )
+        cpi, cti = np.random.RandomState(incomeseed).randn(2) * 0.3 * alpha_partisanship
+        perturbed.partisan_income_coefficient += cpi
+        perturbed.turnout_income_coefficient += cti * 0
+        perturbed.noise_seed = nseed
         return perturbed
 
-    def _perturb_dict(self, d, alpha, seed):
+    def _perturb_dict(self, d, alpha, seed, min_val, max_val):
         values = np.array([d[demo] for demo in self.demos])
+        value_to_add = np.random.RandomState(seed).randn(*values.shape) * alpha
+        values = self._add_in_atan_space(values, value_to_add, min_val, max_val)
+        return {demo: val for demo, val in zip(self.demos, values)}
+
+    def _add_in_atan_space(self, values, value_to_add, min_val, max_val):
+        # scale (min_val, max_val) to (-1, 1)
+        values = values - min_val
+        # now in range (0, max_val - min_val)
+        values = values / (max_val - min_val) * 2
+        # now in range (0, 2)
+        values = values - 1
+        # now in range (-1, 1)
         values = np.arctanh(values)
-        values += np.random.RandomState(seed).randn(*values.shape) * alpha
+        # now in range (-inf, inf)
+        values = values + value_to_add
+        # now in range (-inf, inf)
         values = np.tanh(values)
-        return {demo: d[demo] + val for demo, val in zip(self.demos, values)}
+        # now in range (-1, 1)
+        values += 1
+        # now in range (0, 2)
+        values = values / 2 * (max_val - min_val)
+        # now in range (0, max_val - min_val)
+        values += min_val
+        return values
 
     def predict(self, data, correct):
         demo_values = np.array(data[self.demos])
-        pt = np.array(
-            [
-                self.partisanship_2020[demo] * self.turnout_2020[demo]
-                for demo in self.demos
-            ]
+        nonzero = demo_values.sum(1) != 0
+        demo_values[nonzero] += np.random.RandomState(self.noise_seed).choice(
+            10, replace=False
         )
+        demo_values = demo_values / np.maximum(demo_values.sum(1)[:, None], 1)
+        p = np.array([self.partisanship_2020[demo] for demo in self.demos])
         t = np.array([self.turnout_2020[demo] for demo in self.demos])
-        pt = demo_values @ pt
-        t = demo_values @ t
-        return pt / t, t
+
+        income_normalized = np.array(np.log(data.Incometest + 1))
+        income_normalized = income_normalized - income_normalized.mean()
+        income_normalized = income_normalized / income_normalized.std()
+
+        p = self._add_in_atan_space(
+            p[None],
+            self.partisan_income_coefficient * income_normalized[:, None],
+            -1,
+            1,
+        )
+        t = self._add_in_atan_space(
+            t[None], self.turnout_income_coefficient * income_normalized[:, None], 0, 1
+        )
+        pt = p * t
+
+        pt = (demo_values * pt).sum(1)
+        t = (demo_values * t).sum(1)
+
+        p = np.divide(pt, t, out=np.zeros_like(pt), where=np.abs(t) > 1e-5)
+
+        assert t.max() <= 1
+        assert t.min() >= 0
+        assert p.max() <= 1
+        assert p.min() >= -1
+        return p, t
 
 
 class GondorModel(Model):
@@ -244,4 +335,5 @@ def generate_gondor_map(seed, title, path):
         basemap=GondorMap(),
         seed=seed,
         profile=gondor_profile,
+        full_output=True,
     )
