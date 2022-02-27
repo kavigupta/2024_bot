@@ -369,6 +369,7 @@ def produce_entire_map_generic(
         / number_votes(data, turnout=1),
         profile=profile,
         state=sm is not None,
+        insets=inset_text,
     )
     im.save(text_mask)
     with open(text_mask, "rb") as f:
