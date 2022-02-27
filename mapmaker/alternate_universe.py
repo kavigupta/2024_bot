@@ -56,24 +56,7 @@ def generate_alternate_universe_map(seed, title, path):
     torch.manual_seed(torch_seed)
     target_popular_vote = abs(np.random.RandomState(pv_seed).randn() * POP_VOTE_SIGMA)
     while True:
-        turnout = copied_model.adcm.dcm.create_turnout_head(
-            TURNOUT_NOISE
-            * torch.randn(copied_model.adcm.dcm.turnout_heads["2020"].shape)
-        )
-
-        partisanship = (
-            PARTISAN_NOISE * torch.randn(turnout.shape[0], len(profile.name))
-        ).softmax(-1)
-        demos = copied_model.adcm.dcm.latent_demographic_model(
-            torch.tensor(copied_model.features.features(2020)).float()
-        )
-        t = demos @ turnout
-        tp = demos @ (turnout * partisanship)
-        p = tp / t
-        p = p.detach().numpy()
-        t = t.detach().numpy()[:, 0]
-
-        voteshare_by_party = dict(zip(sorted(profile.name), p.T))
+        t, voteshare_by_party = create_alternate_universe(copied_model, profile)
 
         popular_vote = get_popular_vote_by_voteshare(
             data, voteshare_by_party=voteshare_by_party, turnout=t
@@ -123,6 +106,27 @@ def generate_alternate_universe_map(seed, title, path):
         year=2020,
         profile=profile,
     )
+
+
+def create_alternate_universe(copied_model, profile):
+    turnout = copied_model.adcm.dcm.create_turnout_head(
+        TURNOUT_NOISE * torch.randn(copied_model.adcm.dcm.turnout_heads["2020"].shape)
+    )
+
+    partisanship = (
+        PARTISAN_NOISE * torch.randn(turnout.shape[0], len(profile.symbol))
+    ).softmax(-1)
+    demos = copied_model.adcm.dcm.latent_demographic_model(
+        torch.tensor(copied_model.features.features(2020)).float()
+    )
+    t = demos @ turnout
+    tp = demos @ (turnout * partisanship)
+    p = tp / t
+    p = p.detach().numpy()
+    t = t.detach().numpy()[:, 0]
+
+    voteshare_by_party = dict(zip(sorted(profile.symbol), p.T))
+    return t, voteshare_by_party
 
 
 def sample_profile(seed, profile_seed):
