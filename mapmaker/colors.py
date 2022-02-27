@@ -10,9 +10,6 @@ import plotly.colors
 
 from mapmaker.aggregation import to_winning_margin_single
 
-BACKGROUND = "#222"
-BACKGROUND_RGB = "rgb(34, 34, 34)"
-
 COUNTY_SCALE_MARGIN_MAX = 0.8
 
 MARGINAL = 0.001
@@ -36,6 +33,15 @@ class Profile:
     credit_scale = attr.ib(default=1, kw_only=True)
     value = attr.ib(default=attr.Factory(dict), kw_only=True)
     min_saturation = attr.ib(default=1 / 3, kw_only=True)
+    county_colorscales = attr.ib(default=None, kw_only=True)
+    compute_state_via_county = attr.ib(default=False)
+    background_color = attr.ib(default=(34, 34, 34))
+
+    def background_hex(self):
+        return self.to_string(self.background_color)
+
+    def background_rgb(self):
+        return f"rgb{self.background_color}"
 
     def min_value(self, party):
         if self.value == "normalize":
@@ -46,7 +52,11 @@ class Profile:
         min_value = self.min_value(party)
         value = (1 - min_value) * (1 - saturation) + min_value
         rgb = np.array(colorsys.hsv_to_rgb(self.hue[party], saturation, value))
-        return "#%02x%02x%02x" % tuple((rgb * 255).astype(np.uint8))
+        rgb = (rgb * 255).astype(np.uint8)
+        return self.to_string(rgb)
+
+    def to_string(self, rgb):
+        return "#%02x%02x%02x" % tuple(rgb)
 
     def county_max(self, party):
         return self.color(party, 1)
@@ -54,17 +64,31 @@ class Profile:
     def county_min(self, party):
         return self.color(party, self.min_saturation)
 
+    def state(self, party, direct, via_county):
+        if self.compute_state_via_county:
+            return self.sample_county_at(
+                party, self.compute_state_via_county[via_county]
+            )
+        return self.color(party, direct)
+
+    def sample_county_at(self, party, margin, string=True):
+        [on_scale] = self.place_margin_on_county_colorscale([(party, margin)])
+        result = get_color(self.county_colorscale, on_scale)
+        if string:
+            result = self.to_string(result)
+        return result
+
     def state_tilt(self, party):
-        return self.color(party, 0.18823529411764706)
+        return self.state(party, 0.18823529411764706, "tilt")
 
     def state_lean(self, party):
-        return self.color(party, 0.38431372549019605)
+        return self.state(party, 0.38431372549019605, "lean")
 
     def state_likely(self, party):
-        return self.color(party, 0.584313725490196)
+        return self.state(party, 0.584313725490196, "likely")
 
     def state_safe(self, party):
-        return self.color(party, 0.7803921568627451)
+        return self.state(party, 0.7803921568627451, "safe")
 
     @property
     def parties(self):
@@ -76,6 +100,9 @@ class Profile:
         from .aggregation import to_winning_margin
 
         winning_margin = to_winning_margin(voteshare_by_party)
+        return self.place_margin_on_county_colorscale(winning_margin)
+
+    def place_margin_on_county_colorscale(self, winning_margin):
         parties = self.parties
         out = []
         for party, margin in winning_margin:
@@ -115,6 +142,9 @@ class Profile:
         return result
 
     def county_colorscale_for_party(self, party):
+        if self.county_colorscales is not None:
+            return self.county_colorscales[party]
+
         return [
             [0, self.county_max(party)],
             [1 - MARGINAL * 2, self.county_min(party)],
@@ -185,7 +215,10 @@ class Profile:
                 squares_per_party[party].append(
                     (color, f"{self.symbol[party]}+{margin*100:.0f}")
                 )
-        return self.combine_squares_per_party(squares_per_party, even=True)
+        return self.combine_squares_per_party(
+            squares_per_party,
+            even=self.sample_county_at(self.parties[0], 0, string=False),
+        )
 
     @property
     def state_legend(self):
@@ -196,8 +229,11 @@ class Profile:
             )
         return self.combine_squares_per_party(squares_per_party)
 
-    def combine_squares_per_party(self, squares_per_party, even=False):
-        even = [(np.array([255, 255, 255], dtype=np.uint8), "Even")] * even
+    def combine_squares_per_party(self, squares_per_party, even=None):
+        if even is None:
+            even = []
+        else:
+            even = [(even, "Even")]
         if len(squares_per_party) == 2:
             b, a = self.parties
             res = squares_per_party[a] + even + squares_per_party[b][::-1]

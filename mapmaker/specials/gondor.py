@@ -14,7 +14,7 @@ from shapely.ops import unary_union, transform
 
 from ..model import Model
 from ..mapper import BaseMap, draw_ec, draw_tipping_point
-from ..colors import BACKGROUND, Profile
+from ..colors import Profile
 
 PV_SPREAD = 0.07
 
@@ -96,13 +96,13 @@ class GondorMap(BaseMap):
     def draw_tipping_point(self, *args, **kwargs):
         return draw_tipping_point(self, *args, **kwargs)
 
-    def modify_figure_layout(self, figure):
+    def modify_figure_layout(self, figure, profile):
         figure.update_geos(
             showcoastlines=False,
             showland=False,
             showocean=False,
             showlakes=False,
-            bgcolor=BACKGROUND,
+            bgcolor=profile.background_hex(),
             framewidth=0,
         )
 

@@ -18,7 +18,6 @@ from .aggregation import (
     get_senate_vote,
     get_state_results_by_voteshare,
 )
-from .colors import BACKGROUND
 from .constants import TILT_MARGIN, LEAN_MARGIN, LIKELY_MARGIN
 from .utils import counties_to_states
 from .text import draw_text
@@ -84,7 +83,7 @@ class BaseMap(ABC):
         return counties_to_states(self.metadata, self.counties)
 
     def county_map(
-        self, identifiers, *, variable_to_plot, zmid, zmin, zmax, colorscale
+        self, identifiers, *, variable_to_plot, zmid, zmin, zmax, colorscale, profile
     ):
         def get_figure(inset=None):
             figure = go.Choropleth(
@@ -98,7 +97,10 @@ class BaseMap(ABC):
                 **self.county_plotly_kwargs,
                 showscale=False,
             )
-            figure = fit(figure, modify_figure_layout=self.modify_figure_layout)
+            figure = fit(
+                figure,
+                modify_figure_layout=lambda x: self.modify_figure_layout(x, profile),
+            )
             if inset is not None:
                 figure.update_geos(
                     lataxis_range=self.insets[inset].y_in,
@@ -116,9 +118,10 @@ class BaseMap(ABC):
             zmid=0.5,
             zmax=1,
             colorscale=profile.county_colorscale,
+            profile=profile,
         )
 
-    def map_county_demographics(self, identifiers, *, demographic_values):
+    def map_county_demographics(self, identifiers, *, demographic_values, profile):
         return self.county_map(
             identifiers,
             variable_to_plot=demographic_values,
@@ -126,6 +129,7 @@ class BaseMap(ABC):
             zmin=0,
             zmax=0.9,
             colorscale="jet",
+            profile=profile,
         )
 
     def state_map(self, data, *, voteshare_by_party, turnout, profile):
@@ -147,7 +151,9 @@ class BaseMap(ABC):
             showscale=False,
             **self.state_plotly_kwargs,
         )
-        return fit(figure, modify_figure_layout=self.modify_figure_layout)
+        return fit(
+            figure, modify_figure_layout=lambda x: self.modify_figure_layout(x, profile)
+        )
 
     def populate(self, data, voteshare_by_party, turnout):
         return PopulatedMap(self, data, voteshare_by_party, turnout)
@@ -196,9 +202,13 @@ class USABaseMap(BaseMap):
     def electoral_votes(self):
         return ec()
 
-    def modify_figure_layout(self, figure):
+    def modify_figure_layout(self, figure, profile):
         figure.update_geos(scope="usa")
-        figure.update_layout(geo=dict(bgcolor=BACKGROUND, lakecolor=BACKGROUND))
+        figure.update_layout(
+            geo=dict(
+                bgcolor=profile.background_hex(), lakecolor=profile.background_hex()
+            )
+        )
 
     @property
     def extra_county_maps(self):

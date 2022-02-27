@@ -20,7 +20,6 @@ from .aggregation import (
 from .mapper import USABaseMap, USAPresidencyBaseMap, USASenateBaseMap
 from .version import version
 from .colors import (
-    BACKGROUND_RGB,
     STANDARD_PROFILE,
     get_color,
 )
@@ -321,11 +320,11 @@ def produce_entire_map_generic(
         sm.write_image(states_svg)
 
     # load matpotlib-generated figures
-    remove_backgrounds(counties_svg)
+    remove_backgrounds(counties_svg, profile)
     for inset in basemap.insets:
-        remove_backgrounds(county_insets_svg[inset])
+        remove_backgrounds(county_insets_svg[inset], profile)
     if sm is not None:
-        remove_backgrounds(states_svg)
+        remove_backgrounds(states_svg, profile)
 
     maps = [sg.fromfile(counties_svg).getroot(), *basemap.extra_county_maps]
     for map in maps:
@@ -375,7 +374,7 @@ def produce_entire_map_generic(
     with open(text_mask, "rb") as f:
         fig.append(sg.ImageElement(f, 950, 450))
     fig.save(out_path)
-    add_background_back(out_path)
+    add_background_back(out_path, profile)
     if use_png:
         with open(out_path) as f:
             svg2png(
@@ -405,12 +404,14 @@ def serialize_output(profile, values, always_whole=False):
     return result
 
 
-def remove_backgrounds(path):
+def remove_backgrounds(path, profile):
     with open(path) as f:
         contents = f.read()
     contents = re.sub(r'<rect x="0" y="0" [^/]*"/>', "", contents)
     contents = re.sub(
-        r"<rect[^/]*" + re.escape(re.escape(BACKGROUND_RGB)) + "[^/]*/>", "", contents
+        r"<rect[^/]*" + re.escape(re.escape(profile.background_rgb())) + "[^/]*/>",
+        "",
+        contents,
     )
     contents = re.sub('<g class="layer land">.*?</g>', "", contents)
     contents = re.sub('<g class="layer subunits">.*?</g>', "", contents)
@@ -418,11 +419,11 @@ def remove_backgrounds(path):
         f.write(contents)
 
 
-def add_background_back(path):
+def add_background_back(path, profile):
     with open(path) as f:
         contents = f.read()
     start_content = contents.index("<g>")
-    insert_rect = f'<rect x="0" y="0" width="950" height="450" style="fill: {BACKGROUND_RGB}; fill-opacity: 1"/>'
+    insert_rect = f'<rect x="0" y="0" width="950" height="450" style="fill: {profile.background_rgb()}; fill-opacity: 1"/>'
     contents = contents[:start_content] + insert_rect + contents[start_content:]
     contents = contents.replace(
         'version="1.1"', 'version="1.1" width="950" height="450"'

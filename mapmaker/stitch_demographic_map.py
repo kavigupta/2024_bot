@@ -6,6 +6,8 @@ import tqdm
 import svgutils.transform as sg
 from cairosvg import svg2png
 
+from mapmaker.colors import STANDARD_PROFILE
+
 from .mapper import USAPresidencyBaseMap
 from .stitch_map import remove_backgrounds, add_background_back
 
@@ -32,7 +34,9 @@ def generate_demographic_map(data, demographic_values, title, out_path):
     # import IPython; IPython.embed()
     cms = [
         USAPresidencyBaseMap().map_county_demographics(
-            data["FIPS"], demographic_values=demographic_values[:, i]
+            data["FIPS"],
+            demographic_values=demographic_values[:, i],
+            profile=STANDARD_PROFILE,
         )
         for i in tqdm.trange(num_demos)
     ]
@@ -44,7 +48,7 @@ def generate_demographic_map(data, demographic_values, title, out_path):
 
     for cm, counties_svg in zip(cms, counties_svgs):
         cm.write_image(counties_svg)
-        remove_backgrounds(counties_svg)
+        remove_backgrounds(counties_svg, STANDARD_PROFILE)
 
     cms = [
         sg.fromfile(counties_svg).getroot() for counties_svg in tqdm.tqdm(counties_svgs)
@@ -72,7 +76,7 @@ def generate_demographic_map(data, demographic_values, title, out_path):
     # with open(text_mask, "rb") as f:
     #     fig.append(sg.ImageElement(f, 950, 450))
     fig.save(out_path)
-    add_background_back(out_path)
+    add_background_back(out_path, STANDARD_PROFILE)
     with open(out_path) as f:
         svg2png(
             bytestring=f.read(), write_to=out_path.replace(".svg", ".png"), scale=SCALE
