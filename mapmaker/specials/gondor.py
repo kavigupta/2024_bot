@@ -35,7 +35,7 @@ class GondorMap(BaseMap):
     @cached_property
     def load_file(self):
         df = geopandas.read_file(
-            os.path.join(ROOT, "shapefiles/gondor/gondorshapefinal.shp")
+            os.path.join(ROOT, "shapefiles/gondor/Gondorincome revised.shp")
         )
         df["id"] = df.PrecName
         df["FIPS"] = df.id
@@ -166,6 +166,8 @@ class GondorDemographicModel:
             "Eotheod": 0.75,
             "Southron": 0.35,
         }
+        self.partisan_income_coefficient = -0.3
+        self.turnout_income_coefficient = 0
         self.noise_seed = 0
 
     @property
@@ -176,8 +178,8 @@ class GondorDemographicModel:
         if prediction_seed is None:
             return self
         perturbed = copy.deepcopy(self)
-        pseed, tseed, nseed = np.random.RandomState(prediction_seed).choice(
-            2 ** 32, size=3
+        pseed, tseed, incomeseed, nseed = np.random.RandomState(prediction_seed).choice(
+            2 ** 32, size=4
         )
         perturbed.partisanship_2020 = self._perturb_dict(
             self.partisanship_2020, alpha_partisanship, pseed, -1, 1
@@ -185,11 +187,19 @@ class GondorDemographicModel:
         perturbed.turnout_2020 = self._perturb_dict(
             self.turnout_2020, alpha_turnout, tseed, 0, 1
         )
+        cpi, cti = np.random.RandomState(incomeseed).randn(2) * 0.3 * alpha_partisanship
+        perturbed.partisan_income_coefficient += cpi
+        perturbed.turnout_income_coefficient += cti * 0
         perturbed.noise_seed = nseed
         return perturbed
 
     def _perturb_dict(self, d, alpha, seed, min_val, max_val):
         values = np.array([d[demo] for demo in self.demos])
+        value_to_add = np.random.RandomState(seed).randn(*values.shape) * alpha
+        values = self._add_in_atan_space(values, value_to_add, min_val, max_val)
+        return {demo: val for demo, val in zip(self.demos, values)}
+
+    def _add_in_atan_space(self, values, value_to_add, min_val, max_val):
         # scale (min_val, max_val) to (-1, 1)
         values = values - min_val
         # now in range (0, max_val - min_val)
@@ -199,7 +209,7 @@ class GondorDemographicModel:
         # now in range (-1, 1)
         values = np.arctanh(values)
         # now in range (-inf, inf)
-        values += np.random.RandomState(seed).randn(*values.shape) * alpha
+        values = values + value_to_add
         # now in range (-inf, inf)
         values = np.tanh(values)
         # now in range (-1, 1)
@@ -208,7 +218,7 @@ class GondorDemographicModel:
         values = values / 2 * (max_val - min_val)
         # now in range (0, max_val - min_val)
         values += min_val
-        return {demo: val for demo, val in zip(self.demos, values)}
+        return values
 
     def predict(self, data, correct):
         demo_values = np.array(data[self.demos])
@@ -217,15 +227,26 @@ class GondorDemographicModel:
             10, replace=False
         )
         demo_values = demo_values / np.maximum(demo_values.sum(1)[:, None], 1)
-        pt = np.array(
-            [
-                self.partisanship_2020[demo] * self.turnout_2020[demo]
-                for demo in self.demos
-            ]
-        )
+        p = np.array([self.partisanship_2020[demo] for demo in self.demos])
         t = np.array([self.turnout_2020[demo] for demo in self.demos])
-        pt = demo_values @ pt
-        t = demo_values @ t
+
+        income_normalized = np.array(np.log(data.Incometest + 1))
+        income_normalized = income_normalized - income_normalized.mean()
+        income_normalized = income_normalized / income_normalized.std()
+
+        p = self._add_in_atan_space(
+            p[None],
+            self.partisan_income_coefficient * income_normalized[:, None],
+            -1,
+            1,
+        )
+        t = self._add_in_atan_space(
+            t[None], self.turnout_income_coefficient * income_normalized[:, None], 0, 1
+        )
+        pt = p * t
+
+        pt = (demo_values * pt).sum(1)
+        t = (demo_values * t).sum(1)
 
         p = np.divide(pt, t, out=np.zeros_like(pt), where=np.abs(t) > 1e-5)
 
