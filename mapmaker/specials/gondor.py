@@ -106,6 +106,13 @@ class GondorMap(BaseMap):
             framewidth=0,
         )
 
+    def extra_county_maps(self, profile):
+        return [
+            self.create_states_outline(
+                profile, marker_line_color="white", marker_line_width=0.5
+            )
+        ]
+
     @property
     def insets(self):
         from types import SimpleNamespace

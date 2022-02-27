@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod, abstractproperty
 import os
+import tempfile
 
 import attr
 import us
@@ -62,8 +63,7 @@ class BaseMap(ABC):
     def electoral_votes(self):
         pass
 
-    @property
-    def extra_county_maps(self):
+    def extra_county_maps(self, profile):
         return []
 
     @property
@@ -158,6 +158,28 @@ class BaseMap(ABC):
     def populate(self, data, voteshare_by_party, turnout):
         return PopulatedMap(self, data, voteshare_by_party, turnout)
 
+    def create_states_outline(self, profile, **kwargs):
+        from mapmaker.stitch_map import remove_backgrounds
+
+        index = [x["id"] for x in self.states["features"]]
+        figure = go.Choropleth(
+            geojson=self.states,
+            z=np.zeros(len(index)),
+            locations=index,
+            colorscale=[[0, "rgba(0, 0, 0, 0)"], [1, "rgba(0, 0, 0, 0)"]],
+            zmin=0,
+            zmax=1,
+            showscale=False,
+            **kwargs,
+        )
+        figure = fit(
+            figure, modify_figure_layout=lambda x: self.modify_figure_layout(x, profile)
+        )
+        path = tempfile.mktemp(suffix=".svg")
+        figure.write_image(path)
+        remove_backgrounds(path, profile)
+        return sg.fromfile(path).getroot()
+
 
 @attr.s
 class PopulatedMap:
@@ -210,8 +232,7 @@ class USABaseMap(BaseMap):
             )
         )
 
-    @property
-    def extra_county_maps(self):
+    def extra_county_maps(self, profile):
         return [
             sg.fromfile(
                 os.path.join(

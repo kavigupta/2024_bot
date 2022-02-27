@@ -326,7 +326,7 @@ def produce_entire_map_generic(
     if sm is not None:
         remove_backgrounds(states_svg, profile)
 
-    maps = [sg.fromfile(counties_svg).getroot(), *basemap.extra_county_maps]
+    maps = [sg.fromfile(counties_svg).getroot(), *basemap.extra_county_maps(profile)]
     for map in maps:
         s = basemap.map_scale
         map.moveto(0, basemap.map_dy, scale_x=s, scale_y=s)
@@ -409,7 +409,7 @@ def remove_backgrounds(path, profile):
         contents = f.read()
     contents = re.sub(r'<rect x="0" y="0" [^/]*"/>', "", contents)
     contents = re.sub(
-        r"<rect[^/]*" + re.escape(re.escape(profile.background_rgb())) + "[^/]*/>",
+        r"<rect[^/]*" + re.escape(profile.background_rgb()) + "[^/]*/>",
         "",
         contents,
     )
