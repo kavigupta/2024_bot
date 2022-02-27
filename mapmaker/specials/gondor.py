@@ -109,7 +109,7 @@ class GondorMap(BaseMap):
     def extra_county_maps(self, profile):
         return [
             self.create_states_outline(
-                profile, marker_line_color="white", marker_line_width=0.5
+                profile, marker_line_color="black", marker_line_width=0.5
             )
         ]
 
