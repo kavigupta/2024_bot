@@ -75,6 +75,10 @@ class BaseMap(ABC):
     def map_dy(self):
         return 0
 
+    @property
+    def insets(self):
+        return {}
+
     @cached_property
     def states(self):
         return counties_to_states(self.metadata, self.counties)
@@ -82,18 +86,27 @@ class BaseMap(ABC):
     def county_map(
         self, identifiers, *, variable_to_plot, zmid, zmin, zmax, colorscale
     ):
-        figure = go.Choropleth(
-            geojson=self.counties,
-            locations=identifiers,
-            z=variable_to_plot,
-            zmid=zmid,
-            zmin=zmin,
-            zmax=zmax,
-            colorscale=colorscale,
-            **self.county_plotly_kwargs,
-            showscale=False,
-        )
-        return fit(figure, modify_figure_layout=self.modify_figure_layout)
+        def get_figure(inset=None):
+            figure = go.Choropleth(
+                geojson=self.counties,
+                locations=identifiers,
+                z=variable_to_plot,
+                zmid=zmid,
+                zmin=zmin,
+                zmax=zmax,
+                colorscale=colorscale,
+                **self.county_plotly_kwargs,
+                showscale=False,
+            )
+            figure = fit(figure, modify_figure_layout=self.modify_figure_layout)
+            if inset is not None:
+                figure.update_geos(
+                    lataxis_range=self.insets[inset].y_in,
+                    lonaxis_range=self.insets[inset].x_in,
+                )
+            return figure
+
+        return get_figure(), {inset: get_figure(inset) for inset in self.insets}
 
     def map_county_margins(self, identifiers, *, voteshare_by_party, profile):
         return self.county_map(
