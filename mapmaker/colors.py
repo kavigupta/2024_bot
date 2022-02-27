@@ -31,16 +31,28 @@ class Profile:
     name = attr.ib(default=None)
     text_color = attr.ib(default=None)
     extra_ec = attr.ib(default={})
+    suffix = attr.ib(default=" Party", kw_only=True)
+    order = attr.ib(default=None, kw_only=True)
+    credit_scale = attr.ib(default=1, kw_only=True)
+    value = attr.ib(default=attr.Factory(dict), kw_only=True)
+    min_saturation = attr.ib(default=1 / 3, kw_only=True)
+
+    def min_value(self, party):
+        if self.value == "normalize":
+            return 1/np.array(colorsys.hsv_to_rgb(self.hue[party], 1, 1)).sum()
+        return self.value.get(party, 1)
 
     def color(self, party, saturation):
-        rgb = np.array(colorsys.hsv_to_rgb(self.hue[party], saturation, 1))
+        min_value = self.min_value(party)
+        value = (1 - min_value) * (1 - saturation) + min_value
+        rgb = np.array(colorsys.hsv_to_rgb(self.hue[party], saturation, value))
         return "#%02x%02x%02x" % tuple((rgb * 255).astype(np.uint8))
 
     def county_max(self, party):
         return self.color(party, 1)
 
     def county_min(self, party):
-        return self.color(party, 1 / 3)
+        return self.color(party, self.min_saturation)
 
     def state_tilt(self, party):
         return self.color(party, 0.18823529411764706)
@@ -54,11 +66,17 @@ class Profile:
     def state_safe(self, party):
         return self.color(party, 0.7803921568627451)
 
+    @property
+    def parties(self):
+        if self.order is not None:
+            return self.order
+        return sorted(self.symbol)
+
     def place_on_county_colorscale(self, voteshare_by_party):
         from .aggregation import to_winning_margin
 
         winning_margin = to_winning_margin(voteshare_by_party)
-        parties = sorted(self.symbol)
+        parties = self.parties
         out = []
         for party, margin in winning_margin:
             out.append(
@@ -75,7 +93,7 @@ class Profile:
         from .aggregation import to_winning_margin
         from mapmaker.mapper import classify
 
-        parties = sorted(self.symbol)
+        parties = self.parties
         out = []
         for party, margin in to_winning_margin(voteshare_by_party):
             out.append(INTERVAL * (parties.index(party) + classify(margin)))
@@ -84,7 +102,7 @@ class Profile:
 
     @property
     def county_colorscale(self):
-        parties = sorted(self.symbol)
+        parties = self.parties
         assert (2 * len(parties) + 1) * INTERVAL < 1
         result = []
         for idx, party in enumerate(parties):
@@ -102,7 +120,7 @@ class Profile:
 
     @property
     def state_colorscale(self):
-        parties = sorted(self.symbol)
+        parties = self.parties
         out = [(0, "#000000")]
         for idx, party in enumerate(parties):
             out += [
@@ -117,8 +135,8 @@ class Profile:
     @property
     def vs(self):
         overall = []
-        for party in sorted(self.symbol):
-            overall.append((self.name[party] + " Party", self.state_safe(party)))
+        for party in self.parties:
+            overall.append((self.name[party] + self.suffix, self.state_safe(party)))
             overall.append((" vs. ", self.text_color))
         overall.pop()
         return overall
@@ -142,7 +160,7 @@ class Profile:
 
     def display_differences(self, each, attr="state_safe"):
         result = []
-        for party in sorted(each):
+        for party in self.parties:
             result.append((each[party], getattr(self, attr)(party)))
             result.append((" - ", self.text_color))
         result.pop()
@@ -178,11 +196,11 @@ class Profile:
     def combine_squares_per_party(self, squares_per_party, even=False):
         even = [(np.array([255, 255, 255], dtype=np.uint8), "Even")] * even
         if len(squares_per_party) == 2:
-            b, a = sorted(self.symbol)
+            b, a = self.parties
             res = squares_per_party[a] + even + squares_per_party[b][::-1]
             return res
         all_squares = []
-        for party in sorted(self.symbol):
+        for party in self.parties:
             all_squares.extend(squares_per_party[party])
         return all_squares + even
 

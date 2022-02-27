@@ -92,7 +92,7 @@ def produce_text(
     )
     draw_text(
         draw,
-        10 * scale,
+        int(10 * scale * profile.credit_scale),
         [
             (
                 f"{profile.bot_name} v{version} {profile.credit}",
@@ -110,7 +110,7 @@ def produce_text(
         draw=draw, scale=scale, profile=profile, text_center=TEXT_CENTER, y=y
     )
 
-    amount = 30 if len(profile.symbol) == 2 else 15
+    amount = 30 if len(profile.symbol) == 2 else 15 if len(profile.symbol) == 3 else 12
 
     y += (amount + 10) // 2 + 20
 
@@ -214,7 +214,7 @@ def draw_legend(draw, scale, mode, *, profile):
                 add_square(color, text)
         else:
             legend_x -= LEGEND_SIZE
-            for column, party in enumerate(sorted(profile.symbol)):
+            for column, party in enumerate(profile.parties):
                 for row, (color, short) in enumerate(
                     zip(profile.state_colors(party), profile.state_symbols_short(party))
                 ):
